@@ -1,0 +1,68 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import ThemeToggle from '@/components/ThemeToggle.vue'
+import { api } from '@/api'
+import { toast } from 'vue-sonner'
+
+const router = useRouter()
+const username = ref('')
+const password = ref('')
+const loading = ref(false)
+
+async function handleLogin() {
+  loading.value = true
+  try {
+    await api.auth.login({ username: username.value, password: password.value })
+    toast.success('登录成功')
+    router.push('/')
+  } catch {
+    toast.error('登录失败，请检查用户名和密码')
+  } finally {
+    loading.value = false
+  }
+}
+</script>
+
+<template>
+  <div class="min-h-screen flex items-center justify-center bg-muted/30 p-4 relative">
+    <!-- 右上角主题切换 -->
+    <div class="absolute top-4 right-4">
+      <ThemeToggle />
+    </div>
+    
+    <div class="border rounded-lg bg-background shadow-sm overflow-hidden">
+      <div class="flex">
+        <!-- 左侧登录表单 -->
+        <div class="w-96 p-10">
+          <div class="space-y-8">
+            <div class="space-y-2">
+              <h1 class="text-2xl font-bold tracking-tight">白虎面板</h1>
+              <p class="text-muted-foreground">轻量级定时任务管理系统</p>
+            </div>
+            <form @submit.prevent="handleLogin" class="space-y-5">
+              <div class="space-y-2">
+                <Label>用户名</Label>
+                <Input v-model="username" placeholder="请输入用户名" class="h-10 text-base" />
+              </div>
+              <div class="space-y-2">
+                <Label>密码</Label>
+                <Input v-model="password" type="password" placeholder="请输入密码" class="h-10 text-base" />
+              </div>
+              <Button type="submit" class="w-full h-10" :disabled="loading">
+                {{ loading ? '登录中...' : '登录' }}
+              </Button>
+            </form>
+          </div>
+        </div>
+        <!-- 右侧 Logo 展示（大屏显示） -->
+        <div class="hidden lg:flex w-64 bg-muted/50 dark:bg-muted/30 items-center justify-center">
+          <img src="/logo.svg" alt="Logo" class="w-44 h-44" />
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

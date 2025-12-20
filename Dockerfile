@@ -1,0 +1,74 @@
+# Stage 1: Build frontend
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /app/web
+
+# Copy package files
+COPY web/package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy frontend source
+COPY web/ ./
+
+# Build frontend
+RUN npm run build
+
+# Stage 2: Build backend
+FROM golang:1.24-alpine AS backend-builder
+
+WORKDIR /app
+
+# Copy go mod files
+COPY go.mod go.sum ./
+RUN go env -w GOPROXY=https://goproxy.cn,direct && go mod download
+
+# Copy source code
+COPY . .
+
+# Copy built frontend to embed location
+COPY --from=frontend-builder /app/web/dist ./internal/static/dist
+
+# Build Go binary (no CGO needed, auto-detect target arch)
+ARG VERSION=dev
+ARG BUILD_TIME
+RUN CGO_ENABLED=0 go build -ldflags="-s -w -X baihu/internal/constant.Version=${VERSION} -X 'baihu/internal/constant.BuildTime=${BUILD_TIME}'" -o baihu .
+
+# Stage 3: Final image based on Dockerfile.debian
+FROM debian:bookworm-slim
+
+ENV TZ=Asia/Shanghai
+ENV CONDA_DIR=/opt/miniforge3
+ENV PATH=${CONDA_DIR}/bin:$PATH
+
+RUN sed -i 's@deb.debian.org@mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.list.d/debian.sources \
+    && sed -i 's@security.debian.org@mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.list.d/debian.sources \
+    && echo "${TZ}" > /etc/timezone \
+    && ln -sf /usr/share/zoneinfo/${TZ} /etc/localtime \
+    && apt update \
+    && apt install -y tzdata git gcc curl wget vim ca-certificates htop \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -sSL https://gh-proxy.com/https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh -o /tmp/miniforge.sh \
+    && bash /tmp/miniforge.sh -b -p ${CONDA_DIR} \
+    && rm -f /tmp/miniforge.sh \
+    && "${CONDA_DIR}"/bin/conda config --set show_channel_urls yes \
+    && "${CONDA_DIR}"/bin/conda config --set channel_priority strict \
+    && "${CONDA_DIR}"/bin/conda clean -afy
+
+WORKDIR /app
+
+# Copy binary from builder
+COPY --from=backend-builder /app/baihu .
+
+# Copy config files
+COPY --from=backend-builder /app/configs ./configs
+
+# Create directories
+RUN mkdir -p ./data ./logs ./scripts
+
+# Expose port
+EXPOSE 8052
+
+# Run
+CMD ["./baihu"]

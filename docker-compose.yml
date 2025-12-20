@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  baihu:
+    build: .
+    ports:
+      - "8052:8052"
+    volumes:
+      - ./data:/root/data
+      - ./logs:/root/logs
+      - ./scripts:/root/scripts
+      - ./configs:/root/configs
+    environment:
+      - TZ=Asia/Shanghai
+    restart: unless-stopped

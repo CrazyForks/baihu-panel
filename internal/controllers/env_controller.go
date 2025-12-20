@@ -1,0 +1,103 @@
+package controllers
+
+import (
+	"strconv"
+
+	"baihu/internal/services"
+	"baihu/internal/utils"
+
+	"github.com/gin-gonic/gin"
+)
+
+type EnvController struct {
+	envService *services.EnvService
+}
+
+func NewEnvController(envService *services.EnvService) *EnvController {
+	return &EnvController{envService: envService}
+}
+
+func (ec *EnvController) CreateEnvVar(c *gin.Context) {
+	userID := 1
+
+	var req struct {
+		Name   string `json:"name" binding:"required"`
+		Value  string `json:"value" binding:"required"`
+		Remark string `json:"remark"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.BadRequest(c, err.Error())
+		return
+	}
+
+	envVar := ec.envService.CreateEnvVar(req.Name, req.Value, req.Remark, userID)
+	utils.Success(c, envVar)
+}
+
+func (ec *EnvController) GetEnvVars(c *gin.Context) {
+	userID := 1
+	p := utils.ParsePagination(c)
+	name := c.DefaultQuery("name", "")
+	envVars, total := ec.envService.GetEnvVarsWithPagination(userID, name, p.Page, p.PageSize)
+	utils.PaginatedResponse(c, envVars, total, p)
+}
+
+func (ec *EnvController) GetEnvVar(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		utils.BadRequest(c, "无效的环境变量ID")
+		return
+	}
+
+	envVar := ec.envService.GetEnvVarByID(id)
+	if envVar == nil {
+		utils.NotFound(c, "环境变量不存在")
+		return
+	}
+
+	utils.Success(c, envVar)
+}
+
+func (ec *EnvController) UpdateEnvVar(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		utils.BadRequest(c, "无效的环境变量ID")
+		return
+	}
+
+	var req struct {
+		Name   string `json:"name"`
+		Value  string `json:"value"`
+		Remark string `json:"remark"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.BadRequest(c, err.Error())
+		return
+	}
+
+	envVar := ec.envService.UpdateEnvVar(id, req.Name, req.Value, req.Remark)
+	if envVar == nil {
+		utils.NotFound(c, "环境变量不存在")
+		return
+	}
+
+	utils.Success(c, envVar)
+}
+
+func (ec *EnvController) DeleteEnvVar(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		utils.BadRequest(c, "无效的环境变量ID")
+		return
+	}
+
+	success := ec.envService.DeleteEnvVar(id)
+	if !success {
+		utils.NotFound(c, "环境变量不存在")
+		return
+	}
+
+	utils.SuccessMsg(c, "删除成功")
+}

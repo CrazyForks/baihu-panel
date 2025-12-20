@@ -1,0 +1,36 @@
+# Binaries
+baihu
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Go
+# go.sum should be committed for reproducible builds
+
+# Data & Logs
+data/
+# logs/
+# scripts/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Node
+node_modules/
+web/dist/
+
+# Embedded static files (built during CI/Docker)
+internal/static/dist/
+!internal/static/dist/.gitkeep
+
+# Config (sensitive)
+configs/config.local.json
+
+# Misc
+*.log
+*.tmp
