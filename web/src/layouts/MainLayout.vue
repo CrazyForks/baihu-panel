@@ -5,10 +5,11 @@ import { LayoutDashboard, ListTodo, FileCode, Settings, LogOut, ScrollText, Term
 import { Button } from '@/components/ui/button'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import { api } from '@/api'
-import * as jinrishici from 'jinrishici'
+import { useSiteSettings } from '@/composables/useSiteSettings'
 
 const route = useRoute()
 const sentence = ref('欢迎使用白虎面板')
+const { siteSettings, loadSettings } = useSiteSettings()
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: '数据仪表', exact: true },
@@ -20,7 +21,7 @@ const navItems = [
   { to: '/settings', icon: Settings, label: '系统设置', exact: true },
 ]
 
-function isItemActive(item: typeof navItems[0]) {
+function isItemActive(item: (typeof navItems)[0]) {
   if (item.exact) {
     return route.path === item.to
   }
@@ -36,18 +37,19 @@ async function logout() {
   window.location.href = '/login'
 }
 
-function loadSentence() {
-  jinrishici.load(
-    (result: { data: { content: string } }) => {
-      sentence.value = result.data.content
-    },
-    () => {
-      // 加载失败保持默认
-    }
-  )
+async function loadSentence() {
+  try {
+    const res = await api.dashboard.sentence()
+    sentence.value = res.sentence
+  } catch {
+    // 加载失败保持默认
+  }
 }
 
-onMounted(loadSentence)
+onMounted(() => {
+  loadSettings()
+  loadSentence()
+})
 </script>
 
 <template>
@@ -55,7 +57,7 @@ onMounted(loadSentence)
     <!-- Sidebar -->
     <aside class="w-56 border-r bg-background flex flex-col">
       <div class="h-14 flex items-center px-10 font-semibold text-lg border-b">
-        白虎面板
+        {{ siteSettings.title }}
       </div>
       <nav class="flex-1 px-6 py-9 space-y-1">
         <RouterLink

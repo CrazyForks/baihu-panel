@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -13,6 +13,20 @@ const username = ref('')
 const password = ref('')
 const loading = ref(false)
 
+const siteTitle = ref('白虎面板')
+const siteSubtitle = ref('轻量级定时任务管理系统')
+
+async function loadSiteSettings() {
+  try {
+    const res = await api.settings.getPublicSite()
+    siteTitle.value = res.title || '白虎面板'
+    siteSubtitle.value = res.subtitle || '轻量级定时任务管理系统'
+    document.title = siteTitle.value
+  } catch {
+    // 使用默认值
+  }
+}
+
 async function handleLogin() {
   loading.value = true
   try {
@@ -25,6 +39,8 @@ async function handleLogin() {
     loading.value = false
   }
 }
+
+onMounted(loadSiteSettings)
 </script>
 
 <template>
@@ -40,8 +56,8 @@ async function handleLogin() {
         <div class="w-96 p-10">
           <div class="space-y-8">
             <div class="space-y-2">
-              <h1 class="text-2xl font-bold tracking-tight">白虎面板</h1>
-              <p class="text-muted-foreground">轻量级定时任务管理系统</p>
+              <h1 class="text-2xl font-bold tracking-tight">{{ siteTitle }}</h1>
+              <p class="text-muted-foreground">{{ siteSubtitle }}</p>
             </div>
             <form @submit.prevent="handleLogin" class="space-y-5">
               <div class="space-y-2">

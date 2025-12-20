@@ -7,18 +7,23 @@ import (
 	"baihu/internal/services"
 	"baihu/internal/utils"
 	"fmt"
-	"runtime"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/shirou/gopsutil/v3/process"
 )
 
 type SettingsController struct {
-	userService *services.UserService
+	userService     *services.UserService
+	settingsService *services.SettingsService
 }
 
 func NewSettingsController(userService *services.UserService) *SettingsController {
-	return &SettingsController{userService: userService}
+	return &SettingsController{
+		userService:     userService,
+		settingsService: services.NewSettingsService(),
+	}
 }
 
 // ChangePassword 修改密码
@@ -74,19 +79,50 @@ func (sc *SettingsController) CleanLogs(c *gin.Context) {
 
 // GetSiteSettings 获取站点设置
 func (sc *SettingsController) GetSiteSettings(c *gin.Context) {
-	config := services.Config
-	if config == nil {
-		utils.Success(c, gin.H{
-			"site_name": "白虎面板",
-			"port":      8080,
-		})
+	settings := sc.settingsService.GetSection("site")
+	utils.Success(c, settings)
+}
+
+// GetPublicSiteSettings 获取公开的站点设置（无需认证）
+func (sc *SettingsController) GetPublicSiteSettings(c *gin.Context) {
+	settings := sc.settingsService.GetSection("site")
+	// 只返回公开信息
+	utils.Success(c, gin.H{
+		"title":    settings["title"],
+		"subtitle": settings["subtitle"],
+		"icon":     settings["icon"],
+	})
+}
+
+// UpdateSiteSettings 更新站点设置
+func (sc *SettingsController) UpdateSiteSettings(c *gin.Context) {
+	var req struct {
+		Title      string `json:"title"`
+		Subtitle   string `json:"subtitle"`
+		Icon       string `json:"icon"`
+		PageSize   string `json:"page_size"`
+		CookieDays string `json:"cookie_days"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.BadRequest(c, "参数错误")
 		return
 	}
 
-	utils.Success(c, gin.H{
-		"site_name": config.Server.SiteName,
-		"port":      config.Server.Port,
-	})
+	values := map[string]string{
+		"title":       req.Title,
+		"subtitle":    req.Subtitle,
+		"icon":        req.Icon,
+		"page_size":   req.PageSize,
+		"cookie_days": req.CookieDays,
+	}
+
+	if err := sc.settingsService.SetSection("site", values); err != nil {
+		utils.ServerError(c, "保存失败")
+		return
+	}
+
+	utils.SuccessMsg(c, "保存成功")
 }
 
 // GetAbout 获取关于信息
@@ -97,9 +133,12 @@ func (sc *SettingsController) GetAbout(c *gin.Context) {
 	database.DB.Model(&models.EnvironmentVariable{}).Count(&envCount)
 
 	// 内存使用
-	var m runtime.MemStats
-	runtime.ReadMemStats(&m)
-	memUsage := formatBytes(m.Alloc)
+	memUsage := "N/A"
+	if p, err := process.NewProcess(int32(os.Getpid())); err == nil {
+		if memInfo, err := p.MemoryInfo(); err == nil {
+			memUsage = formatBytes(memInfo.RSS)
+		}
+	}
 
 	// 运行时间
 	uptime := formatDuration(time.Since(constant.StartTime))

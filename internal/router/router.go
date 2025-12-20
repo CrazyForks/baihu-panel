@@ -89,6 +89,9 @@ func Setup(c *Controllers) *gin.Engine {
 			auth.POST("/register", c.Auth.Register)
 		}
 
+		// 公开的站点设置（无需认证）
+		api.GET("/settings/public", c.Settings.GetPublicSiteSettings)
+
 		// 需要认证的路由
 		authorized := api.Group("")
 		authorized.Use(middleware.AuthRequired())
@@ -98,6 +101,7 @@ func Setup(c *Controllers) *gin.Engine {
 
 			// Dashboard stats
 			authorized.GET("/stats", c.Dashboard.GetStats)
+			authorized.GET("/sentence", c.Dashboard.GetSentence)
 
 			// Task routes
 			tasks := authorized.Group("/tasks")
@@ -167,6 +171,7 @@ func Setup(c *Controllers) *gin.Engine {
 				settings.POST("/password", c.Settings.ChangePassword)
 				settings.POST("/clean-logs", c.Settings.CleanLogs)
 				settings.GET("/site", c.Settings.GetSiteSettings)
+				settings.PUT("/site", c.Settings.UpdateSiteSettings)
 				settings.GET("/about", c.Settings.GetAbout)
 			}
 		}

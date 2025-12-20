@@ -16,7 +16,10 @@ COPY web/ ./
 RUN npm run build
 
 # Stage 2: Build backend
-FROM golang:1.24-alpine AS backend-builder
+FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS backend-builder
+
+ARG TARGETOS
+ARG TARGETARCH
 
 WORKDIR /app
 
@@ -30,10 +33,10 @@ COPY . .
 # Copy built frontend to embed location
 COPY --from=frontend-builder /app/web/dist ./internal/static/dist
 
-# Build Go binary (no CGO needed, auto-detect target arch)
+# Build Go binary with cross-compilation (native speed, no QEMU)
 ARG VERSION=dev
 ARG BUILD_TIME
-RUN CGO_ENABLED=0 go build -ldflags="-s -w -X baihu/internal/constant.Version=${VERSION} -X 'baihu/internal/constant.BuildTime=${BUILD_TIME}'" -o baihu .
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-s -w -X baihu/internal/constant.Version=${VERSION} -X 'baihu/internal/constant.BuildTime=${BUILD_TIME}'" -o baihu .
 
 # Stage 3: Final image based on Dockerfile.debian
 FROM debian:bookworm-slim

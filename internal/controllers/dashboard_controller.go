@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"baihu/internal/constant"
 	"baihu/internal/database"
 	"baihu/internal/models"
 	"baihu/internal/services"
@@ -48,4 +49,11 @@ func (dc *DashboardController) GetStats(c *gin.Context) {
 	}
 
 	utils.Success(c, stats)
+}
+
+// GetSentence 获取随机古诗词
+func (dc *DashboardController) GetSentence(c *gin.Context) {
+	utils.Success(c, gin.H{
+		"sentence": constant.GetRandomSentence(),
+	})
 }

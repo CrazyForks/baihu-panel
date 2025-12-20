@@ -50,10 +50,10 @@ const activeTab = ref('password')
       </TabsContent>
 
       <TabsContent value="site" class="mt-6">
-        <Card class="max-w-lg">
+        <Card class="max-w-xl">
           <CardHeader>
             <CardTitle>站点设置</CardTitle>
-            <CardDescription>查看当前站点配置信息</CardDescription>
+            <CardDescription>配置站点标题、图标和系统参数</CardDescription>
           </CardHeader>
           <CardContent>
             <SiteSettings />
@@ -62,7 +62,7 @@ const activeTab = ref('password')
       </TabsContent>
 
       <TabsContent value="about" class="mt-6">
-        <Card class="max-w-3xl">
+        <Card class="max-w-xl">
           <CardContent class="pt-6">
             <AboutSettings />
           </CardContent>

@@ -23,6 +23,16 @@ const pageSize = ref(10)
 const total = ref(0)
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 
+const cronPresets = [
+  { label: '每分钟', value: '* * * * *' },
+  { label: '每5分钟', value: '*/5 * * * *' },
+  { label: '每小时', value: '0 * * * *' },
+  { label: '每天0点', value: '0 0 * * *' },
+  { label: '每天8点', value: '0 8 * * *' },
+  { label: '每周一', value: '0 0 * * 1' },
+  { label: '每月1号', value: '0 0 1 * *' },
+]
+
 async function loadTasks() {
   try {
     const res = await api.tasks.list({ page: currentPage.value, page_size: pageSize.value, name: filterName.value || undefined })
@@ -168,26 +178,39 @@ onMounted(loadTasks)
     </div>
 
     <Dialog v-model:open="showDialog">
-      <DialogContent class="max-w-md">
+      <DialogContent class="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{{ isEdit ? '编辑任务' : '新建任务' }}</DialogTitle>
         </DialogHeader>
-        <div class="space-y-4 py-2">
-          <div class="space-y-2">
-            <Label>任务名称</Label>
-            <Input v-model="editingTask.name" placeholder="任务名称" />
+        <div class="grid gap-4 py-4">
+          <div class="grid grid-cols-4 items-center gap-4">
+            <Label class="text-right">任务名称</Label>
+            <Input v-model="editingTask.name" placeholder="我的任务" class="col-span-3" />
           </div>
-          <div class="space-y-2">
-            <Label>执行命令</Label>
-            <Input v-model="editingTask.command" class="font-mono" placeholder="node script.js" />
+          <div class="grid grid-cols-4 items-center gap-4">
+            <Label class="text-right">执行命令</Label>
+            <Input v-model="editingTask.command" placeholder="node script.js" class="col-span-3 font-mono" />
           </div>
-          <div class="space-y-2">
-            <Label>定时规则 (Cron)</Label>
-            <Input v-model="editingTask.schedule" class="font-mono" placeholder="0 * * * *" />
+          <div class="grid grid-cols-4 items-center gap-4">
+            <Label class="text-right">定时规则</Label>
+            <Input v-model="editingTask.schedule" placeholder="0 * * * *" class="col-span-3 font-mono" />
           </div>
-          <div class="space-y-2">
-            <Label>超时时间 (分钟)</Label>
-            <Input v-model.number="editingTask.timeout" type="number" placeholder="30" />
+          <div class="grid grid-cols-4 items-start gap-4">
+            <span></span>
+            <div class="col-span-3 flex flex-wrap gap-1.5">
+              <span
+                v-for="preset in cronPresets"
+                :key="preset.value"
+                class="px-2 py-0.5 text-xs rounded-md bg-muted hover:bg-accent cursor-pointer transition-colors"
+                @click="editingTask.schedule = preset.value"
+              >
+                {{ preset.label }}
+              </span>
+            </div>
+          </div>
+          <div class="grid grid-cols-4 items-center gap-4">
+            <Label class="text-right">超时(分钟)</Label>
+            <Input v-model.number="editingTask.timeout" type="number" placeholder="30" class="col-span-3" />
           </div>
         </div>
         <DialogFooter>

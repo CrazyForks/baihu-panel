@@ -101,14 +101,18 @@ export const api = {
     detail: (id: number) => request<LogDetail>(`/logs/${id}`)
   },
   dashboard: {
-    stats: () => request<Stats>('/stats')
+    stats: () => request<Stats>('/stats'),
+    sentence: () => request<{ sentence: string }>('/sentence')
   },
   settings: {
     changePassword: (data: { old_password: string; new_password: string }) =>
       request('/settings/password', { method: 'POST', body: JSON.stringify(data) }),
     cleanLogs: (days: number) =>
       request<{ deleted: number }>('/settings/clean-logs', { method: 'POST', body: JSON.stringify({ days }) }),
-    getSite: () => request<{ site_name: string; port: number }>('/settings/site'),
+    getSite: () => request<SiteSettings>('/settings/site'),
+    getPublicSite: () => request<{ title: string; subtitle: string; icon: string }>('/settings/public'),
+    updateSite: (data: SiteSettings) =>
+      request('/settings/site', { method: 'PUT', body: JSON.stringify(data) }),
     getAbout: () => request<AboutInfo>('/settings/about')
   },
   files: {
@@ -251,4 +255,12 @@ export interface AboutInfo {
   task_count: number
   log_count: number
   env_count: number
+}
+
+export interface SiteSettings {
+  title: string
+  subtitle: string
+  icon: string
+  page_size: string
+  cookie_days: string
 }
