@@ -22,10 +22,8 @@ type CronService struct {
 
 // NewCronService creates a new cron service
 func NewCronService(taskService *TaskService, executorService *ExecutorService) *CronService {
-	// 使用秒级精度的 cron parser，支持 5 位和 6 位表达式
-	c := cron.New(cron.WithParser(cron.NewParser(
-		cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor,
-	)))
+	// 使用秒级精度的 cron parser，支持 6 位表达式（秒 分 时 日 月 周）
+	c := cron.New(cron.WithSeconds())
 
 	return &CronService{
 		cron:            c,
@@ -135,9 +133,9 @@ func (cs *CronService) updateNextRun(taskID uint) {
 	}
 }
 
-// ValidateCron validates a cron expression
+// ValidateCron validates a cron expression (6 fields: second minute hour day month weekday)
 func (cs *CronService) ValidateCron(expression string) error {
-	parser := cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor)
+	parser := cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor)
 	_, err := parser.Parse(expression)
 	return err
 }

@@ -26,13 +26,15 @@ const total = ref(0)
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 
 const cronPresets = [
-  { label: '每分钟', value: '* * * * *' },
-  { label: '每5分钟', value: '*/5 * * * *' },
-  { label: '每小时', value: '0 * * * *' },
-  { label: '每天0点', value: '0 0 * * *' },
-  { label: '每天8点', value: '0 8 * * *' },
-  { label: '每周一', value: '0 0 * * 1' },
-  { label: '每月1号', value: '0 0 1 * *' },
+  { label: '每5秒', value: '*/5 * * * * *' },
+  { label: '每30秒', value: '*/30 * * * * *' },
+  { label: '每分钟', value: '0 * * * * *' },
+  { label: '每5分钟', value: '0 */5 * * * *' },
+  { label: '每小时', value: '0 0 * * * *' },
+  { label: '每天0点', value: '0 0 0 * * *' },
+  { label: '每天8点', value: '0 0 8 * * *' },
+  { label: '每周一', value: '0 0 0 * * 1' },
+  { label: '每月1号', value: '0 0 0 1 * *' },
 ]
 
 async function loadTasks() {
@@ -57,7 +59,7 @@ function handlePageChange(page: number) {
 }
 
 function openCreate() {
-  editingTask.value = { name: '', command: '', schedule: '0 * * * *', timeout: 30, enabled: true }
+  editingTask.value = { name: '', command: '', schedule: '0 * * * * *', timeout: 30, enabled: true }
   isEdit.value = false
   showDialog.value = true
 }
@@ -195,11 +197,13 @@ onMounted(loadTasks)
           </div>
           <div class="grid grid-cols-4 items-center gap-4">
             <Label class="text-right">定时规则</Label>
-            <Input v-model="editingTask.schedule" placeholder="0 * * * *" class="col-span-3 font-mono" />
+            <Input v-model="editingTask.schedule" placeholder="0 * * * * *" class="col-span-3 font-mono" />
           </div>
           <div class="grid grid-cols-4 items-start gap-4">
             <span></span>
-            <div class="col-span-3 flex flex-wrap gap-1.5">
+            <div class="col-span-3">
+              <p class="text-xs text-muted-foreground mb-2">格式: 秒 分 时 日 月 周</p>
+              <div class="flex flex-wrap gap-1.5">
               <span
                 v-for="preset in cronPresets"
                 :key="preset.value"
@@ -208,6 +212,7 @@ onMounted(loadTasks)
               >
                 {{ preset.label }}
               </span>
+              </div>
             </div>
           </div>
           <div class="grid grid-cols-4 items-center gap-4">
