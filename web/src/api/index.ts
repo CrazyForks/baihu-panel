@@ -102,7 +102,9 @@ export const api = {
   },
   dashboard: {
     stats: () => request<Stats>('/stats'),
-    sentence: () => request<{ sentence: string }>('/sentence')
+    sentence: () => request<{ sentence: string }>('/sentence'),
+    sendStats: () => request<DailyStats[]>('/sendstats'),
+    taskStats: () => request<TaskStatsItem[]>('/taskstats')
   },
   settings: {
     changePassword: (data: { old_password: string; new_password: string }) =>
@@ -288,4 +290,17 @@ export interface LoginLogListResponse {
   total: number
   page: number
   page_size: number
+}
+
+export interface DailyStats {
+  day: string
+  total: number
+  success: number
+  failed: number
+}
+
+export interface TaskStatsItem {
+  task_id: number
+  task_name: string
+  count: number
 }

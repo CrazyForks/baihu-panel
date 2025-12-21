@@ -102,6 +102,8 @@ func Setup(c *Controllers) *gin.Engine {
 			// Dashboard stats
 			authorized.GET("/stats", c.Dashboard.GetStats)
 			authorized.GET("/sentence", c.Dashboard.GetSentence)
+			authorized.GET("/sendstats", c.Dashboard.GetSendStats)
+			authorized.GET("/taskstats", c.Dashboard.GetTaskStats)
 
 			// Task routes
 			tasks := authorized.Group("/tasks")
