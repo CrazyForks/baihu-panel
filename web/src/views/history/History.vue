@@ -137,7 +137,7 @@ watch(() => route.query.task_id, (newTaskId) => {
 
     <div class="flex gap-4">
       <!-- 日志列表 -->
-      <div class="flex-1 min-w-0 rounded-lg border bg-card">
+      <div class="flex-1 min-w-0 rounded-lg border bg-card overflow-hidden">
         <!-- 表头 -->
         <div class="flex items-center gap-4 px-4 py-2 border-b bg-muted/50 text-sm text-muted-foreground font-medium">
           <span class="w-12 shrink-0">ID</span>
@@ -145,7 +145,7 @@ watch(() => route.query.task_id, (newTaskId) => {
           <span :class="selectedLog ? 'w-40 shrink-0' : 'flex-1'">命令</span>
           <span class="w-12 shrink-0 text-center">状态</span>
           <span class="w-20 text-right shrink-0">耗时</span>
-          <span class="w-40 text-right shrink-0">执行时间</span>
+          <span v-if="!selectedLog" class="w-40 text-right shrink-0">执行时间</span>
         </div>
         <!-- 列表 -->
         <div class="divide-y">
@@ -168,7 +168,7 @@ watch(() => route.query.task_id, (newTaskId) => {
               <span :class="['w-2 h-2 rounded-full', log.status === 'success' ? 'bg-green-500' : log.status === 'failed' ? 'bg-red-500' : 'bg-yellow-500']" />
             </span>
             <span class="w-20 text-right shrink-0 text-muted-foreground text-xs">{{ formatDuration(log.duration) }}</span>
-            <span class="w-40 text-right shrink-0 text-muted-foreground text-xs">{{ log.created_at }}</span>
+            <span v-if="!selectedLog" class="w-40 text-right shrink-0 text-muted-foreground text-xs">{{ log.created_at }}</span>
           </div>
         </div>
         <!-- 分页 -->
