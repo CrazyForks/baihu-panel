@@ -26,16 +26,10 @@ type SecurityConfig struct {
 	Secret string `ini:"secret"`
 }
 
-type TaskConfig struct {
-	DefaultTimeout   int `ini:"default_timeout"`
-	LogRetentionDays int `ini:"log_retention_days"`
-}
-
 type AppConfig struct {
 	Server   ServerConfig   `ini:"server"`
 	Database DatabaseConfig `ini:"database"`
 	Security SecurityConfig `ini:"security"`
-	Task     TaskConfig     `ini:"task"`
 }
 
 var Config *AppConfig
