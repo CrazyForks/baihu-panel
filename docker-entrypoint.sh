@@ -61,4 +61,5 @@ echo "[entrypoint] npm root: $(npm root --prefix $NODE_ENV_DIR)"
 # ============================
 # 启动应用
 # ============================
-exec /app/baihu
+cd /app
+exec ./baihu
