@@ -29,9 +29,11 @@ ARG BUILD_TIME
 
 WORKDIR /app
 
+# Go mod files
 COPY go.mod go.sum ./
 RUN go env -w GOPROXY=https://goproxy.cn,direct && go mod download
 
+# Copy backend source
 COPY . .
 
 # Copy frontend dist
@@ -61,11 +63,6 @@ RUN sed -i 's@deb.debian.org@mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.li
     && python3 -m venv /opt/venv \
     && /opt/venv/bin/pip install --upgrade pip \
     && /opt/venv/bin/pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple \
-    # 设置虚拟环境 Python 为系统默认
-    && update-alternatives --install /usr/bin/python python /opt/venv/bin/python 1 \
-    && update-alternatives --install /usr/bin/python3 python3 /opt/venv/bin/python 1 \
-    && update-alternatives --install /usr/bin/pip pip /opt/venv/bin/pip 1 \
-    && update-alternatives --install /usr/bin/pip3 pip3 /opt/venv/bin/pip 1 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -83,4 +80,4 @@ RUN chmod +x docker-entrypoint.sh
 
 EXPOSE 8052
 
-CMD ["./docker-entrypoint.sh"]
+ENTRYPOINT ["./docker-entrypoint.sh"]
