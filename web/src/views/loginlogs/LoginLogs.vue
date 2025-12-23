@@ -2,7 +2,6 @@
 import { ref, onMounted } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import Pagination from '@/components/Pagination.vue'
 import { RefreshCw, Search } from 'lucide-vue-next'
 import { api } from '@/api'
@@ -106,9 +105,7 @@ onMounted(loadLogs)
           <span class="w-24 shrink-0 font-medium text-sm truncate">{{ log.username }}</span>
           <code class="w-32 shrink-0 text-xs text-muted-foreground bg-muted px-2 py-1 rounded">{{ log.ip }}</code>
           <span class="w-16 shrink-0 flex justify-center">
-            <Badge :variant="log.status === 'success' ? 'default' : 'destructive'" class="text-xs">
-              {{ log.status === 'success' ? '成功' : '失败' }}
-            </Badge>
+            <span :class="['h-2 w-2 rounded-full', log.status === 'success' ? 'bg-green-500' : 'bg-red-500']"></span>
           </span>
           <span class="flex-1 text-xs text-muted-foreground truncate" :title="log.user_agent">{{ log.user_agent || '-' }}</span>
           <span class="w-40 shrink-0 text-right text-xs text-muted-foreground">{{ log.created_at }}</span>

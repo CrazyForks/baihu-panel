@@ -50,7 +50,8 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
 FROM debian:bookworm-slim
 
 ENV TZ=Asia/Shanghai
-ENV PATH="/app/envs/python/bin:$PATH"
+ENV PATH="/app/envs/node/bin:/app/envs/python/bin:$PATH"
+ENV NODE_PATH="/app/envs/node/lib/node_modules"
 
 # 安装必要系统工具 + Node + Python
 RUN sed -i 's@deb.debian.org@mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.list.d/debian.sources \
