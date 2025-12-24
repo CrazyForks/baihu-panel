@@ -89,6 +89,11 @@ docker run -d \
   -v $(pwd)/data:/app/data \
   -v $(pwd)/envs:/app/envs \
   -e TZ=Asia/Shanghai \
+  -e BH_SERVER_PORT=8052 \
+  -e BH_SERVER_HOST=0.0.0.0 \
+  -e BH_DB_TYPE=sqlite \
+  -e BH_DB_PATH=/app/data/ql.db \
+  -e BH_DB_TABLE_PREFIX=baihu_ \
   --restart unless-stopped \
   ghcr.io/engigu/baihu:latest
 ```
@@ -107,6 +112,11 @@ services:
       - ./envs:/app/envs
     environment:
       - TZ=Asia/Shanghai
+      - BH_SERVER_PORT=8052
+      - BH_SERVER_HOST=0.0.0.0
+      - BH_DB_TYPE=sqlite
+      - BH_DB_PATH=/app/data/ql.db
+      - BH_DB_TABLE_PREFIX=baihu_
     restart: unless-stopped
 ```
 
@@ -119,12 +129,15 @@ docker run -d \
   -v $(pwd)/data:/app/data \
   -v $(pwd)/envs:/app/envs \
   -e TZ=Asia/Shanghai \
+  -e BH_SERVER_PORT=8052 \
+  -e BH_SERVER_HOST=0.0.0.0 \
   -e BH_DB_TYPE=mysql \
   -e BH_DB_HOST=mysql-server \
   -e BH_DB_PORT=3306 \
   -e BH_DB_USER=root \
   -e BH_DB_PASSWORD=your_password \
   -e BH_DB_NAME=baihu \
+  -e BH_DB_TABLE_PREFIX=baihu_ \
   --restart unless-stopped \
   ghcr.io/engigu/baihu:latest
 ```
@@ -143,12 +156,15 @@ services:
       - ./envs:/app/envs
     environment:
       - TZ=Asia/Shanghai
+      - BH_SERVER_PORT=8052
+      - BH_SERVER_HOST=0.0.0.0
       - BH_DB_TYPE=mysql
       - BH_DB_HOST=mysql-server
       - BH_DB_PORT=3306
       - BH_DB_USER=root
       - BH_DB_PASSWORD=your_password
       - BH_DB_NAME=baihu
+      - BH_DB_TABLE_PREFIX=baihu_
     restart: unless-stopped
 ```
 
