@@ -211,7 +211,7 @@ services:
 
 </details>
 
-> 💡 环境变量优先级高于配置文件，两种方式可以混合使用。
+> 环境变量优先级高于配置文件，两种方式可以混合使用。
 
 
 ### 访问面板
@@ -247,7 +247,7 @@ services:
 4. **激活环境**：将 `/app/envs/python/bin` 和 `/app/envs/node/bin` 加入 PATH
 5. **启动应用**
 
-> 💡 通过挂载 `./envs:/app/envs` 可以持久化 Python 和 Node.js 环境，避免每次重启容器都重新安装依赖。
+>  通过挂载 `./envs:/app/envs` 可以持久化 Python 和 Node.js 环境，避免每次重启容器都重新安装依赖。
 
 ## 配置说明 ⚙️
 
