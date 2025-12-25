@@ -11,6 +11,7 @@ baihu
 # Data & Logs
 data/
 envs/
+.kiro/
 # logs/
 # scripts/
 configs/config.ini
