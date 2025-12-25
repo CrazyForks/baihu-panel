@@ -31,19 +31,3 @@ type SyncTask struct {
 func (SyncTask) TableName() string {
 	return constant.TablePrefix + "sync_tasks"
 }
-
-// SyncTaskLog 同步任务执行日志
-type SyncTaskLog struct {
-	ID         uint      `json:"id" gorm:"primaryKey"`
-	SyncTaskID uint      `json:"sync_task_id" gorm:"index"`
-	SourceURL  string    `json:"source_url" gorm:"size:500"`
-	TargetPath string    `json:"target_path" gorm:"size:255"`
-	Output     string    `json:"-" gorm:"type:longtext"` // gzip+base64 compressed
-	Status     string    `json:"status" gorm:"size:20"`  // success, failed
-	Duration   int64     `json:"duration"`               // milliseconds
-	CreatedAt  LocalTime `json:"created_at"`
-}
-
-func (SyncTaskLog) TableName() string {
-	return constant.TablePrefix + "sync_task_logs"
-}

@@ -287,13 +287,14 @@ func (s *SyncExecutorService) saveLog(task *models.SyncTask, result *SyncResult)
 		status = "failed"
 	}
 
-	log := &models.SyncTaskLog{
-		SyncTaskID: task.ID,
-		SourceURL:  task.SourceURL,
-		TargetPath: task.TargetPath,
-		Output:     compressed,
-		Status:     status,
-		Duration:   result.End.Sub(result.Start).Milliseconds(),
+	// 写入 TaskLog 表，使用 sync 类型
+	log := &models.TaskLog{
+		TaskID:   task.ID,
+		TaskType: "sync",
+		Command:  fmt.Sprintf("[%s] %s -> %s", task.SourceType, task.SourceURL, task.TargetPath),
+		Output:   compressed,
+		Status:   status,
+		Duration: result.End.Sub(result.Start).Milliseconds(),
 	}
 
 	if err := database.DB.Create(log).Error; err != nil {
@@ -324,13 +325,13 @@ func (s *SyncExecutorService) cleanLogs(task *models.SyncTask) {
 	switch config.Type {
 	case "day":
 		cutoff := time.Now().AddDate(0, 0, -config.Keep)
-		result := database.DB.Where("sync_task_id = ? AND created_at < ?", task.ID, cutoff).Delete(&models.SyncTaskLog{})
+		result := database.DB.Where("task_id = ? AND task_type = 'sync' AND created_at < ?", task.ID, cutoff).Delete(&models.TaskLog{})
 		deleted = result.RowsAffected
 	case "count":
-		var boundaryLog models.SyncTaskLog
-		err := database.DB.Where("sync_task_id = ?", task.ID).Order("id DESC").Offset(config.Keep - 1).Limit(1).First(&boundaryLog).Error
+		var boundaryLog models.TaskLog
+		err := database.DB.Where("task_id = ? AND task_type = 'sync'", task.ID).Order("id DESC").Offset(config.Keep - 1).Limit(1).First(&boundaryLog).Error
 		if err == nil {
-			result := database.DB.Where("sync_task_id = ? AND id < ?", task.ID, boundaryLog.ID).Delete(&models.SyncTaskLog{})
+			result := database.DB.Where("task_id = ? AND task_type = 'sync' AND id < ?", task.ID, boundaryLog.ID).Delete(&models.TaskLog{})
 			deleted = result.RowsAffected
 		}
 	}

@@ -201,7 +201,7 @@ async function toggleTask(task: Task, enabled: boolean) {
 }
 
 function viewLogs(taskId: number) {
-  router.push({ path: '/history', query: { task_id: String(taskId) } })
+  router.push({ path: '/history', query: { task_type: 'task', task_id: String(taskId) } })
 }
 
 onMounted(() => {

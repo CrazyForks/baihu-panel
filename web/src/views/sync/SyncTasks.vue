@@ -109,7 +109,7 @@ async function toggleTask(task: SyncTask, enabled: boolean) {
   catch { toast.error('操作失败') }
 }
 
-function viewLogs(taskId: number) { router.push({ path: '/sync/logs', query: { sync_task_id: String(taskId) } }) }
+function viewLogs(taskId: number) { router.push({ path: '/history', query: { task_type: 'sync', task_id: String(taskId) } }) }
 
 onMounted(() => { loadTasks() })
 </script>

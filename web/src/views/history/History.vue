@@ -3,6 +3,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import Pagination from '@/components/Pagination.vue'
 import LogViewer from './LogViewer.vue'
 import { RefreshCw, X, Search, Maximize2 } from 'lucide-vue-next'
@@ -20,6 +21,7 @@ const selectedLog = ref<TaskLog | null>(null)
 const logDetail = ref<LogDetail | null>(null)
 const filterKeyword = ref('')
 const filterTaskId = ref<number | undefined>(undefined)
+const filterTaskType = ref<string>('')
 const currentPage = ref(1)
 const total = ref(0)
 let searchTimer: ReturnType<typeof setTimeout> | null = null
@@ -49,7 +51,7 @@ const decompressedOutput = computed(() => {
 
 async function loadLogs() {
   try {
-    const params: { page: number; page_size: number; task_id?: number; task_name?: string } = {
+    const params: { page: number; page_size: number; task_id?: number; task_name?: string; task_type?: string } = {
       page: currentPage.value,
       page_size: pageSize.value
     }
@@ -58,6 +60,9 @@ async function loadLogs() {
     }
     if (filterKeyword.value.trim()) {
       params.task_name = filterKeyword.value.trim()
+    }
+    if (filterTaskType.value) {
+      params.task_type = filterTaskType.value
     }
     const response = await api.logs.list(params)
     logs.value = response.data
@@ -73,6 +78,13 @@ function handleSearch() {
     currentPage.value = 1
     loadLogs()
   }, 300)
+}
+
+function handleTypeChange(value: unknown) {
+  const strValue = String(value || '')
+  filterTaskType.value = (!strValue || strValue === 'all') ? '' : strValue
+  currentPage.value = 1
+  loadLogs()
 }
 
 function handlePageChange(page: number) {
@@ -101,18 +113,27 @@ function formatDuration(ms: number): string {
   return `${(ms / 60000).toFixed(1)}m`
 }
 
+function getTaskTypeLabel(type: string): string {
+  return type === 'sync' ? '同步' : '定时'
+}
+
 onMounted(() => {
-  // 从 URL 读取 task_id 参数
+  // 从 URL 读取参数
   const taskIdParam = route.query.task_id
+  const taskTypeParam = route.query.task_type
   if (taskIdParam) {
     filterTaskId.value = Number(taskIdParam)
+  }
+  if (taskTypeParam) {
+    filterTaskType.value = String(taskTypeParam)
   }
   loadLogs()
 })
 
 // 监听路由变化
-watch(() => route.query.task_id, (newTaskId) => {
-  filterTaskId.value = newTaskId ? Number(newTaskId) : undefined
+watch(() => route.query, (newQuery) => {
+  filterTaskId.value = newQuery.task_id ? Number(newQuery.task_id) : undefined
+  filterTaskType.value = newQuery.task_type ? String(newQuery.task_type) : ''
   currentPage.value = 1
   loadLogs()
 })
@@ -126,6 +147,16 @@ watch(() => route.query.task_id, (newTaskId) => {
         <p class="text-muted-foreground text-sm">查看任务执行记录和日志</p>
       </div>
       <div class="flex items-center gap-2">
+        <Select :model-value="filterTaskType || 'all'" @update:model-value="handleTypeChange">
+          <SelectTrigger class="h-9 w-24 text-sm">
+            <SelectValue placeholder="全部类型" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">全部</SelectItem>
+            <SelectItem value="task">定时任务</SelectItem>
+            <SelectItem value="sync">同步任务</SelectItem>
+          </SelectContent>
+        </Select>
         <div class="relative flex-1 sm:flex-none">
           <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input v-model="filterKeyword" placeholder="搜索任务..." class="h-9 pl-9 w-full sm:w-56 text-sm" @input="handleSearch" />
@@ -142,6 +173,7 @@ watch(() => route.query.task_id, (newTaskId) => {
         <!-- 表头 -->
         <div class="flex items-center gap-4 px-4 py-2 border-b bg-muted/50 text-sm text-muted-foreground font-medium overflow-x-auto">
           <span class="w-12 shrink-0">ID</span>
+          <span class="w-14 shrink-0 hidden sm:block">类型</span>
           <span class="w-20 sm:w-28 shrink-0">任务名称</span>
           <span :class="selectedLog ? 'w-40 shrink-0 hidden sm:block' : 'w-32 sm:flex-1 shrink-0 sm:shrink'">命令</span>
           <span class="w-12 shrink-0 text-center">状态</span>
@@ -163,6 +195,11 @@ watch(() => route.query.task_id, (newTaskId) => {
             @click="selectLog(log)"
           >
             <span class="w-12 shrink-0 text-muted-foreground text-sm">#{{ log.id }}</span>
+            <span class="w-14 shrink-0 hidden sm:block">
+              <span :class="['text-xs px-1.5 py-0.5 rounded', log.task_type === 'sync' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300']">
+                {{ getTaskTypeLabel(log.task_type) }}
+              </span>
+            </span>
             <span class="w-20 sm:w-28 font-medium truncate shrink-0 text-sm">
               <TextOverflow :text="log.task_name" title="任务名称" />
             </span>

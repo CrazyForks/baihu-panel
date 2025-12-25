@@ -49,7 +49,6 @@ func RegisterControllers() *Controllers {
 		Settings:   controllers.NewSettingsController(userService, loginLogService, executorService),
 		Dependency: controllers.NewDependencyController(),
 		SyncTask:   controllers.NewSyncTaskController(syncTaskService, syncExecutorService, cronService),
-		SyncLog:    controllers.NewSyncLogController(),
 	}
 }
 

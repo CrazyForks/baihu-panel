@@ -38,6 +38,7 @@ func (Task) TableName() string {
 type TaskLog struct {
 	ID        uint      `json:"id" gorm:"primaryKey"`
 	TaskID    uint      `json:"task_id" gorm:"index"`
+	TaskType  string    `json:"task_type" gorm:"size:20;default:'task'"` // task, sync
 	Command   string    `json:"command" gorm:"type:text"`
 	Output    string    `json:"-" gorm:"type:longtext"` // gzip+base64 compressed
 	Status    string    `json:"status" gorm:"size:20"`  // success, failed

@@ -24,7 +24,6 @@ type Controllers struct {
 	Settings   *controllers.SettingsController
 	Dependency *controllers.DependencyController
 	SyncTask   *controllers.SyncTaskController
-	SyncLog    *controllers.SyncLogController
 }
 
 func mustSubFS(fsys fs.FS, dir string) fs.FS {
@@ -209,13 +208,6 @@ func Setup(c *Controllers) *gin.Engine {
 				syncTasks.PUT("/:id", c.SyncTask.UpdateSyncTask)
 				syncTasks.DELETE("/:id", c.SyncTask.DeleteSyncTask)
 				syncTasks.POST("/:id/execute", c.SyncTask.ExecuteSyncTask)
-			}
-
-			// Sync log routes (同步日志)
-			syncLogs := authorized.Group("/sync-logs")
-			{
-				syncLogs.GET("", c.SyncLog.GetSyncLogs)
-				syncLogs.GET("/:id", c.SyncLog.GetSyncLogDetail)
 			}
 		}
 	}
