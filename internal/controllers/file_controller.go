@@ -53,6 +53,11 @@ func (fc *FileController) GetFileTree(c *gin.Context) {
 			return nil
 		}
 
+		// 过滤 __pycache__ 文件夹
+		if d.IsDir() && d.Name() == "__pycache__" {
+			return filepath.SkipDir
+		}
+
 		relPath, _ := filepath.Rel(fc.workDir, path)
 		parts := strings.Split(relPath, string(filepath.Separator))
 
@@ -234,7 +239,7 @@ func (fc *FileController) RenameFile(c *gin.Context) {
 // UploadArchive handles archive file upload and extraction
 func (fc *FileController) UploadArchive(c *gin.Context) {
 	targetDir := c.PostForm("path")
-	
+
 	file, err := c.FormFile("file")
 	if err != nil {
 		utils.BadRequest(c, "请选择文件")

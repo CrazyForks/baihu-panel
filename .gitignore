@@ -37,6 +37,7 @@ internal/static/dist/
 # Config (sensitive)
 configs/config.local.json
 
+# Python
+__pycache__/
+
 # Misc
-*.log
-*.tmp

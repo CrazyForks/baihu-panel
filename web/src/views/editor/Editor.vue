@@ -410,7 +410,8 @@ onUnmounted(() => {
             formatOnPaste: true,
             tabSize: 4,
             insertSpaces: true,
-            readOnly: !isEditMode
+            readOnly: !isEditMode,
+            domReadOnly: !isEditMode
           }"
         />
         <div v-else class="h-full flex items-center justify-center text-muted-foreground text-sm">
