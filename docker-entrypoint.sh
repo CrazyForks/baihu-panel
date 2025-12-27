@@ -22,8 +22,8 @@ mkdir -p \
 if [ ! -x "$PYTHON_VENV_DIR/bin/python" ]; then
     echo "[entrypoint] Creating Python virtual environment..."
     python3 -m venv "$PYTHON_VENV_DIR"
-    "$PYTHON_VENV_DIR/bin/pip" install --upgrade pip setuptools wheel
     "$PYTHON_VENV_DIR/bin/pip" config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+    "$PYTHON_VENV_DIR/bin/pip" install --upgrade pip setuptools wheel
 else
     echo "[entrypoint] Python venv exists"
 fi
