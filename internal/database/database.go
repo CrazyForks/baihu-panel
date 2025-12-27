@@ -29,7 +29,7 @@ func Init(cfg *Config) error {
 	// 设置东八区时区
 	loc, err := time.LoadLocation("Asia/Shanghai")
 	if err != nil {
-		logger.Warnf("Failed to load timezone, using UTC: %v", err)
+		logger.Warnf("[Database] 加载时区失败，使用 UTC: %v", err)
 		loc = time.UTC
 	}
 	time.Local = loc
@@ -61,7 +61,7 @@ func Init(cfg *Config) error {
 		return fmt.Errorf("failed to connect database: %w", err)
 	}
 
-	logger.Infof("Connected to %s database with Asia/Shanghai timezone", cfg.Type)
+	logger.Infof("[Database] 已连接 %s 数据库 (时区: Asia/Shanghai)", cfg.Type)
 	return nil
 }
 

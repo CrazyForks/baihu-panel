@@ -37,31 +37,34 @@ func NewCronService(taskService *TaskService, executorService *ExecutorService) 
 func (cs *CronService) Start() {
 	cs.loadTasks()
 	cs.cron.Start()
-	logger.Info("Cron service started")
+	logger.Info("[Cron] 调度服务已启动")
 }
 
 // Stop stops the cron service
 func (cs *CronService) Stop() {
 	ctx := cs.cron.Stop()
 	<-ctx.Done()
-	logger.Info("Cron service stopped")
+	logger.Info("[Cron] 调度服务已停止")
 }
 
 // loadTasks loads all enabled tasks from database
 func (cs *CronService) loadTasks() {
 	tasks := cs.taskService.GetTasks()
+	count := 0
 	for _, task := range tasks {
 		if task.Enabled {
-			err := cs.AddTask(&task)
+			err := cs.addTask(&task, false)
 			if err != nil {
 				return
 			}
+			count++
 		}
 	}
+	logger.Infof("[Cron] 启动调度已加载 %d 个定时任务", count)
 }
 
-// AddTask adds a task to the cron scheduler
-func (cs *CronService) AddTask(task *models.Task) error {
+// addTask 内部添加任务方法，silent 控制是否打印日志
+func (cs *CronService) addTask(task *models.Task, logEnabled bool) error {
 	cs.mu.Lock()
 
 	// 如果已存在，先移除
@@ -76,18 +79,25 @@ func (cs *CronService) AddTask(task *models.Task) error {
 	})
 	if err != nil {
 		cs.mu.Unlock()
-		logger.Errorf("Failed to add task %d: %v", task.ID, err)
+		logger.Errorf("[Cron] 添加任务失败 #%d: %v", task.ID, err)
 		return err
 	}
 
 	cs.entryMap[task.ID] = entryID
 	cs.mu.Unlock()
 
-	logger.Infof("Task %d (%s) scheduled with cron: %s", task.ID, task.Name, task.Schedule)
+	if logEnabled {
+		logger.Infof("[Cron] 任务已调度 #%d %s (%s)", task.ID, task.Name, task.Schedule)
+	}
 
 	// 更新下次运行时间
 	cs.updateNextRun(task.ID)
 	return nil
+}
+
+// AddTask adds a task to the cron scheduler
+func (cs *CronService) AddTask(task *models.Task) error {
+	return cs.addTask(task, true)
 }
 
 // RemoveTask removes a task from the cron scheduler
@@ -98,13 +108,19 @@ func (cs *CronService) RemoveTask(taskID uint) {
 	if entryID, exists := cs.entryMap[taskID]; exists {
 		cs.cron.Remove(entryID)
 		delete(cs.entryMap, taskID)
-		logger.Infof("Task %d removed from scheduler", taskID)
+		logger.Infof("[Cron] 任务已移除 #%d", taskID)
 	}
 }
 
 // runTask executes a task and updates its status
 func (cs *CronService) runTask(taskID uint) {
-	logger.Infof("Running task %d", taskID)
+	// 获取任务信息用于日志
+	task := cs.taskService.GetTaskByID(int(taskID))
+	if task != nil {
+		logger.Infof("[Cron] 执行任务 #%d %s", taskID, task.Name)
+	} else {
+		logger.Infof("[Cron] 执行任务 #%d", taskID)
+	}
 
 	// 更新 last_run
 	now := time.Now()

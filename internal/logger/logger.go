@@ -1,8 +1,10 @@
 package logger
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -10,15 +12,46 @@ import (
 
 var Log *logrus.Logger
 
+// CustomFormatter 自定义日志格式
+type CustomFormatter struct{}
+
+// ANSI 颜色代码 (参考 logrus 默认配色)
+const (
+	colorReset  = "\033[0m"
+	colorRed    = "\033[31m" // error, fatal, panic
+	colorYellow = "\033[33m" // warn
+	colorBlue   = "\033[36m" // info (logrus 默认用 cyan)
+	colorGray   = "\033[37m" // debug (logrus 默认用 white)
+)
+
+func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+	timestamp := entry.Time.Format("2006-01-02 15:04:05")
+	level := strings.ToUpper(entry.Level.String())
+
+	// 根据日志级别设置颜色 (参考 logrus TextFormatter 默认配色)
+	var levelColor string
+	switch entry.Level {
+	case logrus.DebugLevel, logrus.TraceLevel:
+		levelColor = colorGray
+	case logrus.InfoLevel:
+		levelColor = colorBlue
+	case logrus.WarnLevel:
+		levelColor = colorYellow
+	case logrus.ErrorLevel, logrus.FatalLevel, logrus.PanicLevel:
+		levelColor = colorRed
+	default:
+		levelColor = colorBlue
+	}
+
+	msg := fmt.Sprintf("[%s]%s[%s]%s %s\n", timestamp, levelColor, level, colorReset, entry.Message)
+	return []byte(msg), nil
+}
+
 func init() {
 	Log = logrus.New()
 
-	// 设置日志格式
-	Log.SetFormatter(&logrus.TextFormatter{
-		FullTimestamp:   true,
-		TimestampFormat: "2006-01-02 15:04:05",
-		ForceColors:     true,
-	})
+	// 设置自定义日志格式
+	Log.SetFormatter(&CustomFormatter{})
 
 	// 设置日志级别
 	Log.SetLevel(logrus.InfoLevel)

@@ -27,8 +27,17 @@ func GinLogger() gin.HandlerFunc {
 			path = path + "?" + query
 		}
 
-		msg := fmt.Sprintf("%3d | %13v | %15s | %-7s %s",
-			status, latency, clientIP, method, path)
+		// 格式化延迟时间
+		var latencyStr string
+		if latency < time.Millisecond {
+			latencyStr = fmt.Sprintf("%dµs", latency.Microseconds())
+		} else if latency < time.Second {
+			latencyStr = fmt.Sprintf("%dms", latency.Milliseconds())
+		} else {
+			latencyStr = fmt.Sprintf("%.2fs", latency.Seconds())
+		}
+
+		msg := fmt.Sprintf("[HTTP] %d %s %s %s %s", status, method, path, latencyStr, clientIP)
 
 		if status >= 500 {
 			logger.Error(msg)
@@ -45,7 +54,7 @@ func GinRecovery() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
 			if err := recover(); err != nil {
-				logger.Errorf("Panic recovered: %v | path: %s", err, c.Request.URL.Path)
+				logger.Errorf("[HTTP] Panic: %v | %s", err, c.Request.URL.Path)
 				c.AbortWithStatus(500)
 			}
 		}()

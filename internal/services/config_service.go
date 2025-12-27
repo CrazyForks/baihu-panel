@@ -2,7 +2,7 @@ package services
 
 import (
 	"baihu/internal/constant"
-	"log"
+	"baihu/internal/logger"
 	"os"
 	"strconv"
 
@@ -78,7 +78,7 @@ func LoadConfig(path string) (*AppConfig, error) {
 	// 检查配置文件是否存在
 	if _, err := os.Stat(path); err == nil {
 		// 配置文件存在，从文件加载
-		log.Printf("[Config] Loading from file: %s", path)
+		logger.Infof("[Config] 从文件加载配置: %s", path)
 		cfg, err := ini.Load(path)
 		if err != nil {
 			return nil, err
@@ -88,7 +88,7 @@ func LoadConfig(path string) (*AppConfig, error) {
 		}
 	} else {
 		// 配置文件不存在，使用环境变量
-		log.Printf("[Config] File not found, loading from environment variables")
+		logger.Info("[Config] 配置文件不存在，从环境变量加载")
 		applyEnvOverrides()
 	}
 
@@ -106,12 +106,12 @@ func LoadConfig(path string) (*AppConfig, error) {
 	// 设置演示模式
 	if v := os.Getenv("BH_DEMO_MODE"); v == "true" || v == "1" {
 		constant.DemoMode = true
-		log.Printf("[Config] Demo mode enabled")
+		logger.Info("[Config] 演示模式已启用")
 	}
 
 	// 输出配置信息（隐藏敏感信息）
-	log.Printf("[Config] Server: %s:%d", Config.Server.Host, Config.Server.Port)
-	log.Printf("[Config] Database: type=%s, host=%s, port=%d, dbname=%s",
+	logger.Infof("[Config] 服务地址: %s:%d", Config.Server.Host, Config.Server.Port)
+	logger.Infof("[Config] 数据库: type=%s, host=%s, port=%d, dbname=%s",
 		Config.Database.Type, Config.Database.Host, Config.Database.Port, Config.Database.DBName)
 
 	return Config, nil

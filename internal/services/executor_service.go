@@ -61,7 +61,7 @@ func NewExecutorService(taskService *TaskService) *ExecutorService {
 	queueSize := getIntSetting(settingsService, constant.SectionScheduler, constant.KeyQueueSize, 100)
 	rateInterval := getIntSetting(settingsService, constant.SectionScheduler, constant.KeyRateInterval, 200)
 
-	logger.Infof("Executor service config: workers=%d, queue=%d, rate=%dms", workerCount, queueSize, rateInterval)
+	logger.Infof("[Executor] 配置: workers=%d, queue=%d, rate=%dms", workerCount, queueSize, rateInterval)
 
 	es := &ExecutorService{
 		taskService:  taskService,
@@ -129,12 +129,12 @@ func (es *ExecutorService) Stop() {
 
 // Reload 重新加载配置并重建 worker pool
 func (es *ExecutorService) Reload() {
-	logger.Info("Reloading executor service...")
+	logger.Info("[Executor] 正在重载配置...")
 
 	// 停止现有 workers
 	close(es.stopCh)
 	es.wg.Wait()
-	logger.Info("Stopped executor service...")
+	logger.Info("[Executor] 已停止工作线程")
 
 	// 从设置中读取新配置
 	settingsService := NewSettingsService()
@@ -153,7 +153,7 @@ func (es *ExecutorService) Reload() {
 	// 启动新的 workers
 	es.startWorkers()
 
-	logger.Infof("Executor service reloaded: workers=%d, queue=%d, rate=%dms", workerCount, queueSize, rateInterval)
+	logger.Infof("[Executor] 配置已重载: workers=%d, queue=%d, rate=%dms", workerCount, queueSize, rateInterval)
 }
 
 // RegisterCallback 注册执行完成回调
@@ -186,7 +186,7 @@ func (es *ExecutorService) saveTaskLogCallback(taskID uint, command string, resu
 
 	compressed, err := utils.CompressToBase64(output)
 	if err != nil {
-		logger.Errorf("Failed to compress log: %v", err)
+		logger.Errorf("[Executor] 压缩日志失败: %v", err)
 		compressed = ""
 	}
 
@@ -204,7 +204,7 @@ func (es *ExecutorService) saveTaskLogCallback(taskID uint, command string, resu
 	}
 
 	if err := database.DB.Create(taskLog).Error; err != nil {
-		logger.Errorf("Failed to save task log: %v", err)
+		logger.Errorf("[Executor] 保存任务日志失败: %v", err)
 	}
 }
 
@@ -216,7 +216,7 @@ func (es *ExecutorService) updateStatsCallback(taskID uint, _ string, result *Ex
 	}
 	sendStatsService := NewSendStatsService()
 	if err := sendStatsService.IncrementStats(taskID, status); err != nil {
-		logger.Errorf("Failed to update stats: %v", err)
+		logger.Errorf("[Executor] 更新统计失败: %v", err)
 	}
 }
 
@@ -235,7 +235,7 @@ func (es *ExecutorService) cleanLogsCallback(taskID uint, _ string, _ *Execution
 
 	var config CleanConfig
 	if err := json.Unmarshal([]byte(task.CleanConfig), &config); err != nil {
-		logger.Errorf("Failed to parse clean config: %v", err)
+		logger.Errorf("[Executor] 解析清理配置失败: %v", err)
 		return
 	}
 
@@ -259,7 +259,7 @@ func (es *ExecutorService) cleanLogsCallback(taskID uint, _ string, _ *Execution
 	}
 
 	if deleted > 0 {
-		logger.Infof("Cleaned %d logs for task %d", deleted, taskID)
+		//logger.Infof("Cleaned %d logs for task %d", deleted, taskID)
 	}
 }
 
@@ -270,7 +270,7 @@ func (es *ExecutorService) EnqueueTask(taskID int) {
 		// 成功入队
 	default:
 		// 队列满，直接执行（降级处理）
-		logger.Warnf("Task queue full, executing task %d directly", taskID)
+		logger.Warnf("[Executor] 任务队列已满，直接执行任务 #%d", taskID)
 		go es.executeTaskInternal(taskID)
 	}
 }
