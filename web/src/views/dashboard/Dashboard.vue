@@ -408,11 +408,11 @@ onUnmounted(() => {
       </Card>
 
       <Card class="lg:col-span-3 h-[300px] sm:h-[340px]">
-        <CardHeader class="pb-2">
+        <CardHeader class="pb-0">
           <CardTitle class="text-base sm:text-lg">任务占比</CardTitle>
           <CardDescription class="text-xs sm:text-sm">最近{{ chartDays }}天任务执行分布</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent class="pt-0">
           <div id="pie-chart" class="w-full h-[200px] sm:h-[240px]">
             <div v-if="!chartsLoaded" class="h-full flex items-center justify-center text-muted-foreground text-sm">
               加载中...
