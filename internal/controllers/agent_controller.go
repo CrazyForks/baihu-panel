@@ -182,7 +182,7 @@ func (c *AgentController) Heartbeat(ctx *gin.Context) {
 
 	// 检查是否需要更新
 	latestVersion := c.agentService.GetLatestVersion()
-	needUpdate := latestVersion != "" && req.Version != "" && req.Version != latestVersion
+	needUpdate := c.agentService.CheckNeedUpdate(req.Version, req.BuildTime)
 	forceUpdate := agent.ForceUpdate
 
 	// 如果强制更新已触发，重置标志
@@ -524,7 +524,7 @@ func (c *AgentController) handleHeartbeat(ac *services.AgentConnection, agent *m
 
 	// 检查是否需要更新
 	latestVersion := c.agentService.GetLatestVersion()
-	needUpdate := latestVersion != "" && req.Version != "" && req.Version != latestVersion
+	needUpdate := c.agentService.CheckNeedUpdate(req.Version, req.BuildTime)
 	forceUpdate := agent.ForceUpdate
 
 	if forceUpdate && needUpdate {

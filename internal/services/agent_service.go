@@ -1,6 +1,7 @@
 package services
 
 import (
+	"baihu/internal/constant"
 	"baihu/internal/database"
 	"baihu/internal/logger"
 	"baihu/internal/models"
@@ -385,6 +386,40 @@ func (s *AgentService) GetLatestVersion() string {
 		}
 	}
 	return strings.TrimSpace(string(data))
+}
+
+// GetLatestBuildTime 获取最新 Agent 构建时间
+func (s *AgentService) GetLatestBuildTime() string {
+	return constant.BuildTime
+}
+
+// CheckNeedUpdate 检查 Agent 是否需要更新
+// 比较 version 和 build_time，任一不同则需要更新
+func (s *AgentService) CheckNeedUpdate(agentVersion, agentBuildTime string) bool {
+	latestVersion := s.GetLatestVersion()
+	latestBuildTime := s.GetLatestBuildTime()
+
+	// 如果没有最新版本信息，不需要更新
+	if latestVersion == "" {
+		return false
+	}
+
+	// 如果 Agent 没有版本信息，需要更新
+	if agentVersion == "" {
+		return true
+	}
+
+	// 版本不同，需要更新
+	if agentVersion != latestVersion {
+		return true
+	}
+
+	// 版本相同但构建时间不同，也需要更新
+	if latestBuildTime != "" && latestBuildTime != "unknown" && agentBuildTime != "" && agentBuildTime != latestBuildTime {
+		return true
+	}
+
+	return false
 }
 
 // GetAvailablePlatforms 获取可用的平台列表
