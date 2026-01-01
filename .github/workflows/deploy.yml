@@ -72,14 +72,14 @@ jobs:
             docker-compose pull
             docker-compose up -d
 
-      - name: Deploy to X server
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.DEPLOY_X_HOST }}
-          username: ${{ secrets.DEPLOY_X_USER }}
-          password: ${{ secrets.DEPLOY_X_PASSWORD }}
-          port: ${{ secrets.DEPLOY_X_PORT }}
-          script: |
-            cd ${{ secrets.DEPLOY_X_PATH }}
-            docker-compose pull
-            docker-compose up -d
+      # - name: Deploy to X server
+      #   uses: appleboy/ssh-action@v1.2.0
+      #   with:
+      #     host: ${{ secrets.DEPLOY_X_HOST }}
+      #     username: ${{ secrets.DEPLOY_X_USER }}
+      #     password: ${{ secrets.DEPLOY_X_PASSWORD }}
+      #     port: ${{ secrets.DEPLOY_X_PORT }}
+      #     script: |
+      #       cd ${{ secrets.DEPLOY_X_PATH }}
+      #       docker-compose pull
+      #       docker-compose up -d
