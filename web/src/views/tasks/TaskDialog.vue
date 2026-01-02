@@ -43,6 +43,16 @@ const allAgents = ref<Agent[]>([])
 const selectedEnvIds = ref<number[]>([])
 const selectedAgentId = ref<string>('local')
 const envSearchQuery = ref('')
+// 为每个执行位置保存独立的工作目录配置
+const workDirCache = ref<Record<string, string>>({})
+
+// 当前显示的工作目录（根据选择的执行位置）
+const currentWorkDir = computed({
+  get: () => workDirCache.value[selectedAgentId.value] || '',
+  set: (val) => {
+    workDirCache.value[selectedAgentId.value] = val
+  }
+})
 
 const cleanConfig = computed(() => {
   if (!cleanType.value || cleanType.value === 'none' || cleanKeep.value <= 0) return ''
@@ -90,18 +100,16 @@ watch(() => props.open, async (val) => {
     } else {
       selectedEnvIds.value = []
     }
-    // 解析 Agent
-    selectedAgentId.value = props.task?.agent_id ? String(props.task.agent_id) : 'local'
+    // 解析 Agent 和工作目录
+    const agentId = props.task?.agent_id ? String(props.task.agent_id) : 'local'
+    selectedAgentId.value = agentId
+    // 初始化工作目录缓存，将当前任务的工作目录保存到对应的执行位置
+    workDirCache.value = {
+      [agentId]: props.task?.work_dir || ''
+    }
     envSearchQuery.value = ''
     // 加载数据
     await loadData()
-  }
-})
-
-// 切换执行位置时，如果从本地切换到 Agent，清空工作目录
-watch(selectedAgentId, (newVal, oldVal) => {
-  if (oldVal === 'local' && newVal !== 'local') {
-    form.value.work_dir = ''
   }
 })
 
@@ -134,6 +142,8 @@ async function save() {
     form.value.envs = selectedEnvIds.value.join(',')
     form.value.type = 'task'
     form.value.agent_id = selectedAgentId.value === 'local' ? null : Number(selectedAgentId.value)
+    // 保存当前选择的执行位置对应的工作目录
+    form.value.work_dir = currentWorkDir.value
     if (props.isEdit && form.value.id) {
       await api.tasks.update(form.value.id, form.value)
       toast.success('任务已更新')
@@ -165,8 +175,8 @@ async function save() {
         <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-3">
           <Label class="sm:text-right text-sm">工作目录</Label>
           <div class="sm:col-span-3">
-            <DirTreeSelect v-if="selectedAgentId === 'local'" :model-value="form.work_dir || ''" @update:model-value="v => form.work_dir = v" />
-            <Input v-else v-model="form.work_dir" placeholder="工作目录（可选）" class="h-8 text-sm" />
+            <DirTreeSelect v-if="selectedAgentId === 'local'" v-model="currentWorkDir" />
+            <Input v-else v-model="currentWorkDir" placeholder="工作目录（可选）" class="h-8 text-sm" />
           </div>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-3">

@@ -225,23 +225,75 @@ onUnmounted(() => {
 
       <TabsContent value="agents" class="mt-4">
         <div class="rounded-lg border bg-card overflow-x-auto hide-scrollbar">
-          <div class="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 border-b bg-muted/50 text-xs sm:text-sm text-muted-foreground font-medium min-w-[360px]">
+          <!-- 大屏表头 -->
+          <div class="hidden sm:flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 border-b bg-muted/50 text-xs sm:text-sm text-muted-foreground font-medium">
             <span class="w-10 sm:w-12 shrink-0">ID</span>
             <span class="w-6 shrink-0"></span>
             <span class="w-24 sm:w-32 shrink-0">名称</span>
-            <span class="w-24 sm:w-28 shrink-0 hidden sm:block">IP</span>
+            <span class="w-24 sm:w-28 shrink-0">IP</span>
             <span class="w-20 sm:w-32 shrink-0 hidden md:block">主机名</span>
             <span class="w-20 sm:w-36 shrink-0 hidden lg:block">版本</span>
             <span class="w-40 shrink-0 hidden xl:block">心跳时间</span>
             <span class="w-40 shrink-0 hidden xl:block">创建时间</span>
-            <span class="w-20 sm:w-36 shrink-0">操作</span>
+            <span class="flex-1 text-center">操作</span>
           </div>
-          <div class="divide-y min-w-[360px]">
+          <div class="divide-y">
             <div v-if="filteredAgents.length === 0" class="text-center py-8 text-muted-foreground">
               <Server class="h-8 w-8 mx-auto mb-2 opacity-50" />
               {{ searchQuery ? '无匹配结果' : '暂无 Agent' }}
             </div>
-            <div v-for="agent in filteredAgents" :key="agent.id" class="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 hover:bg-muted/50 transition-colors">
+            <!-- 小屏布局 -->
+            <div v-for="agent in filteredAgents" :key="agent.id" class="sm:hidden p-3 hover:bg-muted/50 transition-colors">
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex items-center gap-2 flex-1 min-w-0">
+                  <span class="text-xs text-muted-foreground shrink-0">#{{ agent.id }}</span>
+                  <span class="relative flex h-2.5 w-2.5 shrink-0" :title="isOnline(agent) ? '在线' : '离线'">
+                    <span v-if="isOnline(agent)" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span :class="isOnline(agent) ? 'bg-green-500' : 'bg-gray-400'" class="relative inline-flex rounded-full h-2.5 w-2.5"></span>
+                  </span>
+                  <span class="font-medium text-sm truncate cursor-pointer hover:text-primary" @click="viewDetail(agent)" :title="agent.name">{{ agent.name }}</span>
+                </div>
+                <div class="flex items-center gap-0.5 shrink-0 ml-2">
+                  <Button variant="ghost" size="icon" class="h-7 w-7" @click="toggleEnabled(agent)" :title="agent.enabled ? '禁用' : '启用'">
+                    <Power v-if="agent.enabled" class="h-3.5 w-3.5 text-green-600" />
+                    <PowerOff v-else class="h-3.5 w-3.5 text-gray-400" />
+                  </Button>
+                  <Button variant="ghost" size="icon" class="h-7 w-7" @click="viewDetail(agent)" title="详情">
+                    <Eye class="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" class="h-7 w-7" @click="viewTasks(agent)" title="查看任务">
+                    <ListTodo class="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+              <div class="space-y-1 text-xs text-muted-foreground">
+                <div class="flex items-center gap-2">
+                  <span class="w-12 shrink-0">IP:</span>
+                  <span class="truncate">{{ agent.ip || '-' }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-12 shrink-0">主机:</span>
+                  <span class="truncate">{{ agent.hostname || '-' }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-12 shrink-0">版本:</span>
+                  <span class="truncate">{{ agent.version || '-' }}</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-1 mt-2 pt-2 border-t">
+                <Button variant="ghost" size="sm" class="h-7 text-xs" @click="forceUpdate(agent)">
+                  <RotateCw class="h-3 w-3 mr-1" />更新
+                </Button>
+                <Button variant="ghost" size="sm" class="h-7 text-xs" @click="openEditDialog(agent)">
+                  <Edit class="h-3 w-3 mr-1" />编辑
+                </Button>
+                <Button variant="ghost" size="sm" class="h-7 text-xs text-destructive" @click="confirmDelete(agent)">
+                  <Trash2 class="h-3 w-3 mr-1" />删除
+                </Button>
+              </div>
+            </div>
+            <!-- 大屏布局 -->
+            <div v-for="agent in filteredAgents" :key="`desktop-${agent.id}`" class="hidden sm:flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 hover:bg-muted/50 transition-colors">
               <span class="w-10 sm:w-12 shrink-0 text-muted-foreground text-xs sm:text-sm">#{{ agent.id }}</span>
               <span class="w-6 shrink-0 flex justify-center">
                 <span class="relative flex h-2.5 w-2.5" :title="isOnline(agent) ? '在线' : '离线'">
@@ -250,12 +302,12 @@ onUnmounted(() => {
                 </span>
               </span>
               <span class="w-24 sm:w-32 shrink-0 font-medium text-xs sm:text-sm truncate cursor-pointer hover:text-primary" @click="viewDetail(agent)" :title="agent.name">{{ agent.name }}</span>
-              <span class="w-24 sm:w-28 shrink-0 text-xs sm:text-sm text-muted-foreground truncate hidden sm:block">{{ agent.ip || '-' }}</span>
+              <span class="w-24 sm:w-28 shrink-0 text-xs sm:text-sm text-muted-foreground truncate">{{ agent.ip || '-' }}</span>
               <span class="w-20 sm:w-32 shrink-0 text-xs sm:text-sm text-muted-foreground truncate hidden md:block">{{ agent.hostname || '-' }}</span>
               <span class="w-20 sm:w-36 shrink-0 text-xs sm:text-sm text-muted-foreground truncate hidden lg:block">{{ agent.version || '-' }}</span>
               <span class="w-40 shrink-0 text-xs sm:text-sm text-muted-foreground hidden xl:block">{{ agent.last_seen || '-' }}</span>
               <span class="w-40 shrink-0 text-xs sm:text-sm text-muted-foreground hidden xl:block">{{ agent.created_at || '-' }}</span>
-              <span class="w-20 sm:w-36 shrink-0 flex justify-end gap-0.5 sm:gap-1">
+              <span class="flex-1 flex justify-end gap-0.5 sm:gap-1">
                 <Button variant="ghost" size="icon" class="h-6 w-6 sm:h-7 sm:w-7" @click="toggleEnabled(agent)" :title="agent.enabled ? '禁用' : '启用'">
                   <Power v-if="agent.enabled" class="h-3 w-3 sm:h-3.5 sm:w-3.5 text-green-600" />
                   <PowerOff v-else class="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gray-400" />
