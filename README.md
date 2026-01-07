@@ -2,7 +2,7 @@
 
 白虎面板是一个轻量级定时任务管理系统，基于`Go`+`Vue3`构建，`docker`或者`docker-compose`，内置`python3`、`nodejs`、`bash`环境，开箱即用。
 
-演示站点(演示站点的服务器比较烂，见谅) [demo](https://baihu-demo-site.qwapi.eu.org/)
+演示站点(演示站点的服务器比较烂，见谅)  [演示站点](https://baihu-demo-site.qwapi.eu.org/)
 
 ## 项目来由
 
@@ -242,7 +242,7 @@ services:
 
 > 首次登录后请立即修改默认密码
 
-## 目录结构 
+### 数据目录
 
 ```
 ./
@@ -336,6 +336,8 @@ table_prefix = baihu_
 ## 贡献 
 
 欢迎提交 Issue 和 Pull Request！
+
+<img src="https://f.pz.al/pzal/2026/01/07/83be93eb4e2a3.png" width="200" />
 
 ## 许可证 
 
