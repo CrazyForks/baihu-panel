@@ -44,6 +44,20 @@ func cacheControl(value string) gin.HandlerFunc {
 	}
 }
 
+// stripPrefixMiddleware 创建一个中间件，用于去除 URL 前缀
+func stripPrefixMiddleware(prefix string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if prefix != "" && strings.HasPrefix(c.Request.URL.Path, prefix) {
+			// 去除前缀
+			c.Request.URL.Path = strings.TrimPrefix(c.Request.URL.Path, prefix)
+			if c.Request.URL.Path == "" {
+				c.Request.URL.Path = "/"
+			}
+		}
+		c.Next()
+	}
+}
+
 func Setup(c *Controllers) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
@@ -53,14 +67,19 @@ func Setup(c *Controllers) *gin.Engine {
 	cfg := services.GetConfig()
 	urlPrefix := strings.TrimSuffix(cfg.Server.URLPrefix, "/")
 
+	// 如果配置了 URL 前缀，使用中间件去除前缀
+	if urlPrefix != "" {
+		router.Use(stripPrefixMiddleware(urlPrefix))
+	}
+
 	// Serve embedded Vue SPA static files with cache headers
 	staticFS := static.GetFS()
-	assetsGroup := router.Group(urlPrefix + "/assets")
+	assetsGroup := router.Group("/assets")
 	assetsGroup.Use(cacheControl("public, max-age=31536000, immutable")) // 1 year cache for hashed assets
 	assetsGroup.StaticFS("/", http.FS(mustSubFS(staticFS, "assets")))
 
 	// Serve logo.svg with short cache
-	router.GET(urlPrefix+"/logo.svg", func(ctx *gin.Context) {
+	router.GET("/logo.svg", func(ctx *gin.Context) {
 		data, err := static.ReadFile("logo.svg")
 		if err != nil {
 			ctx.Status(404)
@@ -72,39 +91,17 @@ func Setup(c *Controllers) *gin.Engine {
 
 	// SPA fallback - serve index.html (no cache for HTML)
 	router.NoRoute(func(ctx *gin.Context) {
-		// 只处理带前缀的路径或根路径
-		if urlPrefix != "" && !strings.HasPrefix(ctx.Request.URL.Path, urlPrefix) {
-			ctx.Status(404)
-			return
-		}
 		data, err := static.ReadFile("index.html")
 		if err != nil {
 			ctx.String(500, "index.html not found")
 			return
 		}
-
-		html := string(data)
-		
-		// 如果配置了 URL 前缀，需要将绝对路径资源添加前缀
-		if urlPrefix != "" {
-			// 替换 /assets/ 为 /prefix/assets/
-			html = strings.ReplaceAll(html, `"/assets/`, `"`+urlPrefix+`/assets/`)
-			html = strings.ReplaceAll(html, `'/assets/`, `'`+urlPrefix+`/assets/`)
-			// 替换 /logo.svg 为 /prefix/logo.svg
-			html = strings.ReplaceAll(html, `"/logo.svg"`, `"`+urlPrefix+`/logo.svg"`)
-			html = strings.ReplaceAll(html, `'/logo.svg'`, `'`+urlPrefix+`/logo.svg'`)
-		}
-		
-		// 注入 base URL 配置到 HTML
-		configScript := `<script>window.__BASE_URL__ = "` + urlPrefix + `"; window.__API_VERSION__ = "/api/v1";</script>`
-		html = strings.Replace(html, "</head>", configScript+"</head>", 1)
-
 		ctx.Header("Cache-Control", "no-cache, no-store, must-revalidate")
-		ctx.Data(200, "text/html; charset=utf-8", []byte(html))
+		ctx.Data(200, "text/html; charset=utf-8", data)
 	})
 
-	// API routes - 添加 /api/v1 版本前缀
-	api := router.Group(urlPrefix + "/api/v1")
+	// API routes
+	api := router.Group("/api/v1")
 	{
 		// Health check (无需认证)
 		api.GET("/ping", func(ctx *gin.Context) {

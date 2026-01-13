@@ -19,6 +19,5 @@ export default defineConfig({
       }
     }
   },
-  // 使用绝对路径，后端会根据 url_prefix 动态注入正确的路径
   base: '/'
 })
