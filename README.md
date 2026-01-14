@@ -518,6 +518,7 @@ nginx -t && nginx -s reload
 [server]
 port = 8052
 host = 0.0.0.0
+url_prefix =
 
 [database]
 type = sqlite
