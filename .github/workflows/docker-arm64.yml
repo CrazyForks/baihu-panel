@@ -43,6 +43,7 @@ jobs:
           tags: |
             type=semver,pattern={{version}}-arm64
             type=raw,value=latest-arm64,enable={{is_default_branch}}
+            type=ref,event=branch,suffix=-arm64
 
       - name: Get build time
         id: build_time
