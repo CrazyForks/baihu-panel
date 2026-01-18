@@ -40,6 +40,7 @@ jobs:
           tags: |
             type=semver,pattern={{version}}-amd64
             type=raw,value=latest-amd64,enable={{is_default_branch}}
+            type=ref,event=branch,suffix=-amd64
 
       - name: Get build time
         id: build_time
