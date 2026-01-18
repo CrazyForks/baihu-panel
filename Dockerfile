@@ -59,7 +59,7 @@ COPY --from=frontend-builder /app/web/dist ./internal/static/dist
 RUN VERSION_VAL=$(cat /build-info/version.txt) && \
     BUILD_TIME_VAL=$(cat /build-info/build_time.txt) && \
     CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
-    go build -ldflags="-s -w -X baihu/internal/constant.Version=${VERSION_VAL} -X 'baihu/internal/constant.BuildTime=${BUILD_TIME_VAL}'" \
+    go build -ldflags="-s -w -X github.com/engigu/baihu-panel/internal/constant.Version=${VERSION_VAL} -X 'github.com/engigu/baihu-panel/internal/constant.BuildTime=${BUILD_TIME_VAL}'" \
     -o baihu .
 
 # ================================
