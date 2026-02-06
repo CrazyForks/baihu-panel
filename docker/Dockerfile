@@ -104,7 +104,8 @@ RUN VERSION_VAL=$(cat /build-info/version.txt) && \
 # ================================
 # Stage 4: Final image
 # ================================
-FROM ghcr.io/engigu/baihu:base
+ARG BASE_TAG=base
+FROM ghcr.io/engigu/baihu:${BASE_TAG}
 
 ENV TZ=Asia/Shanghai
 ENV PATH="/app/envs/node/bin:/app/envs/python/bin:$PATH"
