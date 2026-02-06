@@ -1,3 +1,4 @@
+ARG BASE_TAG=base
 # ================================
 # Stage 1: Build frontend
 # ================================
@@ -104,7 +105,7 @@ RUN VERSION_VAL=$(cat /build-info/version.txt) && \
 # ================================
 # Stage 4: Final image
 # ================================
-ARG BASE_TAG=base
+ARG BASE_TAG
 FROM ghcr.io/engigu/baihu:${BASE_TAG}
 
 ENV TZ=Asia/Shanghai
