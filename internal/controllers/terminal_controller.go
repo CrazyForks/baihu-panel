@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/engigu/baihu-panel/internal/constant"
+	"github.com/engigu/baihu-panel/internal/services"
 	"github.com/engigu/baihu-panel/internal/utils"
 
 	"github.com/creack/pty"
@@ -20,10 +22,14 @@ import (
 	"golang.org/x/text/transform"
 )
 
-type TerminalController struct{}
+type TerminalController struct {
+	envService *services.EnvService
+}
 
-func NewTerminalController() *TerminalController {
-	return &TerminalController{}
+func NewTerminalController(envService *services.EnvService) *TerminalController {
+	return &TerminalController{
+		envService: envService,
+	}
 }
 
 var upgrader = websocket.Upgrader{
@@ -79,15 +85,22 @@ func (tc *TerminalController) HandleWebSocket(c *gin.Context) {
 	}
 
 	// Windows 使用 pipe 模式，Unix 使用 PTY 模式
+	userID := 1
+	if v, exists := c.Get("userID"); exists {
+		if id, ok := v.(uint); ok {
+			userID = int(id)
+		}
+	}
+
 	if runtime.GOOS == "windows" {
-		tc.handlePipeMode(conn)
+		tc.handlePipeMode(conn, userID)
 	} else {
-		tc.handlePtyMode(conn)
+		tc.handlePtyMode(conn, userID)
 	}
 }
 
 // handlePtyMode 使用 PTY 处理终端（Unix/macOS）
-func (tc *TerminalController) handlePtyMode(conn *websocket.Conn) {
+func (tc *TerminalController) handlePtyMode(conn *websocket.Conn, userID int) {
 	// 发送 PTY 模式标识
 	conn.WriteMessage(websocket.TextMessage, []byte("__PTY_MODE__"))
 
@@ -98,6 +111,12 @@ func (tc *TerminalController) handlePtyMode(conn *websocket.Conn) {
 	}
 
 	cmd.Env = append(os.Environ(), "TERM=xterm-256color")
+
+	// 注入环境变量
+	envVars := tc.envService.GetEnvVarsByUserID(userID)
+	for _, env := range envVars {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", env.Name, env.Value))
+	}
 
 	ptmx, err := pty.Start(cmd)
 	if err != nil {
@@ -149,7 +168,7 @@ func (tc *TerminalController) handlePtyMode(conn *websocket.Conn) {
 }
 
 // handlePipeMode 使用 pipe 处理终端（Windows）
-func (tc *TerminalController) handlePipeMode(conn *websocket.Conn) {
+func (tc *TerminalController) handlePipeMode(conn *websocket.Conn, userID int) {
 	// 发送 pipe 模式标识
 	conn.WriteMessage(websocket.TextMessage, []byte("__PIPE_MODE__"))
 
@@ -157,6 +176,13 @@ func (tc *TerminalController) handlePipeMode(conn *websocket.Conn) {
 
 	if absDir, err := filepath.Abs(constant.ScriptsWorkDir); err == nil {
 		cmd.Dir = absDir
+	}
+
+	// 注入环境变量
+	cmd.Env = os.Environ()
+	envVars := tc.envService.GetEnvVarsByUserID(userID)
+	for _, env := range envVars {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", env.Name, env.Value))
 	}
 
 	stdin, err := cmd.StdinPipe()
