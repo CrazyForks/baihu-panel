@@ -152,13 +152,10 @@ def sync_git(args):
         repo_url = repo_url.replace("https://", f"https://{args.auth_token}@")
 
     dest = args.target_path
-    branch = args.branch
+    branch = args.branch or "main"
 
     # 如果指定了 path 且是单文件模式，使用 raw URL 下载
     if args.path and args.single_file:
-        # 单文件下载必须指定分支，如果未指定则默认为 main
-        if not args.branch:
-             args.branch = "main"
         sync_git_file(args, repo_url, env)
         return
 
@@ -202,34 +199,28 @@ def sync_git(args):
 
         # 稀疏 clone（如果指定了 path）
         if args.path:
-            cmd = [
+            run([
                 "git", "clone",
                 "--depth", "1",
                 "--filter=blob:none",
                 "--no-checkout",
+                "-b", branch,
                 repo_url,
                 dest
-            ]
-            if branch:
-                cmd.extend(["-b", branch])
-            
-            run(cmd, env=env)
+            ], env=env)
 
             run(["git", "sparse-checkout", "init", "--cone"], cwd=dest, env=env)
             run(["git", "sparse-checkout", "set", args.path], cwd=dest, env=env)
             run(["git", "checkout"], cwd=dest, env=env)
         else:
             # 普通 clone
-            cmd = [
+            run([
                 "git", "clone",
                 "--depth", "1",
+                "-b", branch,
                 repo_url,
                 dest
-            ]
-            if branch:
-                cmd.extend(["-b", branch])
-            
-            run(cmd, env=env)
+            ], env=env)
 
     print("同步完成")
 
@@ -295,8 +286,8 @@ def main():
                         help="源地址（Git仓库URL或文件URL）")
     parser.add_argument("--target-path", required=True, 
                         help="目标路径")
-    parser.add_argument("--branch", 
-                        help="Git 分支名（仅 git 类型有效，不填则使用默认分支）")
+    parser.add_argument("--branch", default="main", 
+                        help="Git 分支名（仅 git 类型有效）")
     parser.add_argument("--path", 
                         help="仅拉取指定文件或目录（仅 git 类型有效）")
     parser.add_argument("--single-file", action="store_true",

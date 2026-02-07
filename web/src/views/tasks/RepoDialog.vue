@@ -172,7 +172,7 @@ async function save() {
         </div>
         <div v-if="repoConfig.source_type === 'git'" class="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-3">
           <Label class="sm:text-right text-sm">分支</Label>
-          <Input v-model="repoConfig.branch" placeholder="默认分支 (可选)" class="sm:col-span-3 h-8 text-sm" autocomplete="off" />
+          <Input v-model="repoConfig.branch" placeholder="main (可选)" class="sm:col-span-3 h-8 text-sm" autocomplete="off" />
         </div>
         <div v-if="repoConfig.source_type === 'git'" class="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-3">
           <Label class="sm:text-right text-sm">稀疏路径</Label>
