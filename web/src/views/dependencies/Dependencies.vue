@@ -177,13 +177,12 @@ onMounted(loadDeps)
             <p>
               注意：Docker 容器重新创建后，手动安装的系统依赖会丢失。如需持久化，请在 Dockerfile 中添加依赖或使用自定义镜像。
             </p>
-            <code class="block bg-muted px-3 py-2 rounded text-xs font-mono whitespace-pre">
-# Debian / Ubuntu
-apt-get update && apt-get install -y &lt;package-name&gt;
-
-# Alpine
-apk add &lt;package-name&gt;
-            </code>
+            <div class="bg-muted px-3 py-2 rounded text-xs font-mono">
+              <div class="text-muted-foreground"># Debian / Ubuntu</div>
+              <div class="mb-3">apt-get update && apt-get install -y &lt;package-name&gt;</div>
+              <div class="text-muted-foreground"># Alpine</div>
+              <div>apk add &lt;package-name&gt;</div>
+            </div>
           </div>
         </div>
       </TabsContent>
