@@ -161,6 +161,12 @@ func (h *ServerSchedulerHandler) OnTaskHeartbeat(req *executor.ExecutionRequest,
 	if req.LogID > 0 {
 		h.es.taskLogService.UpdateTaskDuration(req.LogID, duration)
 	}
+
+	// 每分钟打印一次任务还在运行的日志
+	if duration >= 60000 && (duration/60000 > (duration-3000)/60000) {
+		logger.Infof("[Scheduler] 任务 #%s 仍在运行中... (已耗时: %v)",
+			req.TaskID, (time.Duration(duration) * time.Millisecond).Round(time.Second))
+	}
 }
 
 func (h *ServerSchedulerHandler) OnTaskStarted(req *executor.ExecutionRequest) {

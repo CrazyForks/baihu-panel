@@ -77,6 +77,11 @@ func (m *CronManager) AddTask(task CronTask) error {
 	timeout := task.GetTimeout()
 
 	entryID, err := m.cron.AddFunc(task.GetSchedule(), func() {
+		defer func() {
+			if r := recover(); r != nil {
+				m.logger.Errorf("[CronManager] 任务 #%s 执行过程中发生 Panic: %v", taskID, r)
+			}
+		}()
 		m.logger.Infof("[CronManager] 触发计划任务 #%s (%s)", taskID, name)
 
 		req := &ExecutionRequest{

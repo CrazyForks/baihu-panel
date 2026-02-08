@@ -439,6 +439,9 @@ func (c *AgentController) WSConnect(ctx *gin.Context) {
 	// 启动读写协程
 	go c.wsWritePump(ac)
 	go c.wsReadPump(ac, agent)
+
+	// 主动推送任务列表
+	go c.wsManager.BroadcastTasks(agent.ID)
 }
 
 // wsReadPump 读取消息

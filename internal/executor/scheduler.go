@@ -262,15 +262,27 @@ func (s *Scheduler) worker(id int) {
 		case <-s.stopCh:
 			return
 		case req := <-s.taskQueue:
-			// 速率限制
-			<-s.rateLimiter
-			s.executeTask(req)
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						s.logger.Errorf("[Scheduler] Worker %d panic while processing task %s: %v", id, req.TaskID, r)
+					}
+				}()
+				// 速率限制
+				<-s.rateLimiter
+				s.executeTask(req)
+			}()
 		}
 	}
 }
 
 // executeTask 执行任务（本地执行）
 func (s *Scheduler) executeTask(req *ExecutionRequest) (*ExecutionResult, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			s.logger.Errorf("[Scheduler] 任务 %s 执行过程中发生 Panic: %v", req.TaskID, r)
+		}
+	}()
 	start := time.Now()
 
 	s.logger.Infof("[Scheduler] 执行任务 %s (名称: %s, 类型: %s)", req.TaskID, req.Name, req.Type)

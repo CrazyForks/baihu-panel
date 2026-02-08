@@ -271,48 +271,55 @@ func (m *AgentWSManager) cleanupLoop() {
 	NewAgentService().ResetAllAgentsToOffline()
 
 	for range ticker.C {
-		m.mu.Lock()
-		now := time.Now()
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					logger.Errorf("[AgentWS] cleanupLoop panic: %v", r)
+				}
+			}()
+			m.mu.Lock()
+			now := time.Now()
 
-		// 清理超时连接
-		for agentID, conn := range m.connections {
-			if now.Sub(conn.LastPing) > 2*time.Minute {
-				// 减少 IP 连接计数
-				if conn.IP != "" {
-					if count, ok := m.ipConnections[conn.IP]; ok && count > 0 {
-						m.ipConnections[conn.IP] = count - 1
+			// 清理超时连接
+			for agentID, conn := range m.connections {
+				if now.Sub(conn.LastPing) > 2*time.Minute {
+					// 减少 IP 连接计数
+					if conn.IP != "" {
+						if count, ok := m.ipConnections[conn.IP]; ok && count > 0 {
+							m.ipConnections[conn.IP] = count - 1
+						}
+					}
+					conn.Close()
+					delete(m.connections, agentID)
+					// 更新数据库状态
+					database.DB.Model(&models.Agent{}).Where("id = ?", agentID).Update("status", "offline")
+					logger.Infof("[AgentWS] Agent #%d 心跳超时，已断开", agentID)
+				}
+			}
+
+			// 定期清理数据库中的过期状态（处理服务重启或异常终止的情况）
+			// 有些 Agent 虽然没有连接，但数据库状态可能是 "online"
+			cutoff := now.Add(-2 * time.Minute)
+			database.DB.Model(&models.Agent{}).
+				Where("status = ? AND last_seen < ?", "online", cutoff).
+				Update("status", "offline")
+
+			// 清理过期的限流记录（超过 10 分钟未活动）
+
+			// 清理过期的限流记录（超过 10 分钟未活动）
+			for ip, lastAttempt := range m.ipLastAttempt {
+				if now.Sub(lastAttempt) > 10*time.Minute {
+					delete(m.ipLastAttempt, ip)
+					delete(m.ipFailCount, ip)
+					// 只清理没有活跃连接的 IP 计数
+					if m.ipConnections[ip] == 0 {
+						delete(m.ipConnections, ip)
 					}
 				}
-				conn.Close()
-				delete(m.connections, agentID)
-				// 更新数据库状态
-				database.DB.Model(&models.Agent{}).Where("id = ?", agentID).Update("status", "offline")
-				logger.Infof("[AgentWS] Agent #%d 心跳超时，已断开", agentID)
 			}
-		}
 
-		// 定期清理数据库中的过期状态（处理服务重启或异常终止的情况）
-		// 有些 Agent 虽然没有连接，但数据库状态可能是 "online"
-		cutoff := now.Add(-2 * time.Minute)
-		database.DB.Model(&models.Agent{}).
-			Where("status = ? AND last_seen < ?", "online", cutoff).
-			Update("status", "offline")
-
-		// 清理过期的限流记录（超过 10 分钟未活动）
-
-		// 清理过期的限流记录（超过 10 分钟未活动）
-		for ip, lastAttempt := range m.ipLastAttempt {
-			if now.Sub(lastAttempt) > 10*time.Minute {
-				delete(m.ipLastAttempt, ip)
-				delete(m.ipFailCount, ip)
-				// 只清理没有活跃连接的 IP 计数
-				if m.ipConnections[ip] == 0 {
-					delete(m.ipConnections, ip)
-				}
-			}
-		}
-
-		m.mu.Unlock()
+			m.mu.Unlock()
+		}()
 	}
 }
 

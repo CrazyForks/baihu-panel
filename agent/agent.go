@@ -101,17 +101,21 @@ type Agent struct {
 	wsConn        *websocket.Conn
 	wsMu          sync.Mutex
 	stopCh        chan struct{}
-	wsStopCh      chan struct{} // 用于停止当前 WebSocket 相关的 goroutine
+	wsStopCh      chan struct{}     // 用于停止当前 WebSocket 相关的 goroutine
+	taskLogs      map[uint][]string // 记录最近的日志行，用于失败显示
+	logMu         sync.Mutex        // taskLogs 的锁
 }
 
 func NewAgent(config *Config, configFile string) *Agent {
 	a := &Agent{
-		config:     config,
-		configFile: configFile,
-		machineID:  utils.GenerateMachineID(),
-		tasks:      make(map[uint]*AgentTask),
-		client:     &http.Client{Timeout: 30 * time.Second},
-		stopCh:     make(chan struct{}),
+		config:        config,
+		configFile:    configFile,
+		machineID:     utils.GenerateMachineID(),
+		tasks:         make(map[uint]*AgentTask),
+		client:        &http.Client{Timeout: 30 * time.Second},
+		stopCh:        make(chan struct{}),
+		lastTaskCount: -1,
+		taskLogs:      make(map[uint][]string),
 	}
 
 	// 初始化调度器
@@ -152,6 +156,12 @@ func (h *AgentHandler) OnTaskHeartbeat(req *executor.ExecutionRequest, duration 
 			"duration": duration,
 		})
 	}
+
+	// 每分钟打印一次任务还在运行的日志，提升长任务的存在感
+	if duration >= 60000 && (duration/60000 > (duration-3000)/60000) {
+		logger.Infof("[Scheduler] 任务 #%s 仍在运行中... (已耗时: %v)",
+			req.TaskID, (time.Duration(duration) * time.Millisecond).Round(time.Second))
+	}
 }
 
 func (h *AgentHandler) OnTaskStarted(req *executor.ExecutionRequest) {}
@@ -171,6 +181,11 @@ func (h *AgentHandler) OnTaskCompleted(req *executor.ExecutionRequest, result *e
 		StartTime: result.StartTime.Unix(),
 		EndTime:   result.EndTime.Unix(),
 	})
+
+	if result.Status == "failed" {
+		h.agent.printLastLogs(result.LogID)
+	}
+	h.agent.clearTaskLog(result.LogID)
 }
 
 func (h *AgentHandler) OnTaskFailed(req *executor.ExecutionRequest, err error) {
@@ -195,6 +210,9 @@ func (h *AgentHandler) OnTaskFailed(req *executor.ExecutionRequest, err error) {
 		StartTime: time.Now().Unix(),
 		EndTime:   time.Now().Unix(),
 	})
+
+	h.agent.printLastLogs(req.LogID)
+	h.agent.clearTaskLog(req.LogID)
 }
 
 func (h *AgentHandler) OnCronNextRun(req *executor.ExecutionRequest, nextRun time.Time) {}
@@ -345,6 +363,7 @@ func (a *Agent) handleWSMessage(msg *WSMessage) {
 }
 
 func (a *Agent) fetchTasks() {
+	logger.Info("正在从服务器拉取任务列表...")
 	if err := a.sendWSMessage(WSTypeFetchTasks, map[string]interface{}{}); err != nil {
 		logger.Warnf("请求任务列表失败: %v", err)
 	}
@@ -431,8 +450,8 @@ func (a *Agent) handleTasks(data json.RawMessage) {
 	json.Unmarshal(data, &resp)
 
 	newCount := len(resp.Tasks)
-	if newCount != a.lastTaskCount {
-		logger.Infof("任务列表更新: %d -> %d 个任务", a.lastTaskCount, newCount)
+	if newCount != a.lastTaskCount || newCount == 0 {
+		logger.Infof("任务列表同步成功: 共获取到 %d 个任务", newCount)
 		a.lastTaskCount = newCount
 	}
 
@@ -485,6 +504,9 @@ func (w *RealTimeLogWriter) Write(p []byte) (n int, err error) {
 	if len(p) == 0 {
 		return 0, nil
 	}
+
+	// 记录到本地缓存，用于失败时显示
+	w.agent.addTaskLog(w.logID, p)
 
 	// 构造消息
 	msg := map[string]interface{}{
@@ -596,7 +618,7 @@ func (a *Agent) updateTasks(tasks []AgentTask) {
 		if _, exists := newTasks[id]; !exists {
 			a.cronManager.RemoveTask(fmt.Sprintf("%d", id))
 			delete(a.tasks, id)
-			logger.Infof("移除任务 #%d", id)
+			logger.Infof("移除调度任务 #%d", id)
 		}
 	}
 
@@ -607,13 +629,13 @@ func (a *Agent) updateTasks(tasks []AgentTask) {
 			if task.Enabled {
 				err := a.cronManager.AddTask(task)
 				if err != nil {
-					logger.Errorf("调度任务 #%d 失败: %v", id, err)
+					logger.Errorf("添加调度任务 #%d 失败: %v", id, err)
 					continue
 				}
-				logger.Infof("已调度任务 #%d %s (%s)", id, task.Name, task.GetSchedule())
+				logger.Infof("已添加调度任务 #%d %s (%s)", id, task.Name, task.GetSchedule())
 			} else {
 				a.cronManager.RemoveTask(fmt.Sprintf("%d", id))
-				logger.Infof("任务 #%d 已禁用", id)
+				logger.Infof("调度任务 #%d 已禁用", id)
 			}
 			a.tasks[id] = task
 		}
@@ -632,6 +654,50 @@ func (a *Agent) clearAllTasks() {
 	a.tasks = make(map[uint]*AgentTask)
 	a.lastTaskCount = 0
 	logger.Info("所有任务已清空")
+}
+
+func (a *Agent) addTaskLog(logID uint, p []byte) {
+	if logID == 0 {
+		return
+	}
+	a.logMu.Lock()
+	defer a.logMu.Unlock()
+
+	content := string(p)
+	lines := strings.Split(strings.TrimSuffix(content, "\n"), "\n")
+
+	a.taskLogs[logID] = append(a.taskLogs[logID], lines...)
+	if len(a.taskLogs[logID]) > 50 {
+		a.taskLogs[logID] = a.taskLogs[logID][len(a.taskLogs[logID])-50:]
+	}
+}
+
+func (a *Agent) printLastLogs(logID uint) {
+	if logID == 0 {
+		return
+	}
+	a.logMu.Lock()
+	lines, ok := a.taskLogs[logID]
+	a.logMu.Unlock()
+
+	if !ok || len(lines) == 0 {
+		return
+	}
+
+	logger.Errorf("--- 任务 #%d 失败日志预览 (最近 %d 行) ---", logID, len(lines))
+	for _, line := range lines {
+		fmt.Println("  " + line)
+	}
+	logger.Errorf("--- 任务 #%d 结束 ---", logID)
+}
+
+func (a *Agent) clearTaskLog(logID uint) {
+	if logID == 0 {
+		return
+	}
+	a.logMu.Lock()
+	defer a.logMu.Unlock()
+	delete(a.taskLogs, logID)
 }
 
 // executeTask 已被 AgentHandler.OnTaskCompleted 代替，此处删除旧实现
