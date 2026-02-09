@@ -7,6 +7,7 @@ import (
 	"github.com/engigu/baihu-panel/internal/database"
 	"github.com/engigu/baihu-panel/internal/logger"
 	"github.com/engigu/baihu-panel/internal/models"
+	"github.com/engigu/baihu-panel/internal/systime"
 	"github.com/engigu/baihu-panel/internal/utils"
 )
 
@@ -35,7 +36,7 @@ type CleanConfig struct {
 
 // CreateEmptyLog 创建一个空的日志记录（任务开始时调用）
 func (s *TaskLogService) CreateEmptyLog(taskID uint, command string) (*models.TaskLog, error) {
-	startTime := models.LocalTime(time.Now())
+	startTime := models.Now()
 	taskLog := &models.TaskLog{
 		TaskID:    taskID,
 		Command:   command,
@@ -62,7 +63,7 @@ func (s *TaskLogService) SaveTaskLog(taskLog *models.TaskLog) error {
 	}
 
 	// 更新任务的 last_run
-	database.DB.Model(&models.Task{}).Where("id = ?", taskLog.TaskID).Update("last_run", time.Now())
+	database.DB.Model(&models.Task{}).Where("id = ?", taskLog.TaskID).Update("last_run", models.Now())
 
 	return nil
 }
@@ -109,7 +110,7 @@ func (s *TaskLogService) CleanTaskLogs(taskID uint) {
 	var deleted int64
 	switch config.Type {
 	case "day":
-		cutoff := time.Now().AddDate(0, 0, -config.Keep)
+		cutoff := systime.InCST(time.Now()).AddDate(0, 0, -config.Keep)
 		result := database.DB.Where("task_id = ? AND created_at < ?", taskID, cutoff).Delete(&models.TaskLog{})
 		deleted = result.RowsAffected
 	case "count":

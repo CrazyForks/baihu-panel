@@ -4,6 +4,8 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"time"
+
+	"github.com/engigu/baihu-panel/internal/systime"
 )
 
 const TimeFormat = "2006-01-02 15:04:05"
@@ -16,6 +18,8 @@ func (t LocalTime) MarshalJSON() ([]byte, error) {
 	if tt.IsZero() {
 		return []byte("null"), nil
 	}
+	// 统一输出为东八区时间
+	tt = systime.InCST(tt)
 	return []byte(fmt.Sprintf(`"%s"`, tt.Format(TimeFormat))), nil
 }
 
@@ -66,5 +70,5 @@ func (t LocalTime) Time() time.Time {
 }
 
 func Now() LocalTime {
-	return LocalTime(time.Now())
+	return LocalTime(systime.Now())
 }

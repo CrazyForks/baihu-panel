@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/engigu/baihu-panel/internal/logger"
+	"github.com/engigu/baihu-panel/internal/systime"
 
 	"github.com/glebarez/sqlite"
 	"gorm.io/driver/mysql"
@@ -26,12 +27,9 @@ type Config struct {
 }
 
 func Init(cfg *Config) error {
+	var err error
 	// 设置东八区时区
-	loc, err := time.LoadLocation("Asia/Shanghai")
-	if err != nil {
-		logger.Warnf("[Database] 加载时区失败，使用 UTC: %v", err)
-		loc = time.UTC
-	}
+	loc := systime.CST
 	time.Local = loc
 
 	var dialector gorm.Dialector

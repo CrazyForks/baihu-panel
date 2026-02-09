@@ -2,13 +2,14 @@ package executor
 
 import (
 	"sync"
-	"time"
+
+	"github.com/engigu/baihu-panel/internal/systime"
 
 	"github.com/robfig/cron/v3"
 )
 
 // 东八区时区（默认）
-var defaultLocation = time.FixedZone("CST", 8*3600)
+var defaultLocation = systime.CST
 
 // CronManager 统一的任务调度管理器
 type CronManager struct {

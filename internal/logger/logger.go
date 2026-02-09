@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/engigu/baihu-panel/internal/systime"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -47,7 +48,8 @@ func (c *customCore) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore
 }
 
 func (c *customCore) Write(ent zapcore.Entry, fields []zapcore.Field) error {
-	timestamp := ent.Time.Format("2006-01-02 15:04:05")
+	// 统一使用东八区时间
+	timestamp := systime.InCST(ent.Time).Format("2006-01-02 15:04:05")
 	level := strings.ToUpper(ent.Level.String())
 
 	var levelColor string
@@ -82,6 +84,8 @@ func newLogger(output zapcore.WriteSyncer) *zap.Logger {
 }
 
 func init() {
+	// 强制设置全局时区为东八区
+	time.Local = systime.CST
 	atomicLevel = zap.NewAtomicLevelAt(zap.InfoLevel)
 	Log = newLogger(zapcore.AddSync(os.Stdout))
 	Sugar = Log.Sugar()
@@ -93,7 +97,7 @@ func SetupFileOutput(logDir string) error {
 		return err
 	}
 
-	logFile := filepath.Join(logDir, time.Now().Format("2006-01-02")+".log")
+	logFile := filepath.Join(logDir, systime.FormatDate(time.Now())+".log")
 	file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		return err

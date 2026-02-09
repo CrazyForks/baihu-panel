@@ -13,6 +13,7 @@ import (
 	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/database"
 	"github.com/engigu/baihu-panel/internal/models"
+	"github.com/engigu/baihu-panel/internal/systime"
 	"gorm.io/gorm"
 )
 
@@ -129,7 +130,7 @@ func (s *BackupService) CreateBackup() (string, error) {
 		return "", err
 	}
 
-	timestamp := time.Now().Format("20060102_150405")
+	timestamp := systime.FormatDatetime(time.Now())
 	zipPath := filepath.Join(BackupDir, fmt.Sprintf("backup_%s.zip", timestamp))
 
 	zipFile, err := os.Create(zipPath)

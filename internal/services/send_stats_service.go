@@ -5,6 +5,7 @@ import (
 
 	"github.com/engigu/baihu-panel/internal/database"
 	"github.com/engigu/baihu-panel/internal/models"
+	"github.com/engigu/baihu-panel/internal/systime"
 )
 
 type SendStatsService struct{}
@@ -15,7 +16,7 @@ func NewSendStatsService() *SendStatsService {
 
 // IncrementStats 增加任务执行统计
 func (s *SendStatsService) IncrementStats(taskID uint, status string) error {
-	day := time.Now().Format("2006-01-02")
+	day := systime.FormatDate(time.Now())
 
 	var stats models.SendStats
 	result := database.DB.Where("task_id = ? AND day = ? AND status = ?", taskID, day, status).First(&stats)
@@ -44,7 +45,7 @@ func (s *SendStatsService) GetStatsByTaskID(taskID uint) []models.SendStats {
 
 // GetTodayStats 获取今日统计
 func (s *SendStatsService) GetTodayStats() []models.SendStats {
-	day := time.Now().Format("2006-01-02")
+	day := systime.FormatDate(time.Now())
 	var stats []models.SendStats
 	database.DB.Where("day = ?", day).Find(&stats)
 	return stats
@@ -52,7 +53,7 @@ func (s *SendStatsService) GetTodayStats() []models.SendStats {
 
 // GetRecentStats 获取最近N天的统计
 func (s *SendStatsService) GetRecentStats(days int) []models.SendStats {
-	startDay := time.Now().AddDate(0, 0, -days).Format("2006-01-02")
+	startDay := systime.FormatDate(time.Now().AddDate(0, 0, -days))
 	var stats []models.SendStats
 	database.DB.Where("day >= ?", startDay).Order("day DESC").Find(&stats)
 	return stats

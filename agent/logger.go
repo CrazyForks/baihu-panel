@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/engigu/baihu-panel/internal/systime"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -46,7 +47,8 @@ func (c *customCore) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore
 }
 
 func (c *customCore) Write(ent zapcore.Entry, fields []zapcore.Field) error {
-	timestamp := ent.Time.Format("2006-01-02 15:04:05")
+	// 统一使用东八区时间
+	timestamp := systime.InCST(ent.Time).Format("2006-01-02 15:04:05")
 	level := strings.ToUpper(ent.Level.String())
 
 	var levelColor string

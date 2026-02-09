@@ -13,6 +13,7 @@ import (
 	"time"
 
 	internalLogger "github.com/engigu/baihu-panel/internal/logger"
+	"github.com/engigu/baihu-panel/internal/systime"
 	"github.com/engigu/baihu-panel/internal/utils"
 )
 
@@ -33,6 +34,8 @@ var (
 )
 
 func main() {
+	// 强制设置全局时区为东八区
+	time.Local = systime.CST
 	exePath, _ := os.Executable()
 	exeDir := filepath.Dir(exePath)
 	os.Chdir(exeDir)
