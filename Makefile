@@ -64,6 +64,9 @@ clean:
 	rm -rf internal/static/dist
 	mkdir -p internal/static/dist
 	touch internal/static/dist/.gitkeep
+	rm -rf web/dist
+	mkdir -p web/dist
+	touch web/dist/.gitkeep
 
 # Run the application
 run:
