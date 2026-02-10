@@ -158,6 +158,7 @@ export const api = {
     create: (path: string, isDir: boolean) => request('/files/create', { method: 'POST', body: JSON.stringify({ path, isDir }) }),
     delete: (path: string) => request('/files/delete', { method: 'POST', body: JSON.stringify({ path }) }),
     rename: (oldPath: string, newPath: string) => request('/files/rename', { method: 'POST', body: JSON.stringify({ oldPath, newPath }) }),
+    move: (oldPath: string, newPath: string) => request('/files/move', { method: 'POST', body: JSON.stringify({ oldPath, newPath }) }),
     uploadArchive: async (file: File, targetPath?: string) => {
       const formData = new FormData()
       formData.append('file', file)

@@ -37,6 +37,28 @@ type FileNode struct {
 	Children []*FileNode `json:"children,omitempty"`
 }
 
+// checkPath verify if the path is inside the workDir and safe to use.
+// It returns the full absolute path and a boolean indicating if it's safe.
+func (fc *FileController) checkPath(path string, allowRoot bool) (string, bool) {
+	fullPath := filepath.Join(fc.workDir, filepath.Clean(path))
+	rel, err := filepath.Rel(fc.workDir, fullPath)
+	if err != nil {
+		return "", false
+	}
+
+	// Basic traversal check
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", false
+	}
+
+	// Root directory check
+	if !allowRoot && rel == "." {
+		return "", false
+	}
+
+	return fullPath, true
+}
+
 func (fc *FileController) GetFileTree(c *gin.Context) {
 	root := &FileNode{
 		Name:     filepath.Base(fc.workDir),
@@ -104,8 +126,8 @@ func (fc *FileController) GetFileContent(c *gin.Context) {
 		return
 	}
 
-	fullPath := filepath.Join(fc.workDir, filepath.Clean(filePath))
-	if !strings.HasPrefix(fullPath, fc.workDir) {
+	fullPath, safe := fc.checkPath(filePath, false)
+	if !safe {
 		utils.Forbidden(c, "访问被拒绝")
 		return
 	}
@@ -133,8 +155,8 @@ func (fc *FileController) SaveFileContent(c *gin.Context) {
 		return
 	}
 
-	fullPath := filepath.Join(fc.workDir, filepath.Clean(req.Path))
-	if !strings.HasPrefix(fullPath, fc.workDir) {
+	fullPath, safe := fc.checkPath(req.Path, false)
+	if !safe {
 		utils.Forbidden(c, "访问被拒绝")
 		return
 	}
@@ -160,8 +182,8 @@ func (fc *FileController) CreateFile(c *gin.Context) {
 		return
 	}
 
-	fullPath := filepath.Join(fc.workDir, filepath.Clean(req.Path))
-	if !strings.HasPrefix(fullPath, fc.workDir) {
+	fullPath, safe := fc.checkPath(req.Path, false)
+	if !safe {
 		utils.Forbidden(c, "访问被拒绝")
 		return
 	}
@@ -192,8 +214,8 @@ func (fc *FileController) DeleteFile(c *gin.Context) {
 		return
 	}
 
-	fullPath := filepath.Join(fc.workDir, filepath.Clean(req.Path))
-	if !strings.HasPrefix(fullPath, fc.workDir) {
+	fullPath, safe := fc.checkPath(req.Path, false)
+	if !safe {
 		utils.Forbidden(c, "访问被拒绝")
 		return
 	}
@@ -204,6 +226,47 @@ func (fc *FileController) DeleteFile(c *gin.Context) {
 	}
 
 	utils.SuccessMsg(c, "删除成功")
+}
+
+func (fc *FileController) MoveFile(c *gin.Context) {
+	var req struct {
+		OldPath string `json:"oldPath" binding:"required"`
+		NewPath string `json:"newPath" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.BadRequest(c, err.Error())
+		return
+	}
+
+	oldFull, oldSafe := fc.checkPath(req.OldPath, false)
+	newFull, newSafe := fc.checkPath(req.NewPath, false)
+
+	if !oldSafe || !newSafe {
+		utils.Forbidden(c, "访问被拒绝")
+		return
+	}
+
+	if oldFull == newFull {
+		utils.Success(c, nil)
+		return
+	}
+
+	// 检查目标是否存在
+	if _, err := os.Stat(newFull); err == nil {
+		utils.BadRequest(c, "目标已存在")
+		return
+	}
+
+	// 确保目标目录存在
+	os.MkdirAll(filepath.Dir(newFull), 0755)
+
+	if err := os.Rename(oldFull, newFull); err != nil {
+		utils.ServerError(c, err.Error())
+		return
+	}
+
+	utils.Success(c, nil)
 }
 
 func (fc *FileController) RenameFile(c *gin.Context) {
@@ -217,23 +280,37 @@ func (fc *FileController) RenameFile(c *gin.Context) {
 		return
 	}
 
-	oldFull := filepath.Join(fc.workDir, filepath.Clean(req.OldPath))
-	newFull := filepath.Join(fc.workDir, filepath.Clean(req.NewPath))
+	// 校验：重命名禁止跨目录
+	if filepath.Dir(filepath.Clean(req.OldPath)) != filepath.Dir(filepath.Clean(req.NewPath)) {
+		utils.BadRequest(c, "禁止跨目录重命名")
+		return
+	}
 
-	if !strings.HasPrefix(oldFull, fc.workDir) || !strings.HasPrefix(newFull, fc.workDir) {
+	oldFull, oldSafe := fc.checkPath(req.OldPath, false)
+	newFull, newSafe := fc.checkPath(req.NewPath, false)
+
+	if !oldSafe || !newSafe {
 		utils.Forbidden(c, "访问被拒绝")
 		return
 	}
 
-	// 确保目标目录存在
-	os.MkdirAll(filepath.Dir(newFull), 0755)
+	if oldFull == newFull {
+		utils.Success(c, nil)
+		return
+	}
+
+	// 检查目标是否存在
+	if _, err := os.Stat(newFull); err == nil {
+		utils.BadRequest(c, "文件已存在")
+		return
+	}
 
 	if err := os.Rename(oldFull, newFull); err != nil {
 		utils.ServerError(c, err.Error())
 		return
 	}
 
-	utils.SuccessMsg(c, "移动成功")
+	utils.Success(c, nil)
 }
 
 // UploadArchive handles archive file upload and extraction
@@ -254,13 +331,10 @@ func (fc *FileController) UploadArchive(c *gin.Context) {
 	}
 
 	// 确定解压目标目录
-	extractDir := fc.workDir
-	if targetDir != "" {
-		extractDir = filepath.Join(fc.workDir, filepath.Clean(targetDir))
-		if !strings.HasPrefix(extractDir, fc.workDir) {
-			utils.Forbidden(c, "访问被拒绝")
-			return
-		}
+	extractDir, safe := fc.checkPath(targetDir, true)
+	if !safe {
+		utils.Forbidden(c, "访问被拒绝")
+		return
 	}
 	os.MkdirAll(extractDir, 0755)
 
@@ -296,13 +370,10 @@ func (fc *FileController) UploadFiles(c *gin.Context) {
 	targetDir := c.PostForm("path")
 
 	// 确定目标目录
-	destDir := fc.workDir
-	if targetDir != "" {
-		destDir = filepath.Join(fc.workDir, filepath.Clean(targetDir))
-		if !strings.HasPrefix(destDir, fc.workDir) {
-			utils.Forbidden(c, "访问被拒绝")
-			return
-		}
+	destDir, safe := fc.checkPath(targetDir, true)
+	if !safe {
+		utils.Forbidden(c, "访问被拒绝")
+		return
 	}
 	os.MkdirAll(destDir, 0755)
 
@@ -328,10 +399,8 @@ func (fc *FileController) UploadFiles(c *gin.Context) {
 		}
 
 		// 构建完整路径
-		fullPath := filepath.Join(destDir, filepath.Clean(relPath))
-
-		// 安全检查
-		if !strings.HasPrefix(fullPath, fc.workDir) {
+		fullPath, safe := fc.checkPath(filepath.Join(targetDir, relPath), false)
+		if !safe {
 			continue
 		}
 
@@ -355,8 +424,8 @@ func (fc *FileController) DownloadFile(c *gin.Context) {
 		return
 	}
 
-	fullPath := filepath.Join(fc.workDir, filepath.Clean(filePath))
-	if !strings.HasPrefix(fullPath, fc.workDir) {
+	fullPath, safe := fc.checkPath(filePath, false)
+	if !safe {
 		utils.Forbidden(c, "访问被拒绝")
 		return
 	}

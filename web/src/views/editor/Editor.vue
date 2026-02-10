@@ -199,6 +199,10 @@ async function renameItem() {
     toast.error('请输入名称')
     return
   }
+  if (newName.value.includes('/')) {
+    toast.error('名称不能包含路径分隔符 /')
+    return
+  }
   const parts = renamePath.value.split('/')
   parts[parts.length - 1] = newName.value
   const newPath = parts.join('/')
@@ -209,7 +213,7 @@ async function renameItem() {
   }
 
   try {
-    await handleMove(renamePath.value, newPath, '重命名成功')
+    await handleMove(renamePath.value, newPath, '重命名成功', true)
     showRenameDialog.value = false
   } catch {
     // Error handled in handleMove
@@ -268,9 +272,13 @@ async function handleDownload(path: string) {
   }
 }
 
-async function handleMove(oldPath: string, newPath: string, successMsg = '移动成功') {
+async function handleMove(oldPath: string, newPath: string, successMsg = '移动成功', isRename = false) {
   try {
-    await api.files.rename(oldPath, newPath)
+    if (isRename) {
+      await api.files.rename(oldPath, newPath)
+    } else {
+      await api.files.move(oldPath, newPath)
+    }
     toast.success(successMsg)
     if (selectedFile.value === oldPath) {
       selectedFile.value = newPath
@@ -281,8 +289,8 @@ async function handleMove(oldPath: string, newPath: string, successMsg = '移动
       router.replace({ name: 'editor', query: { file: newPath } })
     }
     await loadTree()
-  } catch {
-    toast.error('移动失败')
+  } catch (err: any) {
+    toast.error(err.message || '移动失败')
   }
 }
 
@@ -562,6 +570,7 @@ onUnmounted(() => {
           <div class="space-y-1">
             <Label class="text-xs">新名称</Label>
             <Input v-model="newName" class="h-8 text-xs" placeholder="new_name.sh" @keyup.enter="renameItem" />
+            <p class="text-[10px] text-muted-foreground">注：仅支持修改名称，不可包含路径分隔符 /</p>
           </div>
         </div>
         <DialogFooter>

@@ -20,8 +20,9 @@ func ExtractZip(src, dest string) error {
 	for _, f := range r.File {
 		fpath := filepath.Join(dest, f.Name)
 
-		// 安全检查：防止路径遍历
-		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
+		// 安全检查：防止路径遍历 (ZipSlip)
+		rel, err := filepath.Rel(dest, fpath)
+		if err != nil || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || rel == ".." {
 			continue
 		}
 
@@ -95,7 +96,8 @@ func extractTarReader(tr *tar.Reader, dest string) error {
 		fpath := filepath.Join(dest, header.Name)
 
 		// 安全检查：防止路径遍历
-		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
+		rel, err := filepath.Rel(dest, fpath)
+		if err != nil || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || rel == ".." {
 			continue
 		}
 

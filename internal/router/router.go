@@ -160,6 +160,7 @@ func Setup(c *Controllers) *gin.Engine {
 				files.POST("/create", c.File.CreateFile)
 				files.POST("/delete", c.File.DeleteFile)
 				files.POST("/rename", c.File.RenameFile)
+				files.POST("/move", c.File.MoveFile)
 				files.POST("/upload", c.File.UploadArchive)
 				files.POST("/uploadfiles", c.File.UploadFiles)
 			}
