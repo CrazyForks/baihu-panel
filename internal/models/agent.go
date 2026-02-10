@@ -71,10 +71,10 @@ type AgentTaskResult struct {
 	Output    string `json:"output"`
 	Error     string `json:"error"`    // 额外的系统错误信息
 	Status    string `json:"status"`   // success, failed
-	Duration  int64  `json:"duration"` // milliseconds
+	Duration  int64  `json:"duration"` // 耗时（毫秒）
 	ExitCode  int    `json:"exit_code"`
-	StartTime int64  `json:"start_time"` // unix timestamp
-	EndTime   int64  `json:"end_time"`   // unix timestamp
+	StartTime int64  `json:"start_time"` // Unix 时间戳
+	EndTime   int64  `json:"end_time"`   // Unix 时间戳
 }
 
 // AgentRegisterRequest Agent 注册请求

@@ -15,11 +15,11 @@ import (
 
 // AgentWSManager WebSocket 连接管理器
 type AgentWSManager struct {
-	connections   map[uint]*AgentConnection             // agentID -> connection
+	connections   map[uint]*AgentConnection             // Agent ID -> 连接对象
 	ipConnections map[string]int                        // IP -> 连接数
 	ipLastAttempt map[string]time.Time                  // IP -> 最后连接尝试时间
 	ipFailCount   map[string]int                        // IP -> 连续失败次数
-	remoteWaiters map[uint]chan *models.AgentTaskResult // logID -> result channel
+	remoteWaiters map[uint]chan *models.AgentTaskResult // 日志 ID -> 结果通道
 	mu            sync.RWMutex
 }
 

@@ -10,7 +10,7 @@ import (
 var executorService *tasks.ExecutorService
 
 func RegisterControllers() *Controllers {
-	// Initialize services
+	// 初始化服务
 	settingsService := services.NewSettingsService()
 	loginLogService := services.NewLoginLogService()
 
@@ -37,7 +37,7 @@ func RegisterControllers() *Controllers {
 	// 启动计划任务
 	executorService.StartCron()
 
-	// Initialize and return controllers
+	// 初始化并返回控制器
 	return &Controllers{
 		Task:       controllers.NewTaskController(taskService, executorService),
 		Auth:       controllers.NewAuthController(userService, settingsService, loginLogService),

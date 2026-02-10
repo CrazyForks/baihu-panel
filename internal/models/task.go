@@ -32,14 +32,14 @@ type TaskConfig struct {
 	Concurrency int `json:"$task_concurrency"` // 0: disable concurrency, 1: enable concurrency
 }
 
-// Task represents a scheduled task
+// Task 代表一个计划任务
 type Task struct {
 	ID          uint           `json:"id" gorm:"primaryKey"`
 	Name        string         `json:"name" gorm:"size:255;not null"`
 	Command     string         `json:"command" gorm:"type:text"`                // 普通任务的命令
 	Type        string         `json:"type" gorm:"size:20;default:'task'"`      // 任务类型: constant.TaskTypeNormal, constant.TaskTypeRepo
 	Config      string         `json:"config" gorm:"type:text"`                 // 配置 JSON（仓库同步配置等）
-	Schedule    string         `json:"schedule" gorm:"size:100"`                // cron expression
+	Schedule    string         `json:"schedule" gorm:"size:100"`                // cron 表达式
 	Timeout     int            `json:"timeout" gorm:"default:30"`               // 超时时间（分钟），默认30分钟
 	WorkDir     string         `json:"work_dir" gorm:"size:255;default:''"`     // 工作目录，为空则使用 scripts 目录
 	CleanConfig string         `json:"clean_config" gorm:"size:255;default:''"` // 清理配置 JSON
@@ -86,16 +86,16 @@ func (t *Task) GetSchedule() string {
 	return t.Schedule
 }
 
-// TaskLog represents a log entry for task execution
+// TaskLog 代表任务执行的日志记录
 type TaskLog struct {
 	ID        uint       `json:"id" gorm:"primaryKey"`
 	TaskID    uint       `json:"task_id" gorm:"index"`
 	AgentID   *uint      `json:"agent_id" gorm:"index"` // Agent ID，为空表示本地执行
 	Command   string     `json:"command" gorm:"type:text"`
-	Output    string     `json:"-" gorm:"type:longtext"`      // gzip+base64 compressed
+	Output    string     `json:"-" gorm:"type:longtext"`      // gzip+base64 压缩后的日志
 	Error     string     `json:"error" gorm:"type:text"`      // 额外的系统错误信息
 	Status    string     `json:"status" gorm:"size:20;index"` // success, failed
-	Duration  int64      `json:"duration"`                    // milliseconds
+	Duration  int64      `json:"duration"`                    // 执行耗时（毫秒）
 	ExitCode  int        `json:"exit_code"`
 	StartTime *LocalTime `json:"start_time"`
 	EndTime   *LocalTime `json:"end_time"`

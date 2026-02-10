@@ -36,14 +36,14 @@ type Request struct {
 	Command string
 	WorkDir string
 	Envs    []string
-	Timeout int // 分钟
+	Timeout int // 任务超时时间（分钟）
 }
 
 // Result 任务执行结果
 type Result struct {
 	Output    string
 	Error     string
-	Status    string // success, failed
+	Status    string // 状态: success, failed
 	Duration  int64  // 毫秒
 	ExitCode  int
 	StartTime time.Time
@@ -153,7 +153,7 @@ func ExecuteWithHooks(ctx context.Context, req Request, stdout, stderr io.Writer
 		// 如果 stdout 和 stderr 指针不一致，但在逻辑上我们知道它们是同一个 MultiWriter，
 		// 这里会显示为 Pipe 模式。
 		if stdout != stderr && stdout != io.Discard {
-			logger.Debugf("[Executor] 任务 #%d stdout (%p) and stderr (%p) are different, falling back to Pipe mode.", logID, stdout, stderr)
+			logger.Debugf("[Executor] 任务 #%d stdout (%p) 和 stderr (%p) 不同，回退到 Pipe 模式。", logID, stdout, stderr)
 		}
 		logger.Infof("[Executor] 任务 #%d 启动于 Pipe 模式", logID)
 		if stdout != nil && stdout == stderr {
@@ -183,18 +183,18 @@ func ExecuteWithHooks(ctx context.Context, req Request, stdout, stderr io.Writer
 			if pipeWriter != nil {
 				pipeWriter.Close()
 			}
-			// Start 失败的处理
+			// 启动失败的处理
 			end := time.Now()
 			result := &Result{
 				Status:    constant.TaskStatusFailed,
 				Duration:  end.Sub(start).Milliseconds(),
 				ExitCode:  1,
-				StartTime: start, // 修正为 start
+				StartTime: start, // 记录开始时间
 				EndTime:   end,
 			}
 			// 执行后钩子
 			if hooks != nil {
-				result.Output += "\n[System Error] " + err.Error()
+				result.Output += "\n[系统错误] " + err.Error()
 				hooks.PostExecute(ctx, logID, result)
 			}
 			return result, err
@@ -265,7 +265,7 @@ func ExecuteWithHooks(ctx context.Context, req Request, stdout, stderr io.Writer
 	if hooks != nil {
 		if hookErr := hooks.PostExecute(ctx, logID, result); hookErr != nil {
 			// 记录钩子错误但不影响执行结果
-			result.Output += "\n[Hook Error] " + hookErr.Error()
+			result.Output += "\n[钩子错误] " + hookErr.Error()
 		}
 	}
 

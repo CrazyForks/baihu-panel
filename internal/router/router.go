@@ -62,24 +62,24 @@ func Setup(c *Controllers) *gin.Engine {
 		root = router.Group("")
 	}
 
-	// Serve embedded Vue SPA static files with cache headers
+	// 静态资源服务（Vue SPA），带缓存头部
 	staticFS := static.GetFS()
 	assetsGroup := root.Group("/assets")
-	assetsGroup.Use(cacheControl("public, max-age=31536000, immutable")) // 1 year cache for hashed assets
+	assetsGroup.Use(cacheControl("public, max-age=31536000, immutable")) // 带哈希的资源缓存1年
 	assetsGroup.StaticFS("/", http.FS(mustSubFS(staticFS, "assets")))
 
-	// Serve logo.svg with short cache
+	// logo.svg 短缓存实现
 	root.GET("/logo.svg", func(ctx *gin.Context) {
 		data, err := static.ReadFile("logo.svg")
 		if err != nil {
 			ctx.Status(404)
 			return
 		}
-		ctx.Header("Cache-Control", "public, max-age=86400") // 1 day
+		ctx.Header("Cache-Control", "public, max-age=86400") // 缓存1天
 		ctx.Data(200, "image/svg+xml", data)
 	})
 
-	// API routes
+	// API 路由组
 	api := root.Group("/api/v1")
 	{
 		// Health check (无需认证)
@@ -105,13 +105,13 @@ func Setup(c *Controllers) *gin.Engine {
 			// 获取当前用户
 			authorized.GET("/auth/me", c.Auth.GetCurrentUser)
 
-			// Dashboard stats
+			// 仪表盘统计
 			authorized.GET("/stats", c.Dashboard.GetStats)
 			authorized.GET("/sentence", c.Dashboard.GetSentence)
 			authorized.GET("/sendstats", c.Dashboard.GetSendStats)
 			authorized.GET("/taskstats", c.Dashboard.GetTaskStats)
 
-			// Task routes
+			// 任务模块
 			tasks := authorized.Group("/tasks")
 			{
 				tasks.POST("", c.Task.CreateTask)
@@ -122,7 +122,7 @@ func Setup(c *Controllers) *gin.Engine {
 				tasks.POST("/stop/:logID", c.Task.StopTask)
 			}
 
-			// Task execution routes
+			// 任务执行模块
 			execution := authorized.Group("/execute")
 			{
 				execution.POST("/task/:id", c.Executor.ExecuteTask)
@@ -130,7 +130,7 @@ func Setup(c *Controllers) *gin.Engine {
 				execution.GET("/results", c.Executor.GetLastResults)
 			}
 
-			// Environment variable routes
+			// 环境变量模块
 			env := authorized.Group("/env")
 			{
 				env.POST("", c.Env.CreateEnvVar)
@@ -141,7 +141,7 @@ func Setup(c *Controllers) *gin.Engine {
 				env.DELETE("/:id", c.Env.DeleteEnvVar)
 			}
 
-			// Script routes
+			// 脚本模块
 			scripts := authorized.Group("/scripts")
 			{
 				scripts.POST("", c.Script.CreateScript)
@@ -151,7 +151,7 @@ func Setup(c *Controllers) *gin.Engine {
 				scripts.DELETE("/:id", c.Script.DeleteScript)
 			}
 
-			// File routes
+			// 文件管理模块
 			files := authorized.Group("/files")
 			{
 				files.GET("/tree", c.File.GetFileTree)
@@ -166,7 +166,7 @@ func Setup(c *Controllers) *gin.Engine {
 				files.POST("/uploadfiles", c.File.UploadFiles)
 			}
 
-			// Log routes
+			// 日志查看模块
 			logs := authorized.Group("/logs")
 			{
 				logs.GET("", c.Log.GetLogs)
@@ -174,11 +174,11 @@ func Setup(c *Controllers) *gin.Engine {
 				logs.GET("/:id", c.Log.GetLogDetail)
 			}
 
-			// Terminal routes
+			// 终端模块
 			authorized.GET("/terminal/ws", c.Terminal.HandleWebSocket)
 			authorized.POST("/terminal/exec", c.Terminal.ExecuteShellCommand)
 
-			// Settings routes
+			// 设置中心模块
 			settings := authorized.Group("/settings")
 			{
 				settings.POST("/password", c.Settings.ChangePassword)
@@ -241,7 +241,7 @@ func Setup(c *Controllers) *gin.Engine {
 		agentAPI.GET("/ws", c.Agent.WSConnect)      // WebSocket 连接
 	}
 
-	// SPA fallback - serve index.html (no cache for HTML)
+	// SPA 兜底路由 - 返回 index.html（HTML禁用缓存以保证实时同步）
 	// 必须在最后注册，作为兜底路由
 	router.NoRoute(func(ctx *gin.Context) {
 		// 如果配置了前缀，只处理带前缀的路径

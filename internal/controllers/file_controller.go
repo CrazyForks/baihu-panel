@@ -37,8 +37,8 @@ type FileNode struct {
 	Children []*FileNode `json:"children,omitempty"`
 }
 
-// checkPath verify if the path is inside the workDir and safe to use.
-// It returns the full absolute path and a boolean indicating if it's safe.
+// checkPath 校验路径是否在工作目录内且安全。
+// 它返回完整的绝对路径以及一个表示路径是否安全的布尔值。
 func (fc *FileController) checkPath(path string, allowRoot bool) (string, bool) {
 	fullPath := filepath.Join(fc.workDir, filepath.Clean(path))
 	rel, err := filepath.Rel(fc.workDir, fullPath)
@@ -46,12 +46,12 @@ func (fc *FileController) checkPath(path string, allowRoot bool) (string, bool) 
 		return "", false
 	}
 
-	// Basic traversal check
+	// 基础的目录穿越检查
 	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 		return "", false
 	}
 
-	// Root directory check
+	// 根目录检查
 	if !allowRoot && rel == "." {
 		return "", false
 	}
@@ -313,7 +313,7 @@ func (fc *FileController) RenameFile(c *gin.Context) {
 	utils.Success(c, nil)
 }
 
-// UploadArchive handles archive file upload and extraction
+// UploadArchive 处理归档文件的上传和解压
 func (fc *FileController) UploadArchive(c *gin.Context) {
 	targetDir := c.PostForm("path")
 
@@ -365,7 +365,7 @@ func (fc *FileController) UploadArchive(c *gin.Context) {
 	utils.SuccessMsg(c, "导入成功")
 }
 
-// UploadFiles handles multiple file uploads
+// UploadFiles 处理多个文件的上传
 func (fc *FileController) UploadFiles(c *gin.Context) {
 	targetDir := c.PostForm("path")
 
