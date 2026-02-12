@@ -41,8 +41,6 @@ FROM --platform=$BUILDPLATFORM golang:1.25 AS backend-builder
 ARG TARGETOS
 ARG TARGETARCH
 
-# Install UPX
-RUN apt-get update && apt-get install -y upx-ucl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -64,16 +62,13 @@ RUN VERSION_VAL=$(cat /build-info/version.txt) && \
     BUILD_TIME_VAL=$(cat /build-info/build_time.txt) && \
     CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -ldflags="-s -w -X github.com/engigu/baihu-panel/internal/constant.Version=${VERSION_VAL} -X 'github.com/engigu/baihu-panel/internal/constant.BuildTime=${BUILD_TIME_VAL}'" \
-    -o baihu . && \
-    upx --best --lzma baihu
+    -o baihu .
 
 # ================================
 # Stage 3: Build Agent (all platforms)
 # ================================
 FROM --platform=$BUILDPLATFORM golang:1.25 AS agent-builder
 
-# Install UPX
-RUN apt-get update && apt-get install -y upx-ucl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -100,7 +95,6 @@ RUN VERSION_VAL=$(cat /build-info/version.txt) && \
     build_agent() { \
         local os=$1; local arch=$2; local suffix=$3; \
         CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build -ldflags="${LDFLAGS}" -o baihu-agent$suffix . && \
-        upx --best --lzma baihu-agent$suffix && \
         tar -czvf /opt/agent/baihu-agent-$os-$arch.tar.gz baihu-agent$suffix config.example.ini && \
         rm baihu-agent$suffix; \
     } && \
