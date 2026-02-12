@@ -20,10 +20,6 @@ jobs:
           - linux/arm64
         include:
           - base_type: debian
-            platform: linux/arm/v7
-            base_tag: base
-            tag_suffix: ""
-          - base_type: debian
             platform: linux/amd64
             base_tag: base
             tag_suffix: ""

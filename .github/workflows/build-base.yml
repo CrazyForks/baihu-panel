@@ -23,10 +23,6 @@ jobs:
           - linux/arm64
         include:
           - base_type: debian
-            platform: linux/arm/v7
-            dockerfile: docker/Dockerfile.base
-            tag_suffix: ""
-          - base_type: debian
             platform: linux/amd64
             dockerfile: docker/Dockerfile.base
             tag_suffix: ""
