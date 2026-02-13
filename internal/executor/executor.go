@@ -76,6 +76,32 @@ func Execute(ctx context.Context, req Request, stdout, stderr io.Writer) (*Resul
 func ExecuteWithHooks(ctx context.Context, req Request, stdout, stderr io.Writer, hooks Hooks) (*Result, error) {
 	start := time.Now()
 
+	// 演示模式拦截
+	if constant.DemoMode {
+		logger.Warnf("[Executor] 演示模式下已拦截命令执行: %s", req.Command)
+		if stdout != nil {
+			stdout.Write([]byte("\r\n\033[1;33m[演示模式] 命令执行已跳过\033[0m\r\n"))
+		}
+
+		// 仍然触发 PreExecute 以便流程完整
+		var logID uint
+		if hooks != nil {
+			logID, _ = hooks.PreExecute(ctx, req)
+		}
+
+		result := &Result{
+			Status:    constant.TaskStatusFailed,
+			Output:    "[演示模式] 该任务在演示模式下被禁用执行",
+			StartTime: start,
+			EndTime:   time.Now(),
+		}
+
+		if hooks != nil {
+			hooks.PostExecute(ctx, logID, result)
+		}
+		return result, nil
+	}
+
 	// 2. 执行命令
 	timeout := req.Timeout
 	if timeout <= 0 {

@@ -314,6 +314,35 @@ func (s *Scheduler) executeTask(req *ExecutionRequest) (*ExecutionResult, error)
 
 	s.logger.Infof("[Scheduler] 执行任务 %s (名称: %s, 类型: %s)", req.TaskID, req.Name, req.Type)
 
+	// 演示模式拦截
+	if constant.DemoMode {
+		s.logger.Infof("[Scheduler] 演示模式下已跳过任务 %s (%s) 的执行", req.TaskID, req.Name)
+		// 仍然触发 OnTaskExecuting 以便创建初始日志记录（业务层面的 Handler 会处理）
+		var stdout io.Writer
+		if s.handler != nil {
+			stdout, _, _ = s.handler.OnTaskExecuting(req)
+		}
+
+		result := &ExecutionResult{
+			TaskID:    req.TaskID,
+			LogID:     req.LogID,
+			Success:   false,
+			Status:    constant.TaskStatusFailed,
+			Error:     "[演示模式] 该任务在演示模式下被禁用执行",
+			StartTime: start,
+			EndTime:   time.Now(),
+		}
+
+		if stdout != nil {
+			stdout.Write([]byte("\r\n\033[1;33m[演示模式] 定时任务/手动任务执行已跳过\033[0m\r\n"))
+		}
+
+		if s.handler != nil {
+			s.handler.OnTaskCompleted(req, result)
+		}
+		return result, nil
+	}
+
 	// 如果指定使用 mise，则预先构建好带 mise 的命令，这样 OnTaskExecuting 记录的就是完整命令
 	if req.UseMise {
 		req.Command = utils.BuildMiseCommand(req.Command, req.Languages)
