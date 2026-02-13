@@ -271,8 +271,7 @@ export interface Task {
   work_dir: string
   clean_config: string
   envs: string
-  language: string
-  lang_version: string
+  languages: { name: string; version: string }[]
   agent_id: number | null
   enabled: boolean
   last_run: string

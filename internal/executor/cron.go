@@ -78,8 +78,7 @@ func (m *CronManager) AddTask(task CronTask) error {
 	timeout := task.GetTimeout()
 	workDir := task.GetWorkDir()
 	envs := task.GetEnvs()
-	language := task.GetLanguage()
-	langVersion := task.GetLangVersion()
+	languages := task.GetLanguages()
 	useMise := task.UseMise()
 
 	entryID, err := m.cron.AddFunc(task.GetSchedule(), func() {
@@ -91,16 +90,15 @@ func (m *CronManager) AddTask(task CronTask) error {
 		m.logger.Infof("[CronManager] 触发计划任务 #%s (%s)", taskID, name)
 
 		req := &ExecutionRequest{
-			TaskID:      taskID,
-			Name:        name,
-			Command:     cmd,
-			Type:        TaskTypeCron,
-			Timeout:     timeout,
-			WorkDir:     workDir,
-			Envs:        ParseEnvVars(envs),
-			Language:    language,
-			LangVersion: langVersion,
-			UseMise:     useMise,
+			TaskID:    taskID,
+			Name:      name,
+			Command:   cmd,
+			Type:      TaskTypeCron,
+			Timeout:   timeout,
+			WorkDir:   workDir,
+			Envs:      ParseEnvVars(envs),
+			Languages: languages,
+			UseMise:   useMise,
 		}
 
 		// 如果有关联的 Scheduler，加入队列执行

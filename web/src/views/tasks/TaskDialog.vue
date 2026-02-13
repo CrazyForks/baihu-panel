@@ -89,13 +89,11 @@ const onlineAgents = computed(() => {
 // 语言环境相关
 const installedLangs = ref<MiseLanguage[]>([])
 const loadingLangs = ref(false)
+const selectedLangs = ref<{ name: string; version: string; availableVersions: string[] }[]>([])
+
 const availablePlugins = ref<string[]>([])
 const pluginSearch = ref('')
-const openPluginPopover = ref(false)
-
-const availableVersions = ref<string[]>([])
 const versionSearch = ref('')
-const openVersionPopover = ref(false)
 
 const filteredPlugins = computed(() => {
   if (!pluginSearch.value) return availablePlugins.value
@@ -103,11 +101,11 @@ const filteredPlugins = computed(() => {
   return availablePlugins.value.filter(p => p.toLowerCase().includes(s))
 })
 
-const filteredVersions = computed(() => {
-  if (!versionSearch.value) return availableVersions.value
+function getFilteredVersions(versions: string[]) {
+  if (!versionSearch.value) return versions
   const s = versionSearch.value.toLowerCase()
-  return availableVersions.value.filter(v => v.toLowerCase().includes(s))
-})
+  return versions.filter(v => v.toLowerCase().includes(s))
+}
 
 async function fetchInstalledLangs() {
   loadingLangs.value = true
@@ -163,22 +161,32 @@ function getLangIcon(plugin: string) {
   return ''
 }
 
-watch(() => form.value.language, (newVal) => {
-  if (newVal) {
-    availableVersions.value = installedLangs.value
-      .filter(l => l.plugin === newVal)
+function updateAvailableVersions(lang: { name: string; version: string; availableVersions: string[] }) {
+  if (lang.name) {
+    lang.availableVersions = installedLangs.value
+      .filter(l => l.plugin === lang.name)
       .map(l => l.version)
       .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))
-
-    // 如果当前选中的版本不在可用列表中，且列表不为空，则自动选中第一个（通常是最新版）
-    if (form.value.lang_version && !availableVersions.value.includes(form.value.lang_version)) {
-      // 保持原样，可能还没加载完
-    }
   } else {
-    availableVersions.value = []
-    form.value.lang_version = ''
+    lang.availableVersions = []
   }
-})
+}
+
+function addLang() {
+  selectedLangs.value.push({ name: '', version: '', availableVersions: [] })
+}
+
+function removeLang(index: number) {
+  selectedLangs.value.splice(index, 1)
+}
+
+function updateLangName(index: number, name: string) {
+  const lang = selectedLangs.value[index]
+  if (!lang) return
+  lang.name = name
+  lang.version = '' // reset version
+  updateAvailableVersions(lang)
+}
 
 watch(() => props.open, async (val) => {
   if (val) {
@@ -233,6 +241,16 @@ watch(() => props.open, async (val) => {
     } else {
       selectedEnvIds.value = []
     }
+    // 解析语言环境
+    selectedLangs.value = []
+    if (props.task?.languages && Array.isArray(props.task.languages)) {
+      selectedLangs.value = props.task.languages.map((l: any) => ({
+        name: l.name || '',
+        version: l.version || '',
+        availableVersions: []
+      }))
+    }
+
     // 解析 Agent 和工作目录
     const agentId = props.task?.agent_id ? String(props.task.agent_id) : 'local'
     selectedAgentId.value = agentId
@@ -245,13 +263,10 @@ watch(() => props.open, async (val) => {
     await loadData()
     if (selectedAgentId.value === 'local') {
       await fetchInstalledLangs()
-      // 如果已选择语言（编辑模式），手动触发一次版本更新
-      if (form.value.language) {
-        availableVersions.value = installedLangs.value
-          .filter(l => l.plugin === form.value.language)
-          .map(l => l.version)
-          .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))
-      }
+      // 更新所有语言的可用版本
+      selectedLangs.value.forEach(lang => {
+        updateAvailableVersions(lang)
+      })
     }
   }
 })
@@ -284,6 +299,12 @@ async function save() {
     form.value.envs = selectedEnvIds.value.join(',')
     form.value.type = 'task'
     form.value.agent_id = selectedAgentId.value === 'local' ? null : Number(selectedAgentId.value)
+
+    // 保存语言环境配置
+    form.value.languages = selectedLangs.value.map(l => ({
+      name: l.name,
+      version: l.version
+    }))
 
     // 保存配置 - 确保 concurrency 字段被正确保存
     let config: Record<string, any> = {}
@@ -365,93 +386,104 @@ async function save() {
               </div>
             </div>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-3">
-            <Label class="sm:text-right text-sm font-medium">语言环境</Label>
-            <div class="sm:col-span-3 flex gap-2">
-              <Popover v-model:open="openPluginPopover">
-                <PopoverTrigger asChild>
-                  <Button variant="outline" role="combobox" :aria-expanded="openPluginPopover"
-                    class="justify-between flex-1 h-8 text-sm font-normal">
-                    <div class="flex items-center gap-2 truncate">
-                      <div v-if="form.language && getLangIcon(form.language)"
-                        class="w-4 h-4 shrink-0 rounded-sm bg-white p-0.5 border">
-                        <img :src="getLangIcon(form.language)" class="w-full h-full object-contain" />
-                      </div>
-                      <span>{{ form.language || "选择环境..." }}</span>
-                    </div>
-                    <ChevronsUpDown class="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent class="p-0 w-[240px]" align="start">
-                  <div class="p-2 border-b">
-                    <div class="relative">
-                      <Search class="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                      <Input v-model="pluginSearch" placeholder="搜索已安装语言..." class="h-7 pl-8 text-xs" />
-                    </div>
-                  </div>
-                  <ScrollArea class="h-48">
-                    <div class="p-1">
-                      <div v-if="loadingLangs" class="flex items-center justify-center py-4">
-                        <Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
-                      </div>
-                      <div v-else-if="filteredPlugins.length === 0"
-                        class="py-4 text-center text-xs text-muted-foreground">
-                        未找到已安装语言
-                      </div>
-                      <button v-else v-for="p in filteredPlugins" :key="p"
-                        @click="() => { form.language = p; openPluginPopover = false }"
-                        class="w-full flex items-center px-2 py-1.5 text-xs rounded-sm hover:bg-muted text-left transition-colors group">
-                        <div class="mr-2 h-4 w-4 shrink-0 flex items-center justify-center relative">
-                          <div v-if="getLangIcon(p)"
-                            class="w-full h-full rounded-sm bg-white overflow-hidden p-0.5 border">
-                            <img :src="getLangIcon(p)" class="w-full h-full object-contain" />
-                          </div>
-                          <div v-else
-                            class="w-full h-full flex items-center justify-center bg-primary/10 rounded-sm text-[8px] font-bold uppercase border">
-                            {{ p.substring(0, 2) }}
-                          </div>
-                          <Check v-if="form.language === p"
-                            class="absolute -right-2 -top-1 h-3 w-3 text-primary bg-background rounded-full border shadow-sm" />
+          <div class="grid grid-cols-1 sm:grid-cols-4 items-start gap-2 sm:gap-3">
+            <Label class="sm:text-right text-sm font-medium pt-2">语言环境</Label>
+            <div class="sm:col-span-3 space-y-2">
+              <div v-for="(clang, idx) in selectedLangs" :key="idx" class="flex gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" role="combobox" class="justify-between flex-1 h-8 text-sm font-normal">
+                      <div class="flex items-center gap-2 truncate">
+                        <div v-if="clang.name && getLangIcon(clang.name)"
+                          class="w-4 h-4 shrink-0 rounded-sm bg-white p-0.5 border">
+                          <img :src="getLangIcon(clang.name)" class="w-full h-full object-contain" />
                         </div>
-                        <span :class="{ 'font-bold text-primary': form.language === p }">{{ p }}</span>
-                      </button>
-                    </div>
-                  </ScrollArea>
-                </PopoverContent>
-              </Popover>
-
-              <Popover v-model:open="openVersionPopover">
-                <PopoverTrigger asChild :disabled="!form.language">
-                  <Button variant="outline" role="combobox" :aria-expanded="openVersionPopover"
-                    class="justify-between w-32 h-8 text-sm font-normal" :disabled="!form.language">
-                    <span class="truncate">{{ form.lang_version || "选择版本..." }}</span>
-                    <div class="flex items-center">
-                      <ChevronsUpDown class="h-3.5 w-3.5 shrink-0 opacity-50" />
-                    </div>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent class="p-0 w-[140px]" align="start">
-                  <div class="p-2 border-b">
-                    <div class="relative">
-                      <Search class="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                      <Input v-model="versionSearch" placeholder="搜索版本..." class="h-7 pl-8 text-xs" />
-                    </div>
-                  </div>
-                  <ScrollArea class="h-48">
-                    <div class="p-1">
-                      <div v-if="filteredVersions.length === 0" class="py-4 text-center text-xs text-muted-foreground">
-                        无可用版本
+                        <span>{{ clang.name || "选择环境..." }}</span>
                       </div>
-                      <button v-else v-for="v in filteredVersions" :key="v"
-                        @click="() => { form.lang_version = v; openVersionPopover = false }"
-                        class="w-full flex items-center px-2 py-1.5 text-xs rounded-sm hover:bg-muted text-left transition-colors">
-                        <Check :class="cn('mr-2 h-3 w-3', form.lang_version === v ? 'opacity-100' : 'opacity-0')" />
-                        <span class="truncate">{{ v }}</span>
-                      </button>
+                      <ChevronsUpDown class="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent class="p-0 w-[240px]" align="start">
+                    <div class="p-2 border-b">
+                      <div class="relative">
+                        <Search class="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                        <Input v-model="pluginSearch" placeholder="搜索已安装语言..." class="h-7 pl-8 text-xs" />
+                      </div>
                     </div>
-                  </ScrollArea>
-                </PopoverContent>
-              </Popover>
+                    <ScrollArea class="h-48">
+                      <div class="p-1">
+                        <div v-if="loadingLangs" class="flex items-center justify-center py-4">
+                          <Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
+                        </div>
+                        <div v-else-if="filteredPlugins.length === 0"
+                          class="py-4 text-center text-xs text-muted-foreground">
+                          未找到已安装语言
+                        </div>
+                        <button v-else v-for="p in filteredPlugins" :key="p" @click="updateLangName(idx, p)"
+                          class="w-full flex items-center px-2 py-1.5 text-xs rounded-sm hover:bg-muted text-left transition-colors group">
+                          <div class="mr-2 h-4 w-4 shrink-0 flex items-center justify-center relative">
+                            <div v-if="getLangIcon(p)"
+                              class="w-full h-full rounded-sm bg-white overflow-hidden p-0.5 border">
+                              <img :src="getLangIcon(p)" class="w-full h-full object-contain" />
+                            </div>
+                            <div v-else
+                              class="w-full h-full flex items-center justify-center bg-primary/10 rounded-sm text-[8px] font-bold uppercase border">
+                              {{ p.substring(0, 2) }}
+                            </div>
+                            <Check v-if="clang.name === p"
+                              class="absolute -right-2 -top-1 h-3 w-3 text-primary bg-background rounded-full border shadow-sm" />
+                          </div>
+                          <span :class="{ 'font-bold text-primary': clang.name === p }">{{ p }}</span>
+                        </button>
+                      </div>
+                    </ScrollArea>
+                  </PopoverContent>
+                </Popover>
+
+                <Popover>
+                  <PopoverTrigger asChild :disabled="!clang.name">
+                    <Button variant="outline" role="combobox" class="justify-between w-32 h-8 text-sm font-normal"
+                      :disabled="!clang.name">
+                      <span class="truncate">{{ clang.version || "选择版本..." }}</span>
+                      <div class="flex items-center">
+                        <ChevronsUpDown class="h-3.5 w-3.5 shrink-0 opacity-50" />
+                      </div>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent class="p-0 w-[140px]" align="start">
+                    <div class="p-2 border-b">
+                      <div class="relative">
+                        <Search class="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                        <Input v-model="versionSearch" placeholder="搜索版本..." class="h-7 pl-8 text-xs" />
+                      </div>
+                    </div>
+                    <ScrollArea class="h-48">
+                      <div class="p-1">
+                        <div v-if="getFilteredVersions(clang.availableVersions).length === 0"
+                          class="py-4 text-center text-xs text-muted-foreground">
+                          无可用版本
+                        </div>
+                        <button v-else v-for="v in getFilteredVersions(clang.availableVersions)" :key="v"
+                          @click="clang.version = v"
+                          class="w-full flex items-center px-2 py-1.5 text-xs rounded-sm hover:bg-muted text-left transition-colors">
+                          <Check :class="cn('mr-2 h-3 w-3', clang.version === v ? 'opacity-100' : 'opacity-0')" />
+                          <span class="truncate">{{ v }}</span>
+                        </button>
+                      </div>
+                    </ScrollArea>
+                  </PopoverContent>
+                </Popover>
+
+                <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  @click="removeLang(idx)">
+                  <X class="h-4 w-4" />
+                </Button>
+              </div>
+
+              <Button variant="outline" size="sm" class="w-full h-8 text-xs border-dashed text-muted-foreground"
+                @click="addLang">
+                <Plus class="h-3.5 w-3.5 mr-1" /> 添加语言环境
+              </Button>
             </div>
           </div>
         </template>

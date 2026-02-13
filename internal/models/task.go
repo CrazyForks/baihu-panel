@@ -34,26 +34,25 @@ type TaskConfig struct {
 
 // Task 代表一个计划任务
 type Task struct {
-	ID          uint           `json:"id" gorm:"primaryKey"`
-	Name        string         `json:"name" gorm:"size:255;not null"`
-	Command     string         `json:"command" gorm:"type:text"`                // 普通任务的命令
-	Type        string         `json:"type" gorm:"size:20;default:'task'"`      // 任务类型: constant.TaskTypeNormal, constant.TaskTypeRepo
-	Config      string         `json:"config" gorm:"type:text"`                 // 配置 JSON（仓库同步配置等）
-	Schedule    string         `json:"schedule" gorm:"size:100"`                // cron 表达式
-	Timeout     int            `json:"timeout" gorm:"default:30"`               // 超时时间（分钟），默认30分钟
-	WorkDir     string         `json:"work_dir" gorm:"size:255;default:''"`     // 工作目录，为空则使用 scripts 目录
-	CleanConfig string         `json:"clean_config" gorm:"size:255;default:''"` // 清理配置 JSON
-	Envs        string         `json:"envs" gorm:"size:255;default:''"`         // 环境变量ID列表，逗号分隔
-	Language    string         `json:"language" gorm:"size:50;default:''"`      // 针对本地任务的语言名称 (mise)
-	LangVersion string         `json:"lang_version" gorm:"size:50;default:''"`  // 针对本地任务的语言版本 (mise)
-	AgentID     *uint          `json:"agent_id" gorm:"index"`                   // Agent ID，为空表示本地执行
-	Enabled     bool           `json:"enabled" gorm:"default:true"`
-	RunningGo   string         `json:"running_go" gorm:"type:text"` // 正在运行的 go routine id 数组 (JSON)
-	LastRun     *LocalTime     `json:"last_run"`
-	NextRun     *LocalTime     `json:"next_run"`
-	CreatedAt   LocalTime      `json:"created_at"`
-	UpdatedAt   LocalTime      `json:"updated_at"`
-	DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
+	ID          uint                `json:"id" gorm:"primaryKey"`
+	Name        string              `json:"name" gorm:"size:255;not null"`
+	Command     string              `json:"command" gorm:"type:text"`                   // 普通任务的命令
+	Type        string              `json:"type" gorm:"size:20;default:'task'"`         // 任务类型: constant.TaskTypeNormal, constant.TaskTypeRepo
+	Config      string              `json:"config" gorm:"type:text"`                    // 配置 JSON（仓库同步配置等）
+	Schedule    string              `json:"schedule" gorm:"size:100"`                   // cron 表达式
+	Timeout     int                 `json:"timeout" gorm:"default:30"`                  // 超时时间（分钟），默认30分钟
+	WorkDir     string              `json:"work_dir" gorm:"size:255;default:''"`        // 工作目录，为空则使用 scripts 目录
+	CleanConfig string              `json:"clean_config" gorm:"size:255;default:''"`    // 清理配置 JSON
+	Envs        string              `json:"envs" gorm:"size:255;default:''"`            // 环境变量ID列表，逗号分隔
+	Languages   []map[string]string `json:"languages" gorm:"serializer:json;type:text"` // 针对本地任务的语言配置列表
+	AgentID     *uint               `json:"agent_id" gorm:"index"`                      // Agent ID，为空表示本地执行
+	Enabled     bool                `json:"enabled" gorm:"default:true"`
+	RunningGo   string              `json:"running_go" gorm:"type:text"` // 正在运行的 go routine id 数组 (JSON)
+	LastRun     *LocalTime          `json:"last_run"`
+	NextRun     *LocalTime          `json:"next_run"`
+	CreatedAt   LocalTime           `json:"created_at"`
+	UpdatedAt   LocalTime           `json:"updated_at"`
+	DeletedAt   gorm.DeletedAt      `json:"-" gorm:"index"`
 }
 
 func (Task) TableName() string {
@@ -84,12 +83,8 @@ func (t *Task) GetEnvs() string {
 	return t.Envs
 }
 
-func (t *Task) GetLanguage() string {
-	return t.Language
-}
-
-func (t *Task) GetLangVersion() string {
-	return t.LangVersion
+func (t *Task) GetLanguages() []map[string]string {
+	return t.Languages
 }
 
 func (t *Task) GetUseMise() bool {

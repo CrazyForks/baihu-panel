@@ -52,18 +52,17 @@ func resolveWorkDir(workDir string) string {
 
 func (tc *TaskController) CreateTask(c *gin.Context) {
 	var req struct {
-		Name        string `json:"name" binding:"required"`
-		Command     string `json:"command"`
-		Type        string `json:"type"`
-		Config      string `json:"config"`
-		Schedule    string `json:"schedule" binding:"required"`
-		Timeout     int    `json:"timeout"`
-		WorkDir     string `json:"work_dir"`
-		CleanConfig string `json:"clean_config"`
-		Envs        string `json:"envs"`
-		Language    string `json:"language"`
-		LangVersion string `json:"lang_version"`
-		AgentID     *uint  `json:"agent_id"`
+		Name        string              `json:"name" binding:"required"`
+		Command     string              `json:"command"`
+		Type        string              `json:"type"`
+		Config      string              `json:"config"`
+		Schedule    string              `json:"schedule" binding:"required"`
+		Timeout     int                 `json:"timeout"`
+		WorkDir     string              `json:"work_dir"`
+		CleanConfig string              `json:"clean_config"`
+		Envs        string              `json:"envs"`
+		Languages   []map[string]string `json:"languages"`
+		AgentID     *uint               `json:"agent_id"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -88,7 +87,7 @@ func (tc *TaskController) CreateTask(c *gin.Context) {
 		workDir = resolveWorkDir(req.WorkDir)
 	}
 
-	task := tc.taskService.CreateTask(req.Name, req.Command, req.Schedule, req.Timeout, workDir, req.CleanConfig, req.Envs, req.Type, req.Config, req.AgentID, req.Language, req.LangVersion)
+	task := tc.taskService.CreateTask(req.Name, req.Command, req.Schedule, req.Timeout, workDir, req.CleanConfig, req.Envs, req.Type, req.Config, req.AgentID, req.Languages)
 
 	// 如果是 Agent 任务，通知 Agent；否则添加到本地 cron
 	if task.AgentID != nil && *task.AgentID > 0 {
@@ -148,19 +147,18 @@ func (tc *TaskController) UpdateTask(c *gin.Context) {
 	}
 
 	var req struct {
-		Name        string `json:"name"`
-		Command     string `json:"command"`
-		Type        string `json:"type"`
-		Config      string `json:"config"`
-		Schedule    string `json:"schedule"`
-		Timeout     int    `json:"timeout"`
-		WorkDir     string `json:"work_dir"`
-		CleanConfig string `json:"clean_config"`
-		Envs        string `json:"envs"`
-		Enabled     bool   `json:"enabled"`
-		Language    string `json:"language"`
-		LangVersion string `json:"lang_version"`
-		AgentID     *uint  `json:"agent_id"`
+		Name        string              `json:"name"`
+		Command     string              `json:"command"`
+		Type        string              `json:"type"`
+		Config      string              `json:"config"`
+		Schedule    string              `json:"schedule"`
+		Timeout     int                 `json:"timeout"`
+		WorkDir     string              `json:"work_dir"`
+		CleanConfig string              `json:"clean_config"`
+		Envs        string              `json:"envs"`
+		Enabled     bool                `json:"enabled"`
+		Languages   []map[string]string `json:"languages"`
+		AgentID     *uint               `json:"agent_id"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -181,7 +179,7 @@ func (tc *TaskController) UpdateTask(c *gin.Context) {
 		workDir = resolveWorkDir(req.WorkDir)
 	}
 
-	task := tc.taskService.UpdateTask(id, req.Name, req.Command, req.Schedule, req.Timeout, workDir, req.CleanConfig, req.Envs, req.Enabled, req.Type, req.Config, req.AgentID, req.Language, req.LangVersion)
+	task := tc.taskService.UpdateTask(id, req.Name, req.Command, req.Schedule, req.Timeout, workDir, req.CleanConfig, req.Envs, req.Enabled, req.Type, req.Config, req.AgentID, req.Languages)
 	if task == nil {
 		utils.NotFound(c, "任务不存在")
 		return

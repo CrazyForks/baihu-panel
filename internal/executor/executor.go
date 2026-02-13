@@ -23,8 +23,7 @@ type Task interface {
 	GetTimeout() int
 	GetWorkDir() string
 	GetEnvs() string
-	GetLanguage() string
-	GetLangVersion() string
+	GetLanguages() []map[string]string
 	GetUseMise() bool
 }
 
@@ -37,13 +36,12 @@ type CronTask interface {
 
 // Request 任务执行请求
 type Request struct {
-	Command     string
-	WorkDir     string
-	Envs        []string
-	Timeout     int // 任务超时时间（分钟）
-	Language    string
-	LangVersion string
-	UseMise     bool
+	Command   string
+	WorkDir   string
+	Envs      []string
+	Timeout   int // 任务超时时间（分钟）
+	Languages []map[string]string
+	UseMise   bool
 }
 
 // Result 任务执行结果
@@ -104,7 +102,7 @@ func ExecuteWithHooks(ctx context.Context, req Request, stdout, stderr io.Writer
 
 	finalCommand := req.Command
 	if req.UseMise {
-		finalCommand = BuildLanguageCommand(req.Command, req.Language, req.LangVersion)
+		finalCommand = BuildLanguageCommand(req.Command, req.Languages)
 	}
 	shell, args := utils.GetShellCommand(finalCommand)
 	cmd := exec.CommandContext(execCtx, shell, args...)
@@ -283,15 +281,28 @@ func ExecuteWithHooks(ctx context.Context, req Request, stdout, stderr io.Writer
 }
 
 // BuildLanguageCommand 构建语言环境执行命令 (使用 mise)
-func BuildLanguageCommand(command, language, version string) string {
-	if language == "" {
+func BuildLanguageCommand(command string, languages []map[string]string) string {
+	if len(languages) == 0 {
 		return command
 	}
-	v := version
-	if v == "" {
-		v = "latest"
+
+	var builder strings.Builder
+	builder.WriteString("mise exec")
+
+	for _, lang := range languages {
+		name := lang["name"]
+		version := lang["version"]
+		if name == "" {
+			continue
+		}
+		if version == "" {
+			version = "latest"
+		}
+		builder.WriteString(" " + name + "@" + version)
 	}
-	return "mise exec " + language + "@" + v + " -- " + command
+
+	builder.WriteString(" -- " + command)
+	return builder.String()
 }
 
 // ParseEnvVars 解析环境变量字符串 "KEY1=VALUE1,KEY2=VALUE2"

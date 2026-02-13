@@ -7,24 +7,23 @@ import (
 
 // TaskVO 任务视图对象
 type TaskVO struct {
-	ID          uint              `json:"id"`
-	Name        string            `json:"name"`
-	Command     string            `json:"command"`
-	Type        string            `json:"type"`
-	Config      string            `json:"config"`
-	Schedule    string            `json:"schedule"`
-	Timeout     int               `json:"timeout"`
-	WorkDir     string            `json:"work_dir"`
-	CleanConfig string            `json:"clean_config"`
-	Envs        string            `json:"envs"`
-	Language    string            `json:"language"`
-	LangVersion string            `json:"lang_version"`
-	AgentID     *uint             `json:"agent_id"`
-	Enabled     bool              `json:"enabled"`
-	LastRun     *models.LocalTime `json:"last_run"`
-	NextRun     *models.LocalTime `json:"next_run"`
-	CreatedAt   models.LocalTime  `json:"created_at"`
-	UpdatedAt   models.LocalTime  `json:"updated_at"`
+	ID          uint                `json:"id"`
+	Name        string              `json:"name"`
+	Command     string              `json:"command"`
+	Type        string              `json:"type"`
+	Config      string              `json:"config"`
+	Schedule    string              `json:"schedule"`
+	Timeout     int                 `json:"timeout"`
+	WorkDir     string              `json:"work_dir"`
+	CleanConfig string              `json:"clean_config"`
+	Envs        string              `json:"envs"`
+	Languages   []map[string]string `json:"languages"`
+	AgentID     *uint               `json:"agent_id"`
+	Enabled     bool                `json:"enabled"`
+	LastRun     *models.LocalTime   `json:"last_run"`
+	NextRun     *models.LocalTime   `json:"next_run"`
+	CreatedAt   models.LocalTime    `json:"created_at"`
+	UpdatedAt   models.LocalTime    `json:"updated_at"`
 }
 
 // ToTaskVO 将 Task 模型转换为 TaskVO
@@ -43,8 +42,7 @@ func ToTaskVO(task *models.Task) *TaskVO {
 		WorkDir:     task.WorkDir,
 		CleanConfig: task.CleanConfig,
 		Envs:        task.Envs,
-		Language:    task.Language,
-		LangVersion: task.LangVersion,
+		Languages:   task.Languages,
 		AgentID:     task.AgentID,
 		Enabled:     task.Enabled,
 		LastRun:     task.LastRun,

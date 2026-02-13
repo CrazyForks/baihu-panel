@@ -352,13 +352,12 @@ func (es *ExecutorService) ExecuteDispatcher(ctx context.Context, req *executor.
 	// 本地任务
 	hooks := &LocalTaskHooks{es: es, logID: req.LogID}
 	return executor.ExecuteWithHooks(ctx, executor.Request{
-		Command:     req.Command,
-		WorkDir:     req.WorkDir,
-		Envs:        req.Envs,
-		Timeout:     req.Timeout,
-		Language:    task.Language,
-		LangVersion: task.LangVersion,
-		UseMise:     true, // 本地业务任务启用 mise
+		Command:   req.Command,
+		WorkDir:   req.WorkDir,
+		Envs:      req.Envs,
+		Timeout:   req.Timeout,
+		Languages: task.Languages,
+		UseMise:   true, // 本地业务任务启用 mise
 	}, stdout, stderr, hooks)
 }
 
@@ -470,13 +469,15 @@ func (es *ExecutorService) ExecuteTask(taskID int, extraEnvs []string) *executor
 	}
 
 	req := &executor.ExecutionRequest{
-		TaskID:  fmt.Sprintf("%d", task.ID),
-		Name:    task.Name,
-		Command: task.Command,
-		WorkDir: task.WorkDir,
-		Envs:    envs,
-		Timeout: task.Timeout,
-		Type:    executor.TaskTypeManual,
+		TaskID:    fmt.Sprintf("%d", task.ID),
+		Name:      task.Name,
+		Command:   task.Command,
+		WorkDir:   task.WorkDir,
+		Envs:      envs,
+		Timeout:   task.Timeout,
+		Languages: task.Languages,
+		UseMise:   task.UseMise(),
+		Type:      executor.TaskTypeManual,
 	}
 
 	es.scheduler.EnqueueOrExecute(req)
