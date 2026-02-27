@@ -111,6 +111,8 @@ func (lc *LogController) ClearLogs(c *gin.Context) {
 	query := database.DB.Model(&models.TaskLog{})
 	if req.TaskID != nil && *req.TaskID > 0 {
 		query = query.Where("task_id = ?", *req.TaskID)
+	} else {
+		query = query.Where("1 = 1") // Allow delete all without GORM safety block
 	}
 
 	if err := query.Delete(&models.TaskLog{}).Error; err != nil {
