@@ -10,6 +10,45 @@ env:
   IMAGE_NAME: baihu
 
 jobs:
+  build-binaries:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build Web
+        run: make build-web
+
+      - name: Build Binaries
+        run: |
+          VERSION=${{ github.ref_name }}
+          BUILD_TIME=$(TZ='Asia/Shanghai' date '+%Y/%m/%d %H:%M:%S')
+          LDFLAGS="-s -w -X 'github.com/engigu/baihu-panel/internal/constant.Version=$VERSION' -X 'github.com/engigu/baihu-panel/internal/constant.BuildTime=$BUILD_TIME'"
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="$LDFLAGS" -o baihu-linux-amd64 main.go
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="$LDFLAGS" -o baihu-linux-arm64 main.go
+
+      - name: Build Agent Binaries
+        run: make build-agent
+
+      - name: Upload Binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: baihu-binaries
+          path: |
+            baihu-linux-amd64
+            baihu-linux-arm64
+            data/agent/baihu-agent-*
+
   build:
     runs-on: ubuntu-latest
     strategy:
@@ -115,7 +154,7 @@ jobs:
 
   merge:
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build, build-binaries]
     strategy:
       matrix:
         base_type: [debian, debian13]
@@ -172,6 +211,13 @@ jobs:
         run: |
           docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
 
+      - name: Download Binaries
+        if: matrix.base_type == 'debian'
+        uses: actions/download-artifact@v4
+        with:
+          name: baihu-binaries
+          path: .
+
       - name: Create GitHub Release
         if: matrix.base_type == 'debian'
         uses: softprops/action-gh-release@v2
@@ -179,3 +225,7 @@ jobs:
           tag_name: ${{ github.ref_name }}
           body_path: CHANGELOG.md
           append_body: true  # 追加模式：保留已有说明，在后面添加 CHANGELOG.md
+          files: |
+            baihu-linux-amd64
+            baihu-linux-arm64
+            data/agent/baihu-agent-*
