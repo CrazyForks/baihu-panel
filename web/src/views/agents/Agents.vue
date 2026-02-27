@@ -225,10 +225,11 @@ onUnmounted(() => {
       </TabsList>
 
       <TabsContent value="agents" class="mt-4">
-        <div class="rounded-lg border bg-card overflow-x-auto hide-scrollbar">
-          <!-- 大屏表头 -->
-          <div
-            class="hidden sm:flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 border-b bg-muted/50 text-xs sm:text-sm text-muted-foreground font-medium">
+        <div class="rounded-lg border bg-card overflow-x-auto">
+          <div class="min-w-full w-max">
+            <!-- 大屏表头 -->
+            <div
+              class="hidden sm:flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 border-b bg-muted/50 text-xs sm:text-sm text-muted-foreground font-medium">
             <span class="w-10 sm:w-12 shrink-0">ID</span>
             <span class="w-6 shrink-0"></span>
             <span class="w-24 sm:w-32 shrink-0">名称</span>
@@ -237,7 +238,7 @@ onUnmounted(() => {
             <span class="w-20 sm:w-36 shrink-0 hidden lg:block">版本</span>
             <span class="w-40 shrink-0 hidden xl:block">心跳时间</span>
             <span class="w-40 shrink-0 hidden xl:block">创建时间</span>
-            <span class="flex-1 text-center">操作</span>
+            <span class="flex-1 min-w-[180px] text-center sm:text-right sm:pr-2">操作</span>
           </div>
           <div class="divide-y">
             <div v-if="filteredAgents.length === 0" class="text-center py-8 text-muted-foreground">
@@ -336,8 +337,8 @@ onUnmounted(() => {
                 '-' }}</span>
               <span class="w-40 shrink-0 text-xs sm:text-sm text-muted-foreground hidden xl:block">{{ agent.created_at
                 || '-' }}</span>
-              <span class="flex-1 flex justify-end gap-2 items-center">
-                <span class="cursor-pointer group" @click="toggleEnabled(agent)"
+              <span class="flex-1 min-w-[180px] flex justify-end gap-1 sm:gap-2 items-center">
+                <span class="cursor-pointer group shrink-0" @click="toggleEnabled(agent)"
                   :title="agent.enabled ? '点击禁用' : '点击启用'">
                   <div v-if="agent.enabled"
                     class="h-6 w-6 rounded-md bg-green-500/10 flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
@@ -348,32 +349,34 @@ onUnmounted(() => {
                     <ZapOffIcon class="h-3.5 w-3.5 text-muted-foreground" />
                   </div>
                 </span>
-                <Button variant="ghost" size="icon" class="h-7 w-7" @click="viewDetail(agent)" title="详情">
+                <Button variant="ghost" size="icon" class="h-7 w-7 shrink-0" @click="viewDetail(agent)" title="详情">
                   <Eye class="h-3.5 w-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" class="h-7 w-7" @click="viewTasks(agent)" title="查看任务">
+                <Button variant="ghost" size="icon" class="h-7 w-7 shrink-0" @click="viewTasks(agent)" title="查看任务">
                   <ListTodo class="h-3.5 w-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" class="h-7 w-7" @click="forceUpdate(agent)" title="强制更新">
+                <Button variant="ghost" size="icon" class="h-7 w-7 shrink-0" @click="forceUpdate(agent)" title="强制更新">
                   <RotateCw class="h-3.5 w-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" class="h-7 w-7" @click="openEditDialog(agent)" title="编辑">
+                <Button variant="ghost" size="icon" class="h-7 w-7 shrink-0" @click="openEditDialog(agent)" title="编辑">
                   <Edit class="h-3.5 w-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" class="h-7 w-7 text-destructive" @click="confirmDelete(agent)"
+                <Button variant="ghost" size="icon" class="h-7 w-7 text-destructive shrink-0" @click="confirmDelete(agent)"
                   title="删除">
                   <Trash2 class="h-3.5 w-3.5" />
                 </Button>
               </span>
             </div>
           </div>
+          </div>
         </div>
       </TabsContent>
 
       <TabsContent value="regcodes" class="mt-4">
         <div class="rounded-lg border bg-card overflow-x-auto hide-scrollbar">
-          <div
-            class="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 border-b bg-muted/50 text-xs sm:text-sm text-muted-foreground font-medium min-w-[500px]">
+          <div class="min-w-full w-max">
+            <div
+              class="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 border-b bg-muted/50 text-xs sm:text-sm text-muted-foreground font-medium">
             <span class="w-6 shrink-0"></span>
             <span class="flex-1 min-w-[200px]">令牌</span>
             <span class="w-24 sm:w-32 shrink-0">备注</span>
@@ -385,7 +388,7 @@ onUnmounted(() => {
               </Button>
             </span>
           </div>
-          <div class="divide-y min-w-[500px]">
+          <div class="divide-y">
             <div v-if="tokens.length === 0" class="text-center py-8 text-muted-foreground">
               <Ticket class="h-8 w-8 mx-auto mb-2 opacity-50" />暂无令牌
             </div>
@@ -420,6 +423,7 @@ onUnmounted(() => {
                 </Button>
               </span>
             </div>
+          </div>
           </div>
         </div>
       </TabsContent>
