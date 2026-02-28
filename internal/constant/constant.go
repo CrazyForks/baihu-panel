@@ -38,8 +38,9 @@ const (
 	KeyTitle      = "title"
 	KeySubtitle   = "subtitle"
 	KeyIcon       = "icon"
-	KeyPageSize   = "page_size"
-	KeyCookieDays = "cookie_days"
+	KeyPageSize       = "page_size"
+	KeyCookieDays     = "cookie_days"
+	KeyApiToken       = "api_token"
 
 	// System Settings Key 常量
 	KeyInitialized = "initialized"

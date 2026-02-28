@@ -125,6 +125,7 @@ export const api = {
     getPublicSite: () => request<{ title: string; subtitle: string; icon: string; demo_mode: boolean }>('/settings/public'),
     updateSite: (data: SiteSettings) =>
       request('/settings/site', { method: 'PUT', body: JSON.stringify(data) }),
+    generateApiToken: () => request<{ token: string }>('/settings/site/api-token/generate', { method: 'POST' }),
     getScheduler: () => request<SchedulerSettings>('/settings/scheduler'),
     updateScheduler: (data: SchedulerSettings) =>
       request('/settings/scheduler', { method: 'PUT', body: JSON.stringify(data) }),
@@ -401,6 +402,8 @@ export interface SiteSettings {
   icon: string
   page_size: string
   cookie_days: string
+  api_token?: string
+  api_token_expire?: string
 }
 
 export interface SchedulerSettings {

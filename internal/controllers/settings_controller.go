@@ -5,8 +5,10 @@ import (
 	"runtime"
 	"strconv"
 
+	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/engigu/baihu-panel/internal/constant"
@@ -82,6 +84,16 @@ func (sc *SettingsController) ChangePassword(c *gin.Context) {
 // GetSiteSettings 获取站点设置
 func (sc *SettingsController) GetSiteSettings(c *gin.Context) {
 	settings := sc.settingsService.GetSection(constant.SectionSite)
+	
+	// 解析 JSON 格式的 API Token
+	if tokenJson, ok := settings[constant.KeyApiToken]; ok && tokenJson != "" {
+		var tokenData map[string]string
+		if err := json.Unmarshal([]byte(tokenJson), &tokenData); err == nil {
+			settings["api_token"] = tokenData["token"]
+			settings["api_token_expire"] = tokenData["expire_at"]
+		}
+	}
+	
 	utils.Success(c, settings)
 }
 
@@ -100,16 +112,29 @@ func (sc *SettingsController) GetPublicSiteSettings(c *gin.Context) {
 // UpdateSiteSettings 更新站点设置
 func (sc *SettingsController) UpdateSiteSettings(c *gin.Context) {
 	var req struct {
-		Title      string `json:"title"`
-		Subtitle   string `json:"subtitle"`
-		Icon       string `json:"icon"`
-		PageSize   string `json:"page_size"`
-		CookieDays string `json:"cookie_days"`
+		Title          string `json:"title"`
+		Subtitle       string `json:"subtitle"`
+		Icon           string `json:"icon"`
+		PageSize       string `json:"page_size"`
+		CookieDays     string `json:"cookie_days"`
+		ApiToken       string `json:"api_token"`
+		ApiTokenExpire string `json:"api_token_expire"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.BadRequest(c, "参数错误")
 		return
+	}
+
+	apiTokenJson := ""
+	if req.ApiToken != "" || req.ApiTokenExpire != "" {
+		tokenData := map[string]string{
+			"token":     req.ApiToken,
+			"expire_at": req.ApiTokenExpire,
+		}
+		if b, err := json.Marshal(tokenData); err == nil {
+			apiTokenJson = string(b)
+		}
 	}
 
 	values := map[string]string{
@@ -118,6 +143,7 @@ func (sc *SettingsController) UpdateSiteSettings(c *gin.Context) {
 		constant.KeyIcon:       req.Icon,
 		constant.KeyPageSize:   req.PageSize,
 		constant.KeyCookieDays: req.CookieDays,
+		constant.KeyApiToken:   apiTokenJson,
 	}
 
 	if err := sc.settingsService.SetSection(constant.SectionSite, values); err != nil {
@@ -126,6 +152,13 @@ func (sc *SettingsController) UpdateSiteSettings(c *gin.Context) {
 	}
 
 	utils.SuccessMsg(c, "保存成功")
+}
+
+// GenerateApiToken 随机生成API Token
+func (sc *SettingsController) GenerateApiToken(c *gin.Context) {
+	utils.Success(c, gin.H{
+		"token": strings.ToLower(utils.RandomString(32)),
+	})
 }
 
 // GetSchedulerSettings 获取调度设置
