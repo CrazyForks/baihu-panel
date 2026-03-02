@@ -4,7 +4,7 @@ tmp_dir = "bin"
 
 [build]
   args_bin = []
-  bin = "./bin/baihu"
+  entrypoint = "./bin/baihu"
   cmd = ":"
   full_bin = "go run main.go server"
   delay = 1000

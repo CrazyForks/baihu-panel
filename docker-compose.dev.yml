@@ -1,0 +1,31 @@
+services:
+  baihu-dev:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+    container_name: baihu-dev
+    ports:
+      - "8052:8052"
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - baihu-envs:/app/envs
+      - baihu-node-modules:/app/web/node_modules
+      - go-mod-cache:/go/pkg/mod
+      - npm-cache:/root/.npm
+    environment:
+      - TZ=Asia/Shanghai
+      - DEV_UID=${UID:-1000}
+      - DEV_GID=${GID:-1000}
+    stdin_open: true
+    tty: true
+
+volumes:
+  baihu-envs:
+    name: baihu_dev_envs
+  baihu-node-modules:
+    name: baihu_dev_node_modules
+  go-mod-cache:
+    name: baihu_dev_go_cache
+  npm-cache:
+    name: baihu_dev_npm_cache

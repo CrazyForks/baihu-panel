@@ -8,6 +8,9 @@ VERSION=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 BUILD_TIME=$(shell date '+%Y/%m/%d %H:%M:%S')
 LDFLAGS=-ldflags="-s -w -X 'github.com/engigu/baihu-panel/internal/constant.Version=$(VERSION)' -X 'github.com/engigu/baihu-panel/internal/constant.BuildTime=$(BUILD_TIME)'"
 
+HOST_UID := $(shell id -u 2>/dev/null || echo 1000)
+HOST_GID := $(shell id -g 2>/dev/null || echo 1000)
+
 # Default target
 all: build
 
@@ -68,6 +71,10 @@ clean:
 	mkdir -p web/dist
 	touch web/dist/.gitkeep
 
+# Clean everything: local artifacts and Docker development environment (including volumes)
+clean-all: clean docker-dev-clean
+	@echo "All local artifacts and Docker dev caches have been completely wiped."
+
 # Run the application
 run:
 	@mkdir -p bin
@@ -77,6 +84,7 @@ run:
 # Development run with hot reload (both frontend and backend)
 dev:
 	@command -v concurrently > /dev/null 2>&1 || npm install -g concurrently
+	@mkdir -p envs web/node_modules
 	concurrently --kill-others \
 		"go tool air" \
 		"cd web && npm ci && npm run dev"
@@ -105,30 +113,48 @@ docker-run:
 
 # Docker compose up
 docker-up:
-	docker-compose up -d
+	docker compose up -d
 
 # Docker compose down
 docker-down:
-	docker-compose down
+	docker compose down
 
-# Build and run in development mode (foreground with logs)
+# Start isolated Docker dev environment (foreground with logs, Ctrl+C to stop)
 docker-dev:
-	docker-compose down
-	docker-compose build
-	docker-compose up
+	@command -v concurrently > /dev/null 2>&1 || npm install -g concurrently
+	@mkdir -p envs web/node_modules
+	UID=$(HOST_UID) GID=$(HOST_GID) docker compose -f docker-compose.dev.yml up --build
+
+# Start isolated Docker dev environment (background)
+docker-dev-d:
+	UID=$(HOST_UID) GID=$(HOST_GID) docker compose -f docker-compose.dev.yml up -d --build
+
+# Stop Docker dev environment (preserves cached volumes for fast restart)
+docker-dev-down:
+	docker compose -f docker-compose.dev.yml down
+
+# Stop and completely clean Docker dev environment (removes all cached volumes)
+# Use this if your environment is broken or you want a fresh start
+docker-dev-clean:
+	docker compose -f docker-compose.dev.yml down -v
 
 # Help
 help:
 	@echo "Available targets:"
-	@echo "  all            - Build the application (default)"
-	@echo "  build          - Build the application"
-	@echo "  build-agent    - Build agent packages (tar.gz) for all platforms"
-	@echo "  clean          - Clean built files"
-	@echo "  run            - Run the application"
-	@echo "  deps           - Install dependencies"
-	@echo "  docker-build   - Build Docker image"
-	@echo "  docker-run     - Run Docker container"
-	@echo "  docker-up      - Start Docker Compose stack"
-	@echo "  docker-down    - Stop Docker Compose stack"
-	@echo "  docker-dev     - Build and run Docker Compose in foreground"
-	@echo "  help           - Show this help message"
+	@echo "  all              - Build the application (default)"
+	@echo "  build            - Build the application"
+	@echo "  build-agent      - Build agent packages (tar.gz) for all platforms"
+	@echo "  clean            - Clean built files"
+	@echo "  clean-all        - Clean local files and Docker dev environment (including volumes)"
+	@echo "  run              - Run the application locally"
+	@echo "  dev              - Run local development with hot reload"
+	@echo "  deps             - Install Go dependencies"
+	@echo "  docker-build     - Build production Docker image"
+	@echo "  docker-run       - Run production Docker container"
+	@echo "  docker-up        - Start production Docker Compose stack"
+	@echo "  docker-down      - Stop production Docker Compose stack"
+	@echo "  docker-dev       - Start isolated Docker dev environment (foreground)"
+	@echo "  docker-dev-d     - Start isolated Docker dev environment (background)"
+	@echo "  docker-dev-down  - Stop Docker dev environment (keep caches)"
+	@echo "  docker-dev-clean - Stop and clean Docker dev environment (remove caches)"
+	@echo "  help             - Show this help message"
