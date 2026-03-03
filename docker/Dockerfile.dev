@@ -34,7 +34,7 @@ ENV MISE_DATA_DIR=/app/envs/mise
 ENV MISE_CONFIG_DIR=/app/envs/mise
 ENV PATH="/app/envs/mise/shims:/app/envs/mise/bin:$PATH"
 
-RUN mkdir -p /go/pkg/mod /root/.npm /app/web/node_modules
+ENV NPM_CONFIG_CACHE=/var/cache/npm
 
 COPY docker/docker-entrypoint-dev.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint-dev.sh

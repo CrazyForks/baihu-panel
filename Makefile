@@ -8,8 +8,10 @@ VERSION=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 BUILD_TIME=$(shell date '+%Y/%m/%d %H:%M:%S')
 LDFLAGS=-ldflags="-s -w -X 'github.com/engigu/baihu-panel/internal/constant.Version=$(VERSION)' -X 'github.com/engigu/baihu-panel/internal/constant.BuildTime=$(BUILD_TIME)'"
 
-HOST_UID := $(shell id -u 2>/dev/null || echo 1000)
-HOST_GID := $(shell id -g 2>/dev/null || echo 1000)
+DEV_UID ?= $(shell id -u 2>/dev/null || echo 1000)
+DEV_GID ?= $(shell id -g 2>/dev/null || echo 1000)
+export DEV_UID
+export DEV_GID
 
 # Default target
 all: build
@@ -123,11 +125,11 @@ docker-down:
 docker-dev:
 	@command -v concurrently > /dev/null 2>&1 || npm install -g concurrently
 	@mkdir -p envs web/node_modules
-	UID=$(HOST_UID) GID=$(HOST_GID) docker compose -f docker-compose.dev.yml up --build
+	docker compose -f docker-compose.dev.yml up --build
 
 # Start isolated Docker dev environment (background)
 docker-dev-d:
-	UID=$(HOST_UID) GID=$(HOST_GID) docker compose -f docker-compose.dev.yml up -d --build
+	docker compose -f docker-compose.dev.yml up -d --build
 
 # Stop Docker dev environment (preserves cached volumes for fast restart)
 docker-dev-down:
