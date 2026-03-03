@@ -205,6 +205,29 @@ func performHardMigration(db *gorm.DB, mappings map[string]map[uint]string) erro
 		logger.Infof("[MigrationV3] Pass 1: 构建关键表 %s 的 ID 映射, 共 %d 条", actualName, len(mappings[t.EntityName]))
 	}
 
+	// 构建 fallback ID：FK 映射找不到时使用第一条记录的新 ID
+	fallbackIDs := make(map[string]string)
+	for _, t := range allTables {
+		// 优先从 mappings 中取第一个新 xid（本次迁移生成的）
+		if m, ok := mappings[t.EntityName]; ok && len(m) > 0 {
+			for _, newID := range m {
+				fallbackIDs[t.EntityName] = newID
+				break
+			}
+			continue
+		}
+		// 如果该表已经是 string ID（被跳过了），从实际表查第一条
+		actualName := getTableName(db, t.Model)
+		if actualName != "" && db.Migrator().HasTable(actualName) {
+			var row map[string]interface{}
+			if err := db.Table(actualName).Select("id").Order("id").Limit(1).Find(&row).Error; err == nil {
+				if id, ok := getValFromMap(row, "id"); ok && id != nil {
+					fallbackIDs[t.EntityName] = fmt.Sprintf("%v", id)
+				}
+			}
+		}
+	}
+
 	// ---------------------------------------------------------
 	// 第二、三阶段：正式转换数据并处理关联字段 (Pass 2 & 3)
 	// ---------------------------------------------------------
@@ -248,11 +271,25 @@ func performHardMigration(db *gorm.DB, mappings map[string]map[uint]string) erro
 			for field, parentEntity := range t.FKs {
 				columnName := getColumnName(field)
 				if val, ok := getValFromMap(row, columnName); ok && val != nil {
+					strVal := fmt.Sprintf("%v", val)
+					if strVal == "" || strVal == "0" || strVal == "<nil>" {
+						row[columnName] = nil
+						continue
+					}
+					// 如果值已经是非数字字符串（例如已迁移过的 xid），直接保留
+					if !utils.IsNumeric(strVal) {
+						continue
+					}
+					// 数字型外键，查映射表转换
 					ufk := parseUint(val)
 					if ufk > 0 {
 						if nid, exists := mappings[parentEntity][ufk]; exists {
 							row[columnName] = nid
+						} else if fbID, hasFB := fallbackIDs[parentEntity]; hasFB {
+							logger.Warnf("[MigrationV3] 表 %s 的 %s=%d 在 %s 映射中未找到，使用首条记录 ID: %s", getTableName(db, t.Model), columnName, ufk, parentEntity, fbID)
+							row[columnName] = fbID
 						} else {
+							logger.Warnf("[MigrationV3] 表 %s 的 %s=%d 在 %s 映射中未找到且无 fallback，置空", getTableName(db, t.Model), columnName, ufk, parentEntity)
 							row[columnName] = nil
 						}
 					} else {
