@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"strings"
+
 	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/services"
 	"github.com/engigu/baihu-panel/internal/utils"
@@ -20,14 +22,14 @@ func NotifyTokenAuth() gin.HandlerFunc {
 		// 从 settings 表读取配置的通知 Token
 		settingsService := services.NewSettingsService()
 		savedToken := settingsService.Get(constant.SectionNotify, constant.KeyNotifyToken)
-		
+
 		if savedToken == "" {
 			utils.Unauthorized(c, "通知 Token 未配置")
 			c.Abort()
 			return
 		}
 
-		if token != savedToken {
+		if strings.ToLower(token) != strings.ToLower(savedToken) {
 			utils.Unauthorized(c, "通知 Token 无效")
 			c.Abort()
 			return

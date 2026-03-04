@@ -11,7 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { api, type NotifyChannel, type ChannelType, type EventType, type NotifyBinding } from '@/api'
+import { api, type NotifyChannel, type ChannelType, type EventType, type NotifyBinding, type Task } from '@/api'
 import { toast } from 'vue-sonner'
 import ChannelList from './components/ChannelList.vue'
 import EventBinding from './components/EventBinding.vue'
@@ -172,13 +172,13 @@ async function saveChannel() {
     toast.error('请填写渠道名称和类型')
     return
   }
-  
+
   // 确保 enabled 字段有值
   const channelData = {
     ...editingChannel.value,
     enabled: editingChannel.value.enabled ?? true
   }
-  
+
   try {
     await api.notify.saveChannel(channelData)
     toast.success('保存成功')
@@ -321,52 +321,27 @@ onMounted(() => {
 
       <!-- 渠道管理 -->
       <TabsContent value="channels">
-        <ChannelList
-          :channels="channels"
-          :channel-types="channelTypes"
-          @add="openNewChannel"
-          @edit="openEditChannel"
-          @delete="confirmDelete"
-          @test="testChannel"
-        />
+        <ChannelList :channels="channels" :channel-types="channelTypes" @add="openNewChannel" @edit="openEditChannel"
+          @delete="confirmDelete" @test="testChannel" />
       </TabsContent>
 
       <!-- 事件绑定 -->
       <TabsContent value="events">
-        <EventBinding
-          :channels="channels"
-          :channel-types="channelTypes"
-          :event-types="eventTypes"
-          :bindings="bindings"
-          :tasks="allTasks"
-          @save="saveBindings"
-          @delete="deleteBinding"
-        />
+        <EventBinding :channels="channels" :channel-types="channelTypes" :event-types="eventTypes" :bindings="bindings"
+          :tasks="allTasks" @save="saveBindings" @delete="deleteBinding" />
       </TabsContent>
 
       <!-- 脚本调用 -->
       <TabsContent value="api">
-        <ApiUsage
-          :channels="channels"
-          :channel-types="channelTypes"
-          :api-token="apiToken"
-          @generate-token="generateApiToken"
-          @copy-token="copyApiToken"
-          @copy-example="copyApiExample"
-        />
+        <ApiUsage :channels="channels" :channel-types="channelTypes" :api-token="apiToken"
+          @generate-token="generateApiToken" @copy-token="copyApiToken" @copy-example="copyApiExample" />
       </TabsContent>
     </Tabs>
 
     <!-- 添加/编辑渠道弹窗 -->
-    <ChannelDialog
-      v-model:open="showDialog"
-      :is-editing="isEditing"
-      v-model:channel="editingChannel"
-      :channel-types="channelTypes"
-      :config-fields="channelConfigFields"
-      @type-change="onTypeChange"
-      @save="saveChannel"
-    />
+    <ChannelDialog v-model:open="showDialog" :is-editing="isEditing" v-model:channel="editingChannel"
+      :channel-types="channelTypes" :config-fields="channelConfigFields" @type-change="onTypeChange"
+      @save="saveChannel" />
 
     <!-- 删除确认 -->
     <AlertDialog :open="showDeleteConfirm" @update:open="showDeleteConfirm = $event">

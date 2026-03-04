@@ -2,8 +2,10 @@
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, Trash2, TestTube, Pencil, Bell, Calendar } from 'lucide-vue-next'
+import { Plus, Trash2, TestTube, Pencil, Bell, Calendar, Copy, Check } from 'lucide-vue-next'
 import type { NotifyChannel, ChannelType } from '@/api'
+import { ref } from 'vue'
+import { toast } from 'vue-sonner'
 
 defineProps<{
   channels: NotifyChannel[]
@@ -20,6 +22,18 @@ const emit = defineEmits<{
 function getChannelTypeName(type: string, channelTypes: ChannelType[]): string {
   const found = channelTypes.find(t => t.type === type)
   return found ? found.label : type
+}
+
+const copiedBlock = ref<string | null>(null)
+
+function copyToClipboard(text: string, blockId: string) {
+  navigator.clipboard.writeText(text).then(() => {
+    copiedBlock.value = blockId
+    toast.success('已复制长 ID')
+    setTimeout(() => {
+      copiedBlock.value = null
+    }, 2000)
+  })
 }
 </script>
 
@@ -78,6 +92,12 @@ function getChannelTypeName(type: string, channelTypes: ChannelType[]): string {
               <span>{{ ch.created_at.split(' ')[0] }}</span>
             </div>
             <div class="flex items-center gap-1">
+              <Button variant="ghost" size="icon"
+                class="h-8 w-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                @click="copyToClipboard(ch.id, 'channel-' + ch.id)" title="复制 ID">
+                <Check v-if="copiedBlock === 'channel-' + ch.id" class="w-4 h-4 text-emerald-500" />
+                <Copy v-else class="w-4 h-4" />
+              </Button>
               <Button variant="ghost" size="icon"
                 class="h-8 w-8 rounded-full hover:bg-primary/10 hover:text-primary transition-colors"
                 @click="emit('test', ch)" title="测试发送">
