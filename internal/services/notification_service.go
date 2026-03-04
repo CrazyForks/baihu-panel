@@ -16,11 +16,12 @@ import (
 
 // NotifyChannel 通知渠道配置
 type NotifyChannel struct {
-	ID      string            `json:"id"`
-	Name    string            `json:"name"`
-	Type    string            `json:"type"`
-	Enabled bool              `json:"enabled"`
-	Config  map[string]string `json:"config"`
+	ID        string            `json:"id"`
+	Name      string            `json:"name"`
+	Type      string            `json:"type"`
+	Enabled   bool              `json:"enabled"`
+	CreatedAt models.LocalTime  `json:"created_at"`
+	Config    map[string]string `json:"config"`
 }
 
 // NotifyMessage 通知消息
@@ -312,11 +313,12 @@ func (s *NotificationService) getChannelsInternal() []NotifyChannel {
 			continue
 		}
 		channels = append(channels, NotifyChannel{
-			ID:      nw.ID,
-			Name:    nw.Name,
-			Type:    nw.Type,
-			Enabled: nw.Enabled,
-			Config:  config,
+			ID:        nw.ID,
+			Name:      nw.Name,
+			Type:      nw.Type,
+			Enabled:   nw.Enabled,
+			CreatedAt: nw.CreatedAt,
+			Config:    config,
 		})
 	}
 	return channels

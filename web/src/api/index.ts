@@ -532,6 +532,7 @@ export interface NotifyChannel {
   name: string
   type: string
   enabled: boolean
+  created_at?: string
   config: Record<string, string>
 }
 
