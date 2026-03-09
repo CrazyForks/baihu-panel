@@ -589,6 +589,7 @@ export interface AppLog {
   level: string
   status: string
   ref_id: string
+  channel_name?: string
   error_msg: string
   created_at: string
   read_at: string | null

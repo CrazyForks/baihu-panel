@@ -226,8 +226,10 @@ function onDialogClose(open: boolean) {
           class="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 hover:bg-muted/50 transition-colors cursor-pointer group"
           :class="[selectedLogId === log.id && 'bg-accent/50']" @click="showDetail(log)">
           <span class="w-12 sm:w-16 shrink-0 text-muted-foreground text-xs sm:text-sm">#{{ getLogIndex(index) }}</span>
-          <span class="w-40 sm:w-56 shrink-0 font-medium text-xs sm:text-sm truncate" :title="log.title">{{ log.title
-            }}</span>
+          <span class="w-40 sm:w-56 shrink-0 font-medium text-xs sm:text-sm truncate" :title="log.title">
+            <span v-if="log.channel_name" class="mr-1 text-muted-foreground">[{{ log.channel_name }}]</span>{{ log.title
+            }}
+          </span>
           <span class="hidden sm:flex sm:flex-1 text-xs sm:text-sm text-muted-foreground truncate" :title="log.content">
             {{ log.content || '-' }}
           </span>
@@ -270,6 +272,10 @@ function onDialogClose(open: boolean) {
               <span class="text-muted-foreground">标题</span>
               <span class="font-medium text-foreground">{{ detailDialogProps.title }}</span>
             </div>
+            <div v-if="selectedLog?.channel_name" class="flex justify-between items-center text-sm">
+              <span class="text-muted-foreground">发送渠道</span>
+              <span class="font-medium text-foreground">{{ selectedLog.channel_name }}</span>
+            </div>
             <div class="flex justify-between items-center text-sm">
               <span class="text-muted-foreground">发生时间</span>
               <span class="font-mono text-xs text-muted-foreground">{{ selectedLog ? formatDate(selectedLog.created_at)
@@ -284,9 +290,11 @@ function onDialogClose(open: boolean) {
               推送内容
             </div>
             <div class="p-6">
-              <pre v-if="detailDialogProps.content"
-                class="text-xs font-mono bg-muted/30 p-4 rounded-lg border border-muted/50 whitespace-pre-wrap break-all leading-relaxed shadow-inner">{{ detailDialogProps.content }}</pre>
-              <div v-else class="text-xs text-muted-foreground italic py-2">无推送内容</div>
+              <div v-if="detailDialogProps.content"
+                class="text-sm text-foreground bg-muted/20 p-5 rounded-xl border border-border/50 whitespace-pre-wrap break-all leading-relaxed shadow-sm">
+                {{ detailDialogProps.content }}
+              </div>
+              <div v-else class="text-sm text-muted-foreground italic py-2">无推送内容</div>
             </div>
 
             <template v-if="detailDialogProps.error">
@@ -295,8 +303,11 @@ function onDialogClose(open: boolean) {
                 错误信息
               </div>
               <div class="p-6">
-                <pre
-                  class="text-xs font-mono bg-red-500/5 text-red-600/90 p-4 rounded-lg border border-red-500/20 whitespace-pre-wrap break-all leading-relaxed shadow-inner">{{ detailDialogProps.error }}</pre>
+                <div v-if="detailDialogProps.error"
+                  class="text-sm text-red-700 bg-red-500/10 p-5 rounded-xl border border-red-200/50 whitespace-pre-wrap break-all leading-relaxed shadow-sm">
+                  {{ detailDialogProps.error }}
+                </div>
+                <div v-else class="text-sm text-muted-foreground italic py-2">无错误信息</div>
               </div>
             </template>
           </div>

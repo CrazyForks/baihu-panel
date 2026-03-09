@@ -289,9 +289,11 @@ function onDialogClose(open: boolean) {
                             内容详情
                         </div>
                         <div class="p-6">
-                            <pre v-if="detailDialogProps.content"
-                                class="text-xs font-mono bg-muted/30 p-4 rounded-lg border border-muted/50 whitespace-pre-wrap break-all leading-relaxed shadow-inner">{{ detailDialogProps.content }}</pre>
-                            <div v-else class="text-xs text-muted-foreground italic py-2">无内容</div>
+                            <div v-if="detailDialogProps.content"
+                                class="text-sm text-foreground bg-muted/20 p-5 rounded-xl border border-border/50 whitespace-pre-wrap break-all leading-relaxed shadow-sm">
+                                {{ detailDialogProps.content }}
+                            </div>
+                            <div v-else class="text-sm text-muted-foreground italic py-2">无内容</div>
                         </div>
 
                         <template v-if="detailDialogProps.error">
@@ -300,8 +302,11 @@ function onDialogClose(open: boolean) {
                                 错误信息
                             </div>
                             <div class="p-6">
-                                <pre
-                                    class="text-xs font-mono bg-red-500/5 text-red-600/90 p-4 rounded-lg border border-red-500/20 whitespace-pre-wrap break-all leading-relaxed shadow-inner">{{ detailDialogProps.error }}</pre>
+                                <div v-if="detailDialogProps.error"
+                                    class="text-sm text-red-700 bg-red-500/10 p-5 rounded-xl border border-red-200/50 whitespace-pre-wrap break-all leading-relaxed shadow-sm">
+                                    {{ detailDialogProps.error }}
+                                </div>
+                                <div v-else class="text-sm text-muted-foreground italic py-2">无错误信息</div>
                             </div>
                         </template>
                     </div>

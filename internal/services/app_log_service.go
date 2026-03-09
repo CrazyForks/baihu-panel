@@ -38,24 +38,53 @@ func (s *AppLogService) Add(log *models.AppLog) error {
 func (s *AppLogService) List(category string, status string, level string, page, pageSize int, keyword string) ([]models.AppLog, int64, error) {
 	var logs []models.AppLog
 	var total int64
-	query := database.DB.Model(&models.AppLog{})
+	db := database.DB
+
+	// 如果是推送日志，尝试关联查询渠道名称
+	if category == constant.LogCategoryPushLog {
+		db = db.Table(models.AppLog{}.TableName() + " AS al").
+			Select("al.*, nw.name as channel_name").
+			Joins(fmt.Sprintf("LEFT JOIN %s AS nw ON al.ref_id = nw.id", models.NotifyWay{}.TableName()))
+	} else {
+		db = db.Model(&models.AppLog{})
+	}
 
 	if category != "" {
-		query = query.Where("category = ?", category)
+		if category == constant.LogCategoryPushLog {
+			db = db.Where("al.category = ?", category)
+		} else {
+			db = db.Where("category = ?", category)
+		}
 	}
 	if status != "" {
-		query = query.Where("status = ?", status)
+		field := "status"
+		if category == constant.LogCategoryPushLog {
+			field = "al.status"
+		}
+		db = db.Where(field+" = ?", status)
 	}
 	if level != "" {
-		query = query.Where("level = ?", level)
+		field := "level"
+		if category == constant.LogCategoryPushLog {
+			field = "al.level"
+		}
+		db = db.Where(field+" = ?", level)
 	}
 	if keyword != "" {
-		query = query.Where("(title LIKE ? OR content LIKE ?)", "%"+keyword+"%", "%"+keyword+"%")
+		if category == constant.LogCategoryPushLog {
+			db = db.Where("(al.title LIKE ? OR al.content LIKE ?)", "%"+keyword+"%", "%"+keyword+"%")
+		} else {
+			db = db.Where("(title LIKE ? OR content LIKE ?)", "%"+keyword+"%", "%"+keyword+"%")
+		}
 	}
 
-	query.Count(&total)
+	db.Count(&total)
 	offset := (page - 1) * pageSize
-	err := query.Order("created_at desc").Offset(offset).Limit(pageSize).Find(&logs).Error
+	order := "created_at desc"
+	if category == constant.LogCategoryPushLog {
+		order = "al.created_at desc"
+	}
+	err := db.Order(order).Offset(offset).Limit(pageSize).Scan(&logs).Error
 	return logs, total, err
 }
 
@@ -171,7 +200,7 @@ func (s *AppLogService) SubscribeEvents(bus *eventbus.EventBus) {
 		content, _ := payload["content"].(string)
 		success, _ := payload["success"].(bool)
 		errorMsg, _ := payload["error_msg"].(string)
-		channelName, _ := payload["channel_name"].(string)
+		channelID, _ := payload["channel_id"].(string)
 
 		status := constant.LogStatusSuccess
 		level := constant.LogLevelInfo
@@ -182,10 +211,11 @@ func (s *AppLogService) SubscribeEvents(bus *eventbus.EventBus) {
 
 		s.Add(&models.AppLog{
 			Category: constant.LogCategoryPushLog,
-			Title:    fmt.Sprintf("[%s] %s", channelName, title),
+			Title:    title,
 			Content:  models.BigText(content),
 			Level:    level,
 			Status:   status,
+			RefID:    channelID,
 			ErrorMsg: models.BigText(errorMsg),
 		})
 	})

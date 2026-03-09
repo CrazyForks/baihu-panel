@@ -203,15 +203,16 @@ func (s *NotificationService) SendToChannel(channel NotifyChannel, msg *NotifyMe
 		Title: msg.Title,
 		Text:  msg.Text,
 	})
-	
+
 	payload := map[string]interface{}{
 		"title":        msg.Title,
 		"content":      msg.Text,
+		"channel_id":   channel.ID,
 		"channel_name": channel.Name,
 		"success":      false,
 		"error_msg":    "",
 	}
-	
+
 	if err != nil {
 		payload["error_msg"] = err.Error()
 		eventbus.DefaultBus.Publish(eventbus.Event{
