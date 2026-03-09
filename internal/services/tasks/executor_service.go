@@ -13,6 +13,7 @@ import (
 
 	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/database"
+	"github.com/engigu/baihu-panel/internal/eventbus"
 	"github.com/engigu/baihu-panel/internal/executor"
 	"github.com/engigu/baihu-panel/internal/logger"
 	"github.com/engigu/baihu-panel/internal/models"
@@ -39,19 +40,12 @@ type EnvService interface {
 	GetAllEnvVars() []string
 }
 
-// Notifier 通知服务接口定义（避免循环依赖）
-type Notifier interface {
-	TriggerEvent(bindingType string, eventType string, dataID string, templateData map[string]interface{})
-}
-
-// ExecutorService handles task execution and scheduling
 type ExecutorService struct {
 	taskService     *TaskService
 	taskLogService  *TaskLogService
 	agentWSManager  AgentWSManager
 	settingsService SettingsService
 	envService      EnvService
-	notifier        Notifier
 	scheduler       *executor.Scheduler
 	cronManager     *executor.CronManager
 	results         []executor.ExecutionResult
@@ -64,14 +58,12 @@ func (es *ExecutorService) GetScheduler() *executor.Scheduler {
 	return es.scheduler
 }
 
-// NewExecutorService creates a new executor service
 func NewExecutorService(
 	taskService *TaskService,
 	taskLogService *TaskLogService,
 	agentWSManager AgentWSManager,
 	settingsService SettingsService,
 	envService EnvService,
-	notifier Notifier,
 ) *ExecutorService {
 	es := &ExecutorService{
 		taskService:     taskService,
@@ -79,7 +71,6 @@ func NewExecutorService(
 		agentWSManager:  agentWSManager,
 		settingsService: settingsService,
 		envService:      envService,
-		notifier:        notifier,
 		results:         make([]executor.ExecutionResult, 0, 100),
 		stopCh:          make(chan struct{}),
 	}
@@ -143,7 +134,8 @@ func (h *ServerSchedulerHandler) OnTaskExecuting(req *executor.ExecutionRequest)
 	if err != nil {
 		// 并发限制，更新日志状态为失败
 		taskLog.Status = constant.TaskStatusFailed
-		taskLog.Output, _ = utils.CompressToBase64("任务并发数限制，拒绝执行")
+		comp, _ := utils.CompressToBase64("任务并发数限制，拒绝执行")
+		taskLog.Output = models.BigText(comp)
 		h.es.taskLogService.SaveTaskLog(taskLog)
 		return nil, nil, fmt.Errorf("任务并发限制: %v", err)
 	}
@@ -225,9 +217,9 @@ func (h *ServerSchedulerHandler) OnTaskCompleted(req *executor.ExecutionRequest,
 	taskLog := &models.TaskLog{
 		ID:        req.LogID,
 		TaskID:    task.ID,
-		Command:   req.Command,
-		Output:    output,
-		Error:     result.Error,
+		Command:   models.BigText(req.Command),
+		Output:    models.BigText(output),
+		Error:     models.BigText(result.Error),
 		Status:    result.Status,
 		Duration:  result.Duration,
 		ExitCode:  result.ExitCode,
@@ -256,27 +248,29 @@ func (h *ServerSchedulerHandler) OnTaskCompleted(req *executor.ExecutionRequest,
 	h.es.HandleTaskRetry(task, req, result.Success, result.Status, result.ExitCode)
 
 	// ======= 通知触发 =======
-	if h.es.notifier != nil {
-		go func() {
-			var eventType string
-			switch result.Status {
-			case constant.TaskStatusSuccess:
-				eventType = constant.EventTaskSuccess
-			case constant.TaskStatusFailed:
-				eventType = constant.EventTaskFailed
-			case constant.TaskStatusTimeout:
-				eventType = constant.EventTaskTimeout
-			}
-			if eventType != "" {
-				h.es.notifier.TriggerEvent(constant.BindingTypeTask, eventType, task.ID, map[string]interface{}{
+	// ======= 通知触发 =======
+	go func() {
+		var eventType string
+		switch result.Status {
+		case constant.TaskStatusSuccess:
+			eventType = constant.EventTaskSuccess
+		case constant.TaskStatusFailed:
+			eventType = constant.EventTaskFailed
+		case constant.TaskStatusTimeout:
+			eventType = constant.EventTaskTimeout
+		}
+		if eventType != "" {
+			eventbus.DefaultBus.Publish(eventbus.Event{
+				Type: eventType,
+				Payload: map[string]interface{}{
 					"task_id":   task.ID,
 					"task_name": task.Name,
 					"status":    result.Status,
 					"duration":  result.Duration,
-				})
-			}
-		}()
-	}
+				},
+			})
+		}
+	}()
 }
 
 func (h *ServerSchedulerHandler) OnTaskFailed(req *executor.ExecutionRequest, err error) {
@@ -305,9 +299,9 @@ func (h *ServerSchedulerHandler) OnTaskFailed(req *executor.ExecutionRequest, er
 	taskLog := &models.TaskLog{
 		ID:        req.LogID,
 		TaskID:    taskID,
-		Command:   req.Command,
-		Output:    output,
-		Error:     err.Error(),
+		Command:   models.BigText(req.Command),
+		Output:    models.BigText(output),
+		Error:     models.BigText(err.Error()),
 		Status:    constant.TaskStatusFailed,
 		Duration:  0,
 		ExitCode:  1,
@@ -338,19 +332,21 @@ func (h *ServerSchedulerHandler) OnTaskFailed(req *executor.ExecutionRequest, er
 	h.es.HandleTaskRetry(task, req, false, constant.TaskStatusFailed, 1)
 
 	// ======= 通知触发 =======
-	if h.es.notifier != nil {
-		go func() {
-			taskName := "未知任务"
-			if task != nil {
-				taskName = task.Name
-			}
-			h.es.notifier.TriggerEvent(constant.BindingTypeTask, constant.EventTaskFailed, taskID, map[string]interface{}{
+	// ======= 通知触发 =======
+	go func() {
+		taskName := "未知任务"
+		if task != nil {
+			taskName = task.Name
+		}
+		eventbus.DefaultBus.Publish(eventbus.Event{
+			Type: constant.EventTaskFailed,
+			Payload: map[string]interface{}{
 				"task_id":   taskID,
 				"task_name": taskName,
 				"error":     err.Error(),
-			})
-		}()
-	}
+			},
+		})
+	}()
 }
 
 // HandleTaskRetry 处理任务失败重试逻辑
@@ -372,11 +368,11 @@ func (es *ExecutorService) HandleTaskRetry(task *models.Task, req *executor.Exec
 					return nil
 				}
 
-				newEnvs := es.loadEnvVars(latestTask.ID, latestTask.Envs)
+				newEnvs := es.loadEnvVars(latestTask.ID, string(latestTask.Envs))
 				return &executor.ExecutionRequest{
 					TaskID:    req.TaskID,
 					Name:      latestTask.Name,
-					Command:   latestTask.Command,
+					Command:   string(latestTask.Command),
 					WorkDir:   latestTask.WorkDir,
 					Envs:      newEnvs,
 					Timeout:   latestTask.Timeout,
@@ -501,7 +497,7 @@ func (es *ExecutorService) AddCronTask(task *models.Task) error {
 		return nil
 	}
 	// 在加入调度器前，预先加载好环境信息
-	task.RuntimeEnvs = es.loadEnvVars(task.ID, task.Envs)
+	task.RuntimeEnvs = es.loadEnvVars(task.ID, string(task.Envs))
 
 	return es.cronManager.AddTask(task)
 }
@@ -582,7 +578,7 @@ func (es *ExecutorService) ExecuteTask(taskID string, extraEnvs []string) *execu
 		}
 	}
 
-	envs := es.loadEnvVars(task.ID, task.Envs)
+	envs := es.loadEnvVars(task.ID, string(task.Envs))
 	if len(extraEnvs) > 0 {
 		envs = append(envs, extraEnvs...)
 	}
@@ -590,7 +586,7 @@ func (es *ExecutorService) ExecuteTask(taskID string, extraEnvs []string) *execu
 	req := &executor.ExecutionRequest{
 		TaskID:    task.ID,
 		Name:      task.Name,
-		Command:   task.Command,
+		Command:   string(task.Command),
 		WorkDir:   task.WorkDir,
 		Envs:      envs,
 		Timeout:   task.Timeout,
@@ -749,13 +745,13 @@ func (es *ExecutorService) CheckConcurrency(taskID string) error {
 		return err
 	}
 	var goids []int64
-	if task.RunningGo != "" {
-		_ = json.Unmarshal([]byte(task.RunningGo), &goids)
+	if string(task.RunningGo) != "" {
+		_ = json.Unmarshal([]byte(string(task.RunningGo)), &goids)
 	}
-
-	var config models.TaskConfig
-	if task.Config != "" {
-		_ = json.Unmarshal([]byte(task.Config), &config)
+ 
+ 	var config models.TaskConfig
+	if string(task.Config) != "" {
+		_ = json.Unmarshal([]byte(string(task.Config)), &config)
 	}
 
 	if config.Concurrency == 0 && len(goids) > 0 {
@@ -792,7 +788,7 @@ func (es *ExecutorService) AddRunningGo(taskID string) (int64, error) {
 
 			goids = append(goids, goid)
 			data, _ := json.Marshal(goids)
-			return tx.Model(&task).Update("running_go", string(data)).Error
+			return tx.Model(&task).Update("running_go", models.BigText(data)).Error
 		})
 		if lastErr == nil {
 			return goid, nil

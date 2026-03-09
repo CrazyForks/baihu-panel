@@ -287,6 +287,20 @@ export const api = {
     deleteBinding: (id: string) => request('/notify/bindings/' + id, { method: 'DELETE' }),
     send: (data: { channel_id: string; title: string; text: string }) =>
       request<NotifyResult>('/notify/send', { method: 'POST', body: JSON.stringify(data) })
+  },
+  appLogs: {
+    list: (params?: { page?: number; page_size?: number; category?: string; status?: string; level?: string; keyword?: string }) => {
+      const query = new URLSearchParams()
+      if (params?.page) query.set('page', String(params.page))
+      if (params?.page_size) query.set('page_size', String(params.page_size))
+      if (params?.category) query.set('category', params.category)
+      if (params?.status) query.set('status', params.status)
+      if (params?.level) query.set('level', params.level)
+      if (params?.keyword) query.set('keyword', params.keyword)
+      return request<AppLogListResponse>(`/app-logs?${query}`)
+    },
+    markAsRead: (data: { id?: string; category?: string }) => request('/app-logs/read', { method: 'POST', body: JSON.stringify(data) }),
+    clear: (category: string) => request('/app-logs/clear', { method: 'POST', body: JSON.stringify({ category }) })
   }
 }
 
@@ -560,5 +574,41 @@ export interface NotifyResult {
   success: boolean
   error?: string
 }
+
+export interface AppLog {
+  id: string
+  category: string
+  title: string
+  content: string
+  level: string
+  status: string
+  ref_id: string
+  error_msg: string
+  created_at: string
+  read_at: string | null
+}
+
+export interface AppLogListResponse {
+  data: AppLog[]
+  total: number
+}
+
+export const LOG_CATEGORY = {
+  SYSTEM_NOTICE: 'system_notice',
+  PUSH_LOG: 'push_log'
+} as const
+
+export const LOG_LEVEL = {
+  INFO: 'info',
+  WARNING: 'warning',
+  ERROR: 'error'
+} as const
+
+export const LOG_STATUS = {
+  UNREAD: 'unread',
+  READ: 'read',
+  SUCCESS: 'success',
+  FAILED: 'failed'
+} as const
 
 

@@ -10,9 +10,9 @@ import (
 	"os"
 	"strings"
 	"time"
-
 	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/database"
+	"github.com/engigu/baihu-panel/internal/eventbus"
 	"github.com/engigu/baihu-panel/internal/models"
 	"github.com/engigu/baihu-panel/internal/models/vo"
 	"github.com/engigu/baihu-panel/internal/services"
@@ -76,8 +76,11 @@ func (sc *SettingsController) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	go services.NewNotificationService().TriggerEvent(constant.BindingTypeSystem, constant.EventPasswordChanged, "", map[string]interface{}{
-		"username": user.Username,
+	eventbus.DefaultBus.Publish(eventbus.Event{
+		Type: constant.EventPasswordChanged,
+		Payload: map[string]interface{}{
+			"username": user.Username,
+		},
 	})
 
 	utils.SuccessMsg(c, "密码修改成功")

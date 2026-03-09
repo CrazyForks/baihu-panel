@@ -5,6 +5,7 @@ import { resetAuthCache } from '@/router'
 import { LayoutDashboard, ListTodo, FileCode, Settings, LogOut, ScrollText, Terminal, Variable, KeyRound, Menu, X, Server, Globe, Bell } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import ThemeToggle from '@/components/ThemeToggle.vue'
+import SystemNotice from '@/components/SystemNotice.vue'
 import { api } from '@/api'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 
@@ -150,7 +151,10 @@ onMounted(() => {
             <span class="sm:hidden">{{ sentenceContent }}</span>
           </span>
         </div>
-        <ThemeToggle />
+        <div class="flex items-center gap-2">
+          <SystemNotice />
+          <ThemeToggle />
+        </div>
       </div>
       <div class="p-4 lg:p-6">
         <RouterView />

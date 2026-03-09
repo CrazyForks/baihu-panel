@@ -20,7 +20,7 @@ func (es *EnvService) CreateEnvVar(name, value, remark string, hidden bool, user
 	env := &models.EnvironmentVariable{
 		ID:        utils.GenerateID(),
 		Name:      name,
-		Value:     value,
+		Value:     models.BigText(value),
 		Remark:    remark,
 		Hidden:    hidden,
 		UserID:    userID,
@@ -72,7 +72,7 @@ func (es *EnvService) UpdateEnvVar(id string, name, value, remark string, hidden
 	}
 	updates := map[string]interface{}{
 		"name":   name,
-		"value":  value,
+		"value":  models.BigText(value),
 		"remark": remark,
 		"hidden": hidden,
 	}
@@ -98,7 +98,7 @@ func (es *EnvService) DeleteEnvVar(id string, force bool) (bool, []models.Task) 
 		err := database.DB.Transaction(func(tx *gorm.DB) error {
 			// Update tasks to remove this env ID
 			for _, task := range associatedTasks {
-				ids := splitEnvIDs(task.Envs)
+				ids := splitEnvIDs(string(task.Envs))
 				var newIDs []string
 				for _, eid := range ids {
 					if eid != id {
@@ -166,12 +166,12 @@ func (es *EnvService) formatEnvVars(envs []models.EnvironmentVariable) []string 
 
 	for _, env := range envs {
 		if idx, ok := nameToIndex[env.Name]; ok {
-			mergedList[idx].values = append(mergedList[idx].values, env.Value)
+			mergedList[idx].values = append(mergedList[idx].values, string(env.Value))
 		} else {
 			nameToIndex[env.Name] = len(mergedList)
 			mergedList = append(mergedList, mergedEnv{
 				name:   env.Name,
-				values: []string{env.Value},
+				values: []string{string(env.Value)},
 			})
 		}
 	}

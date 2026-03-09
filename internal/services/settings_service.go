@@ -25,7 +25,7 @@ func (s *SettingsService) InitSettings() error {
 					ID:      utils.GenerateID(),
 					Section: section,
 					Key:     key,
-					Value:   value,
+					Value:   models.BigText(value),
 				}).Error; err != nil {
 					return err
 				}
@@ -47,7 +47,7 @@ func (s *SettingsService) InitSettings() error {
 			ID:      utils.GenerateID(),
 			Section: constant.SectionSecurity,
 			Key:     constant.KeySecret,
-			Value:   secretValue,
+			Value:   models.BigText(secretValue),
 		}).Error; err != nil {
 			return err
 		}
@@ -72,7 +72,7 @@ func (s *SettingsService) Get(section, key string) string {
 		}
 		return ""
 	}
-	return setting.Value
+	return string(setting.Value)
 }
 
 // Set 设置单个值
@@ -83,10 +83,10 @@ func (s *SettingsService) Set(section, key, value string) error {
 			ID:      utils.GenerateID(),
 			Section: section,
 			Key:     key,
-			Value:   value,
+			Value:   models.BigText(value),
 		}).Error
 	}
-	return database.DB.Model(&setting).Update("value", value).Error
+	return database.DB.Model(&setting).Update("value", models.BigText(value)).Error
 }
 
 // Delete 删除单个设置
@@ -108,7 +108,7 @@ func (s *SettingsService) GetSection(section string) map[string]string {
 	var settings []models.Setting
 	database.DB.Where("section = ?", section).Find(&settings)
 	for _, setting := range settings {
-		result[setting.Key] = setting.Value
+		result[setting.Key] = string(setting.Value)
 	}
 	return result
 }

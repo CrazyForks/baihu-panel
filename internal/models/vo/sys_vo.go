@@ -48,7 +48,7 @@ func ToEnvVO(env *models.EnvironmentVariable) *EnvVO {
 	return &EnvVO{
 		ID:        env.ID,
 		Name:      env.Name,
-		Value:     env.Value,
+		Value:     string(env.Value),
 		Remark:    env.Remark,
 		Hidden:    env.Hidden,
 		CreatedAt: env.CreatedAt,

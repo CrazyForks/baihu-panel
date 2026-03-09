@@ -33,6 +33,7 @@ type Controllers struct {
 	Agent        *controllers.AgentController
 	Mise         *controllers.MiseController
 	Notification *controllers.NotificationController
+	AppLog       *controllers.AppLogController
 }
 
 func mustSubFS(fsys fs.FS, dir string) fs.FS {
@@ -249,6 +250,7 @@ func initAuthorizedAPIRoutes(api *gin.RouterGroup, c *Controllers) {
 		registerAgentRoutes(authorized, c)
 		registerMiseRoutes(authorized, c)
 		registerNotificationRoutes(authorized, c)
+		registerAppLogRoutes(authorized, c)
 	}
 
 	// 通知发送 API（使用通知 Token 认证，供脚本调用）
@@ -418,6 +420,15 @@ func registerNotificationRoutes(g *gin.RouterGroup, c *Controllers) {
 		notify.GET("/bindings", c.Notification.GetBindings)
 		notify.POST("/bindings", c.Notification.SaveBinding)
 		notify.DELETE("/bindings/:id", c.Notification.DeleteBinding)
+	}
+}
+
+func registerAppLogRoutes(g *gin.RouterGroup, c *Controllers) {
+	appLogs := g.Group("/app-logs")
+	{
+		appLogs.GET("", c.AppLog.GetLogs)
+		appLogs.POST("/read", c.AppLog.MarkAsRead)
+		appLogs.POST("/clear", c.AppLog.ClearLogs)
 	}
 }
 

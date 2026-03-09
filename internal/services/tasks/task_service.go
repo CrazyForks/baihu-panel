@@ -23,16 +23,16 @@ func (ts *TaskService) CreateTask(name, command, schedule string, timeout int, w
 	task := &models.Task{
 		ID:            utils.GenerateID(),
 		Name:          name,
-		Command:       command,
+		Command:       models.BigText(command),
 		Tags:          tags,
 		Type:          taskType,
 		TriggerType:   triggerType,
-		Config:        config,
+		Config:        models.BigText(config),
 		Schedule:      schedule,
 		Timeout:       timeout,
 		WorkDir:       workDir,
 		CleanConfig:   cleanConfig,
-		Envs:          envs,
+		Envs:          models.BigText(envs),
 		Languages:     languages,
 		AgentID:       agentID,
 		Enabled:       true,
@@ -94,17 +94,17 @@ func (ts *TaskService) UpdateTask(id string, name, command, schedule string, tim
 		return nil
 	}
 	task.Name = name
-	task.Command = command
+	task.Command = models.BigText(command)
 	task.Tags = tags
 	task.Schedule = schedule
 	task.Timeout = timeout
 	task.WorkDir = workDir
 	task.CleanConfig = cleanConfig
-	task.Envs = envs
+	task.Envs = models.BigText(envs)
 	task.Enabled = enabled
 	task.AgentID = agentID
 	task.Languages = languages
-	task.Config = config
+	task.Config = models.BigText(config)
 	task.RetryCount = retryCount
 	task.RetryInterval = retryInterval
 	task.RandomRange = randomRange

@@ -1,7 +1,10 @@
 package services
 
 import (
+	"fmt"
+	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/database"
+	"github.com/engigu/baihu-panel/internal/eventbus"
 	"github.com/engigu/baihu-panel/internal/models"
 	"github.com/engigu/baihu-panel/internal/utils"
 )
@@ -23,6 +26,61 @@ func (s *LoginLogService) Create(username, ip, userAgent, status, message string
 		Message:   message,
 	}
 	return database.DB.Create(log).Error
+}
+
+// SubscribeEvents 注册订阅事件
+func (s *LoginLogService) SubscribeEvents(bus *eventbus.EventBus) {
+	// 用户登录事件
+	bus.Subscribe(constant.EventUserLogin, func(e eventbus.Event) {
+		payload, ok := e.Payload.(map[string]interface{})
+		if !ok {
+			return
+		}
+
+		username, _ := payload["username"].(string)
+		ip, _ := payload["ip"].(string)
+		userAgent, _ := payload["userAgent"].(string)
+		status, _ := payload["status"].(string)
+		message, _ := payload["message"].(string)
+
+		s.Create(username, ip, userAgent, status, message)
+
+		// 如果登录成功，触发系统通知
+		if status == "success" {
+			bus.Publish(eventbus.Event{
+				Type: constant.EventSystemNotice,
+				Payload: map[string]interface{}{
+					"title":   "登录提醒",
+					"content": fmt.Sprintf("用户 %s 已从 IP %s 登录系统", username, ip),
+					"level":   constant.LogLevelWarning,
+				},
+			})
+		}
+	})
+
+	// 暴力破解防御触发事件
+	bus.Subscribe(constant.EventBruteForceLogin, func(e eventbus.Event) {
+		payload, ok := e.Payload.(map[string]interface{})
+		if !ok {
+			return
+		}
+
+		username, _ := payload["username"].(string)
+		ip, _ := payload["ip"].(string)
+		userAgent, _ := payload["userAgent"].(string)
+
+		s.Create(username, ip, userAgent, "failed", "尝试次数过多，由于暴力破解防御机制已锁定")
+
+		// 触发系统通知
+		bus.Publish(eventbus.Event{
+			Type: constant.EventSystemNotice,
+			Payload: map[string]interface{}{
+				"title":   "系统安全警告",
+				"content": fmt.Sprintf("检测到 IP %s 正在尝试暴力破解用户 %s", ip, username),
+				"level":   constant.LogLevelError,
+			},
+		})
+	})
 }
 
 // List 获取登录日志列表

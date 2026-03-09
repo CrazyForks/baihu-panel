@@ -74,6 +74,10 @@ const (
 	EventTaskFailed  = "task_failed"
 	EventTaskTimeout = "task_timeout"
 
+	// 其他事件类型
+	EventSystemNotice = "system_notice"
+	EventNotifySent   = "notify_sent"
+
 	// WebSocket 消息类型
 	WSTypeHeartbeat     = "heartbeat"
 	WSTypeHeartbeatAck  = "heartbeat_ack"
@@ -110,6 +114,21 @@ const (
 	// Agent 状态
 	AgentStatusOnline  = "online"
 	AgentStatusOffline = "offline"
+	// AppLog 分类
+	LogCategoryDefault      = "default"
+	LogCategorySystemNotice = "system_notice"
+	LogCategoryPushLog      = "push_log"
+
+	// AppLog 级别
+	LogLevelInfo    = "info"
+	LogLevelWarning = "warning"
+	LogLevelError   = "error"
+
+	// AppLog 状态
+	LogStatusUnread  = "unread"
+	LogStatusRead    = "read"
+	LogStatusSuccess = "success"
+	LogStatusFailed  = "failed"
 )
 
 // TablePrefix 表前缀，从配置文件读取

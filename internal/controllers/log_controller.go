@@ -87,7 +87,7 @@ func (lc *LogController) GetLogs(c *gin.Context) {
 			TaskName:  task.Name,
 			TaskType:  taskType,
 			AgentID:   log.AgentID,
-			Command:   log.Command,
+			Command:   string(log.Command),
 			Status:    log.Status,
 			Duration:  log.Duration,
 			StartTime: log.StartTime,

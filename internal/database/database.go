@@ -15,6 +15,7 @@ import (
 )
 
 var DB *gorm.DB
+var DBConfig *Config
 
 type Config struct {
 	Type     string // sqlite, mysql, postgres
@@ -28,6 +29,7 @@ type Config struct {
 
 func Init(cfg *Config) error {
 	var err error
+	DBConfig = cfg
 	// 设置东八区时区
 	loc := systime.CST
 	time.Local = loc

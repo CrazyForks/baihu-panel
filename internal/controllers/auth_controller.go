@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/engigu/baihu-panel/internal/constant"
+	"github.com/engigu/baihu-panel/internal/eventbus"
 	"github.com/engigu/baihu-panel/internal/middleware"
 	"github.com/engigu/baihu-panel/internal/models/vo"
 	"github.com/engigu/baihu-panel/internal/services"
@@ -54,10 +55,13 @@ func (ac *AuthController) Login(c *gin.Context) {
 	if val, ok := loginAttempts.Load(ip); ok {
 		attempt := val.(*loginAttempt)
 		if attempt.Count >= 5 && time.Since(attempt.LastAttempt) < time.Minute {
-			ac.loginLogService.Create(req.Username, ip, userAgent, "failed", "尝试次数过多，请一分钟后再试")
-			go services.NewNotificationService().TriggerEvent(constant.BindingTypeSystem, constant.EventBruteForceLogin, "", map[string]interface{}{
-				"ip":       ip,
-				"username": req.Username,
+			eventbus.DefaultBus.Publish(eventbus.Event{
+				Type: constant.EventBruteForceLogin,
+				Payload: map[string]interface{}{
+					"ip":        ip,
+					"username":  req.Username,
+					"userAgent": userAgent,
+				},
 			})
 			utils.TooManyRequests(c, "尝试次数过多，请一分钟后再试")
 			return
@@ -77,7 +81,16 @@ func (ac *AuthController) Login(c *gin.Context) {
 		attempt.LastAttempt = time.Now()
 
 		// 记录登录失败日志
-		ac.loginLogService.Create(req.Username, ip, userAgent, "failed", "用户名或密码错误")
+		eventbus.DefaultBus.Publish(eventbus.Event{
+			Type: constant.EventUserLogin,
+			Payload: map[string]interface{}{
+				"ip":        ip,
+				"username":  req.Username,
+				"userAgent": userAgent,
+				"status":    "failed",
+				"message":   "用户名或密码错误",
+			},
+		})
 		utils.Unauthorized(c, "用户名或密码错误")
 		return
 	}
@@ -96,7 +109,16 @@ func (ac *AuthController) Login(c *gin.Context) {
 	// 生成 token
 	token, err := utils.GenerateToken(user.ID, user.Username, expireDays, constant.Secret)
 	if err != nil {
-		ac.loginLogService.Create(req.Username, ip, userAgent, "failed", "Token生成失败")
+		eventbus.DefaultBus.Publish(eventbus.Event{
+			Type: constant.EventUserLogin,
+			Payload: map[string]interface{}{
+				"ip":        ip,
+				"username":  req.Username,
+				"userAgent": userAgent,
+				"status":    "failed",
+				"message":   "Token生成失败",
+			},
+		})
 		utils.ServerError(c, "登录失败")
 		return
 	}
@@ -105,11 +127,15 @@ func (ac *AuthController) Login(c *gin.Context) {
 	middleware.SetAuthCookie(c, token, expireDays)
 
 	// 记录登录成功日志
-	ac.loginLogService.Create(req.Username, ip, userAgent, "success", "登录成功")
-
-	go services.NewNotificationService().TriggerEvent(constant.BindingTypeSystem, constant.EventUserLogin, "", map[string]interface{}{
-		"ip":       ip,
-		"username": req.Username,
+	eventbus.DefaultBus.Publish(eventbus.Event{
+		Type: constant.EventUserLogin,
+		Payload: map[string]interface{}{
+			"ip":        ip,
+			"username":  req.Username,
+			"userAgent": userAgent,
+			"status":    "success",
+			"message":   "登录成功",
+		},
 	})
 
 	utils.Success(c, gin.H{

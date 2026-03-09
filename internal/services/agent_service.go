@@ -331,8 +331,8 @@ func (s *AgentService) GetTasks(agentID string) []models.AgentTask {
 
 		if allEnvs {
 			envVars = envService.GetAllEnvVars()
-		} else if task.Envs != "" {
-			envVars = envService.GetEnvVarsByIDs(task.Envs)
+		} else if string(task.Envs) != "" {
+			envVars = envService.GetEnvVarsByIDs(string(task.Envs))
 		}
 
 		envVarsStr := executor.FormatEnvVars(envVars)
@@ -340,7 +340,7 @@ func (s *AgentService) GetTasks(agentID string) []models.AgentTask {
 		result[i] = models.AgentTask{
 			ID:          task.ID,
 			Name:        task.Name,
-			Command:     task.Command,
+			Command:     string(task.Command),
 			Schedule:    task.Schedule,
 			Timeout:     task.Timeout,
 			WorkDir:     task.WorkDir,

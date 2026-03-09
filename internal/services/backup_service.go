@@ -57,6 +57,7 @@ func (s *BackupService) getTableConfigs() []tableConfig {
 		{"deps.json", s.exportTable(&[]models.Dependency{}, true), s.restoreTable(&[]models.Dependency{}, true)},
 		{"notify_ways.json", s.exportTable(&[]models.NotifyWay{}, true), s.restoreTable(&[]models.NotifyWay{}, true)},
 		{"notify_bindings.json", s.exportTable(&[]models.NotifyBinding{}, true), s.restoreTable(&[]models.NotifyBinding{}, true)},
+		{"app_logs.json", s.exportTable(&[]models.AppLog{}, false), s.restoreTable(&[]models.AppLog{}, false)},
 	}
 }
 
@@ -235,6 +236,7 @@ func (s *BackupService) Restore(zipPath string) error {
 		tx.Unscoped().Where("1=1").Delete(&models.Dependency{})
 		tx.Unscoped().Where("1=1").Delete(&models.NotifyWay{})
 		tx.Unscoped().Where("1=1").Delete(&models.NotifyBinding{})
+		tx.Unscoped().Where("1=1").Delete(&models.AppLog{})
 
 		// 2. 依次恢复每个表
 		for _, cfg := range configs {
@@ -340,6 +342,8 @@ func (s *BackupService) restoreFromZipFile(tx *gorm.DB, f *zip.File, filename st
 		return restoreStreamBatch[models.NotifyWay](tx, decoder)
 	case "notify_bindings.json":
 		return restoreStreamBatch[models.NotifyBinding](tx, decoder)
+	case "app_logs.json":
+		return restoreStreamBatch[models.AppLog](tx, decoder)
 	default:
 		return nil
 	}
@@ -417,7 +421,7 @@ func (s *BackupService) GetBackupFile() string {
 	if err := database.DB.Where("section = ? AND `key` = ?", BackupSection, BackupFileKey).First(&setting).Error; err != nil {
 		return ""
 	}
-	return setting.Value
+	return string(setting.Value)
 }
 
 func (s *BackupService) ClearBackup() error {
