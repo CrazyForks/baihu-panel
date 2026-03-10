@@ -85,6 +85,14 @@ func initOpenAPIRoutes(root *gin.RouterGroup, urlPrefix string) {
 
 		// 3. 提供给 Scalar/Swagger 使用 host 环境变量后的 doc.json 内容
 		if path == "doc.json" {
+			// 动态设置当前请求的域名作为 Swagger Host
+			openapi_docs.SwaggerInfo.Host = c.Request.Host
+			scheme := "http"
+			if c.Request.TLS != nil || c.Request.Header.Get("X-Forwarded-Proto") == "https" {
+				scheme = "https"
+			}
+			openapi_docs.SwaggerInfo.Schemes = []string{scheme}
+
 			doc := openapi_docs.SwaggerInfo.ReadDoc()
 			c.Header("Content-Type", "application/json; charset=utf-8")
 			c.String(http.StatusOK, doc)
