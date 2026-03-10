@@ -7,6 +7,7 @@ import (
 	"github.com/engigu/baihu-panel/internal/middleware"
 	"github.com/engigu/baihu-panel/internal/services"
 
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 )
 
@@ -37,6 +38,11 @@ func Setup(c *Controllers) *gin.Engine {
 	// 获取 URL 前缀
 	cfg := services.GetConfig()
 	urlPrefix := strings.TrimSuffix(cfg.Server.URLPrefix, "/")
+
+	// 按需绑定 Pprof 调试路由
+	if cfg.Server.PprofEnabled {
+		pprof.Register(router)
+	}
 
 	// 创建一个路由组，如果有前缀则使用前缀，否则使用根路径
 	var root *gin.RouterGroup
