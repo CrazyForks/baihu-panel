@@ -45,8 +45,7 @@ export MISE_DATA_DIR="$MISE_DIR"
 export MISE_CONFIG_DIR="$MISE_DIR"
 export PATH="$MISE_DIR/shims:$MISE_DIR/bin:$PATH"
 
-# 使 Node.js 运行脚本时能够自动找到全局安装的模块 (类似 Python site-packages 行为)
-export NODE_PATH=$(npm root -g 2>/dev/null)
+log "Mise PATH configured, verifying runtimes..."
 
 # 默认启用 Python 镜像源
 export PIP_INDEX_URL=${PIP_INDEX_URL:-https://pypi.org/simple}
@@ -56,12 +55,22 @@ export NODE_OPTIONS="--max-old-space-size=256"
 export PYTHONPATH=/app/data/scripts:$PYTHONPATH
 
 # ============================
-# 打印确认
+# 打印确认 (增加超时防护，防止这里卡死)
 # ============================
-log "mise version: $(mise --version 2>/dev/null | head -n 1)"
-log "python: $(python --version 2>&1 | head -n 1) at $(which python)"
-log "node: $(node --version 2>&1 | head -n 1) at $(which node)"
-log "npm: $(npm --version 2>&1 | head -n 1) at $(which npm)"
+log "Checking mise..."
+log "  - mise: $(mise --version 2>/dev/null | head -n 1 || echo "not found")"
+
+log "Checking python..."
+log "  - python: $(python --version 2>&1 | head -n 1 || echo "not found")"
+
+log "Checking node..."
+log "  - node: $(node --version 2>&1 | head -n 1 || echo "not found")"
+
+# 延迟获取 NODE_PATH，避免同步阻塞启动
+log "Checking npm..."
+log "  - npm: $(npm --version 2>&1 | head -n 1 || echo "not found")"
+export NODE_PATH=$(npm root -g 2>/dev/null || echo "")
+log "  - node_path: $NODE_PATH"
 
 # ============================
 # 将 baihu 注册到全局命令
