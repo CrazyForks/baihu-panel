@@ -16,6 +16,7 @@ example/
 - `playwright.py`：Python 示例，使用 `playwright` 连接 Browserless
 
 其中 Python 方案是最主流、也最接近 Puppeteer 使用体验的一种。
+同时建议在 Baihu 中为 Python 示例安装并使用 Python `3.11` 版本，因为过高版本的 Python 可能会出现依赖安装失败。
 
 ## 先安装语言依赖
 
@@ -23,6 +24,7 @@ example/
 
 - 运行 `playwright.js` 前，请在 Node.js 语言依赖中安装：`puppeteer-core`
 - 运行 `playwright.py` 前，请在 Python 语言依赖中安装：`playwright`
+- Python 运行环境建议选择：`3.11`，避免因为版本过高导致依赖安装失败
 
 安装完成后，再创建任务执行对应脚本。
 
