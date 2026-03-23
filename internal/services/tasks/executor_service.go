@@ -750,7 +750,10 @@ func (es *ExecutorService) CheckConcurrency(taskID string) error {
 	var task models.Task
 	res := database.DB.Select("config, running_go").Where("id = ?", taskID).Limit(1).Find(&task)
 	if res.Error != nil || res.RowsAffected == 0 {
-		return err
+		if res.Error != nil {
+			return res.Error
+		}
+		return gorm.ErrRecordNotFound
 	}
 	var goids []int64
 	if string(task.RunningGo) != "" {
@@ -777,7 +780,10 @@ func (es *ExecutorService) AddRunningGo(taskID string) (int64, error) {
 			var task models.Task
 			res := tx.Where("id = ?", taskID).Limit(1).Find(&task)
 			if res.Error != nil || res.RowsAffected == 0 {
-				return err
+				if res.Error != nil {
+					return res.Error
+				}
+				return gorm.ErrRecordNotFound
 			}
 			var goids []int64
 			if task.RunningGo != "" {
@@ -819,7 +825,10 @@ func (es *ExecutorService) RemoveRunningGo(taskID string, goid int64) {
 			var task models.Task
 			res := tx.Where("id = ?", taskID).Limit(1).Find(&task)
 			if res.Error != nil || res.RowsAffected == 0 {
-				return err
+				if res.Error != nil {
+					return res.Error
+				}
+				return gorm.ErrRecordNotFound
 			}
 			var goids []int64
 			if task.RunningGo != "" {
