@@ -111,8 +111,8 @@ onMounted(() => {
 
     <!-- Sidebar -->
     <aside :class="[
-      'fixed lg:static inset-y-0 left-0 z-50 w-44 border-r bg-background flex flex-col transform transition-transform duration-200 ease-in-out lg:transform-none',
-      mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      'fixed lg:static inset-y-0 z-50 w-44 border-r bg-background flex flex-col transition-[left] duration-200 ease-in-out',
+      mobileMenuOpen ? 'left-0' : '-left-44 lg:left-0'
     ]">
       <div class="h-14 flex items-center justify-center px-4 font-semibold text-lg border-b relative">
         <span>{{ siteSettings.title }}</span>
