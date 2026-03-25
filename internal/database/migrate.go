@@ -33,7 +33,7 @@ func Migrate() error {
 	sig := getModelSignature(allModels)
 	if DB.Migrator().HasTable(&models.Setting{}) {
 		var sigSetting models.Setting
-		res := DB.Where("section = ? AND `key` = ?", "system", "schema_signature").Limit(1).Find(&sigSetting)
+		res := DB.Where(&models.Setting{Section: "system", Key: "schema_signature"}).Limit(1).Find(&sigSetting)
 		if res.RowsAffected > 0 && string(sigSetting.Value) == sig {
 			logger.Info("[Database] 模型指纹一致，跳过自动表结构同步")
 			return nil
@@ -54,7 +54,7 @@ func Migrate() error {
 	// 3. 更新指纹记录
 	if DB.Migrator().HasTable(&models.Setting{}) {
 		var sigSetting models.Setting
-		res := DB.Where("section = ? AND `key` = ?", "system", "schema_signature").Limit(1).Find(&sigSetting)
+		res := DB.Where(&models.Setting{Section: "system", Key: "schema_signature"}).Limit(1).Find(&sigSetting)
 		if res.RowsAffected > 0 {
 			DB.Model(&sigSetting).Update("value", models.BigText(sig))
 		} else {
