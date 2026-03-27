@@ -469,8 +469,3 @@ func splitKeywords(s string) []string {
 	}
 	return res
 }
-
-func resolveAbsScriptsDir() string {
-	cwd, _ := os.Getwd()
-	return filepath.Join(cwd, "data", "scripts")
-}
