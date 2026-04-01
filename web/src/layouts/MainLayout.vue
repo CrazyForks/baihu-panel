@@ -125,7 +125,7 @@ onMounted(() => {
         'fixed lg:static inset-y-0 z-50 w-44 border-r bg-background flex flex-col transition-all duration-300 ease-in-out',
         mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       ]">
-        <div class="h-14 flex items-center justify-center px-4 font-semibold text-lg border-b relative">
+        <div class="h-14 flex items-center justify-center px-4 font-semibold text-lg border-b border-slate-200/60 dark:border-white/10 relative">
           <span>{{ siteSettings.title }}</span>
           <Button variant="ghost" size="icon" class="h-8 w-8 lg:hidden absolute right-2" @click="mobileMenuOpen = false">
             <X class="h-4 w-4" />
@@ -141,7 +141,7 @@ onMounted(() => {
             </Button>
           </RouterLink>
         </nav>
-        <div class="px-3 py-4 2xl:pb-12 border-t flex justify-center">
+        <div class="px-3 py-4 2xl:pb-12 border-t border-slate-200/60 dark:border-white/10 flex justify-center">
           <Button variant="ghost" 
             class="justify-start 2xl:justify-center gap-3 h-9 px-3 w-content 2xl:w-full 2xl:max-w-[140px] text-muted-foreground hover:text-foreground transition-all whitespace-nowrap"
             @click="logout">
@@ -154,7 +154,7 @@ onMounted(() => {
       <!-- Main Content Area -->
       <main class="flex-1 flex flex-col min-w-0 relative">
         <!-- Top Navigation Bar -->
-        <header class="h-14 border-b bg-background flex items-center justify-between px-4 lg:px-6 shrink-0 sticky top-0 z-30 shadow-sm">
+        <header class="h-14 border-b border-slate-200/60 dark:border-white/10 bg-background flex items-center justify-between px-4 lg:px-6 shrink-0 sticky top-0 z-30">
           <div class="flex items-center gap-3 flex-1 min-w-0">
             <Button variant="ghost" size="icon" class="h-9 w-9 lg:hidden shrink-0" @click="mobileMenuOpen = true">
               <Menu class="h-5 w-5 text-muted-foreground" />
