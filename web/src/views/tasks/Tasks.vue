@@ -324,8 +324,9 @@ watch(() => route.query.agent_id, (newVal: any) => {
 <template>
   <div class="space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <div class="flex items-center gap-3">
+      <div class="flex flex-col">
         <h2 class="text-xl sm:text-2xl font-bold tracking-tight">定时任务</h2>
+        <p class="text-muted-foreground text-sm">管理和调度自动化执行任务</p>
       </div>
 
       <div class="flex flex-col sm:flex-row gap-2.5 w-full md:w-auto">

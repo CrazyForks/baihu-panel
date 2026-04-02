@@ -109,7 +109,7 @@ onMounted(() => {
   <div class="h-screen w-full bg-slate-50/50 dark:bg-zinc-950 flex items-center justify-center 2xl:p-8 3xl:p-12 transition-all duration-500 overflow-hidden">
     
     <!-- Application Card: The main floating surface -->
-    <div :style="mobileMenuOpen ? 'transform: scale(0.98); opacity: 0.9;' : ''"
+    <div
       class="flex h-full w-full bg-background relative transition-all duration-500 overflow-hidden
              2xl:max-w-[1800px] 2xl:max-h-[92vh] 2xl:rounded-[2.5rem] 
              2xl:shadow-[0_50px_100px_-20px_rgba(0,0,0,0.25),0_0_0_1px_rgba(255,255,255,0.05)]
@@ -134,7 +134,7 @@ onMounted(() => {
         <nav class="flex-1 px-3 py-6 space-y-1 flex flex-col items-center overflow-y-auto">
           <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" custom v-slot="{ navigate }">
             <Button variant="ghost"
-              :class="['justify-center gap-3 h-9 px-3 w-full max-w-[140px]', isItemActive(item) && 'bg-accent text-accent-foreground font-semibold shadow-sm']"
+              :class="['justify-center gap-3 h-9 px-3 w-full max-w-[140px]', isItemActive(item) && 'bg-slate-100 dark:bg-accent text-foreground dark:text-accent-foreground font-semibold shadow-sm']"
               @click="handleNavClick(navigate)">
               <component :is="item.icon" class="h-4 w-4" />
               {{ item.label }}
