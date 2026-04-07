@@ -17,6 +17,7 @@ import ChannelList from './components/ChannelList.vue'
 import EventBinding from './components/EventBinding.vue'
 import ApiUsage from './components/ApiUsage.vue'
 import ChannelDialog from './components/ChannelDialog.vue'
+import TemplateSettings from './components/TemplateSettings.vue'
 
 const activeTab = ref('channels')
 
@@ -322,10 +323,11 @@ onMounted(() => {
           <h2 class="text-xl sm:text-2xl font-bold tracking-tight">消息推送</h2>
           <p class="text-muted-foreground text-sm">配置通知渠道，绑定系统事件实现自动推送</p>
         </div>
-        <TabsList class="grid grid-cols-3 w-full sm:w-auto min-w-[300px]">
-          <TabsTrigger value="channels">渠道管理</TabsTrigger>
-          <TabsTrigger value="events">事件绑定</TabsTrigger>
-          <TabsTrigger value="api">脚本调用</TabsTrigger>
+        <TabsList class="flex w-full sm:w-fit overflow-x-auto overflow-y-hidden justify-start sm:justify-center bg-muted/50 p-1 rounded-xl scrollbar-hide border border-border/50">
+          <TabsTrigger value="channels" class="flex-1 sm:flex-none whitespace-nowrap px-3 sm:px-6">渠道管理</TabsTrigger>
+          <TabsTrigger value="templates" class="flex-1 sm:flex-none whitespace-nowrap px-3 sm:px-6">推送模板</TabsTrigger>
+          <TabsTrigger value="events" class="flex-1 sm:flex-none whitespace-nowrap px-3 sm:px-6">事件绑定</TabsTrigger>
+          <TabsTrigger value="api" class="flex-1 sm:flex-none whitespace-nowrap px-3 sm:px-6">脚本调用</TabsTrigger>
         </TabsList>
       </div>
 
@@ -333,6 +335,11 @@ onMounted(() => {
       <TabsContent value="channels">
         <ChannelList :channels="channels" :channel-types="channelTypes" @add="openNewChannel" @edit="openEditChannel"
           @delete="confirmDelete" @test="testChannel" />
+      </TabsContent>
+
+      <!-- 推送模板 -->
+      <TabsContent value="templates">
+        <TemplateSettings v-model:activeTab="activeTab" />
       </TabsContent>
 
       <!-- 事件绑定 -->

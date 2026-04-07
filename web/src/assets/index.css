@@ -222,6 +222,10 @@
     text-rendering: optimizeLegibility;
   }
 
+  input, textarea, button, select {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  }
+
   .font-code,
   .font-mono,
   code,

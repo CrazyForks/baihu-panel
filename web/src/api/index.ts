@@ -151,6 +151,9 @@ export const api = {
     getAbout: () => request<AboutInfo>('/settings/about'),
     getChangelog: () => request<string>('/settings/changelog'),
     get: (section: string, key: string) => request<string>(`/settings/${section}/${key}`),
+    getSection: (section: string) => request<Record<string, string>>(`/settings/${section}`),
+    setSection: (section: string, values: Record<string, string>) =>
+      request(`/settings/${section}`, { method: 'PUT', body: JSON.stringify(values) }),
     generateToken: (section: string, key: string) =>
       request<string>(`/settings/${section}/${key}/generate`, { method: 'POST' }),
     getLoginLogs: (params?: { page?: number; page_size?: number; username?: string }) => {

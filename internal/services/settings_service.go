@@ -87,6 +87,17 @@ func (s *SettingsService) InitSettings() error {
 		}
 	}
 
+	// 从 constant.DefaultSettings 初始化所有缺少的通知模板
+	if notifyDefaults, ok := constant.DefaultSettings[constant.SectionNotify]; ok {
+		for k, v := range notifyDefaults {
+			var count int64
+			database.DB.Model(&models.Setting{}).Where(&models.Setting{Section: constant.SectionNotify, Key: k}).Count(&count)
+			if count == 0 {
+				s.Set(constant.SectionNotify, k, v)
+			}
+		}
+	}
+
 	// 初始化或获取 JWT Secret 密码
 	var secCount int64
 	database.DB.Model(&models.Setting{}).Where(&models.Setting{Section: constant.SectionSecurity, Key: constant.KeySecret}).Count(&secCount)

@@ -494,6 +494,39 @@ func (sc *SettingsController) RestoreBackup(c *gin.Context) {
 	utils.SuccessMsg(c, "恢复成功")
 }
 
+// GetSectionSettings 获取指定 section 的所有设置
+func (sc *SettingsController) GetSectionSettings(c *gin.Context) {
+	section := c.Param("section")
+	if section == "" {
+		utils.BadRequest(c, "参数错误")
+		return
+	}
+	settings := sc.settingsService.GetSection(section)
+	utils.Success(c, settings)
+}
+
+// UpdateSectionSettings 批量更新指定 section 的设置
+func (sc *SettingsController) UpdateSectionSettings(c *gin.Context) {
+	section := c.Param("section")
+	if section == "" {
+		utils.BadRequest(c, "参数错误")
+		return
+	}
+
+	var values map[string]string
+	if err := c.ShouldBindJSON(&values); err != nil {
+		utils.BadRequest(c, "参数错误")
+		return
+	}
+
+	if err := sc.settingsService.SetSection(section, values); err != nil {
+		utils.ServerError(c, "更新失败")
+		return
+	}
+
+	utils.SuccessMsg(c, "保存成功")
+}
+
 // GetSetting 获取单个设置值
 func (sc *SettingsController) GetSetting(c *gin.Context) {
 	section := c.Param("section")

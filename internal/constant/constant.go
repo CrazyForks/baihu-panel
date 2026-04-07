@@ -68,6 +68,21 @@ const (
 	KeyNotifyChannels = "channels"
 	KeyNotifyEvents   = "events"
 	KeyNotifyToken    = "notify_token"
+	KeyNotifyPrefix   = "notify_prefix"
+
+	// Notify Templates Keys
+	KeyNotifyTemplateUserLoginTitle       = "notify_template_user_login_title"
+	KeyNotifyTemplateUserLoginText        = "notify_template_user_login_text"
+	KeyNotifyTemplateBruteForceLoginTitle  = "notify_template_brute_force_login_title"
+	KeyNotifyTemplateBruteForceLoginText   = "notify_template_brute_force_login_text"
+	KeyNotifyTemplatePasswordChangedTitle = "notify_template_password_changed_title"
+	KeyNotifyTemplatePasswordChangedText  = "notify_template_password_changed_text"
+	KeyNotifyTemplateTaskSuccessTitle     = "notify_template_task_success_title"
+	KeyNotifyTemplateTaskSuccessText      = "notify_template_task_success_text"
+	KeyNotifyTemplateTaskFailedTitle      = "notify_template_task_failed_title"
+	KeyNotifyTemplateTaskFailedText       = "notify_template_task_failed_text"
+	KeyNotifyTemplateTaskTimeoutTitle     = "notify_template_task_timeout_title"
+	KeyNotifyTemplateTaskTimeoutText      = "notify_template_task_timeout_text"
 
 	// 事件绑定类型
 	BindingTypeSystem = "system"
@@ -185,5 +200,22 @@ var DefaultSettings = map[string]map[string]string{
 		KeyWorkerCount:  "4",
 		KeyQueueSize:    "100",
 		KeyRateInterval: "200",
+	},
+	SectionNotify: {
+		KeyNotifyPrefix: "[白虎面板]",
+		// Login
+		KeyNotifyTemplateUserLoginTitle:       "用户登录(成功/失败)",
+		KeyNotifyTemplateUserLoginText:        "用户 {{username}} 在 IP {{ip}} 登录{{status_label}}\n{{message}}",
+		KeyNotifyTemplateBruteForceLoginTitle:  "系统安全警告",
+		KeyNotifyTemplateBruteForceLoginText:   "检测到 IP {{ip}} 正在尝试暴力破解用户 {{username}}",
+		KeyNotifyTemplatePasswordChangedTitle: "账户安全通知",
+		KeyNotifyTemplatePasswordChangedText:  "用户 {{username}} 刚刚修改了密码",
+		// Task
+		KeyNotifyTemplateTaskSuccessTitle: "任务[{{task_name}}] 成功",
+		KeyNotifyTemplateTaskSuccessText:  "任务 #{{task_id}} {{task_name}}\n状态: 成功\n耗时: {{duration}}ms\n执行结果: {{output}}",
+		KeyNotifyTemplateTaskFailedTitle:  "任务[{{task_name}}] 失败",
+		KeyNotifyTemplateTaskFailedText:   "任务 #{{task_id}} {{task_name}}\n状态: 失败\n执行时间: {{start_time}}\n原因: {{error}}\n最后输出: {{output}}",
+		KeyNotifyTemplateTaskTimeoutTitle: "任务[{{task_name}}] 超时",
+		KeyNotifyTemplateTaskTimeoutText:  "任务 #{{task_id}} {{task_name}}\n状态: 超时\n耗时: {{duration}}ms\n最后输出: {{output}}",
 	},
 }

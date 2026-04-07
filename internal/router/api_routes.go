@@ -163,6 +163,8 @@ func registerSettingsRoutes(g *gin.RouterGroup, c *Controllers) {
 		settings.GET("/backup/download", c.Settings.DownloadBackup)
 		settings.POST("/restore", c.Settings.RestoreBackup)
 		// 通用设置接口
+		settings.GET("/:section", c.Settings.GetSectionSettings)
+		settings.PUT("/:section", c.Settings.UpdateSectionSettings)
 		settings.GET("/:section/:key", c.Settings.GetSetting)
 		settings.POST("/:section/:key/generate", c.Settings.GenerateSettingToken)
 	}

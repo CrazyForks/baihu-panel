@@ -15,6 +15,7 @@ import (
 	"github.com/engigu/baihu-panel/internal/sdk/messenger"
 	"gorm.io/gorm"
 	"regexp"
+	"strings"
 )
 
 // NotifyChannel 通知渠道配置
@@ -324,6 +325,54 @@ func stripAnsi(str string) string {
 	return ansiRegexp.ReplaceAllString(str, "")
 }
 
+// parseTemplate 简单的 {{key}} 模板替换
+func (s *NotificationService) parseTemplate(tmpl string, payload map[string]interface{}) string {
+	result := tmpl
+	for k, v := range payload {
+		placeholder := fmt.Sprintf("{{%s}}", k)
+		valStr := fmt.Sprintf("%v", v)
+		result = strings.ReplaceAll(result, placeholder, valStr)
+	}
+	return result
+}
+
+// getDefaultMessage 兜底默认消息内容
+func (s *NotificationService) getDefaultMessage(eventType string, payload map[string]interface{}) (string, string) {
+	var title, text string
+	switch eventType {
+	case constant.EventUserLogin:
+		status, _ := payload["status"].(string)
+		if status == "success" {
+			title = "用户登录成功"
+			text = fmt.Sprintf("用户 %v 在 IP %v 登录成功", payload["username"], payload["ip"])
+		} else {
+			title = "用户登录失败"
+			reason, _ := payload["message"].(string)
+			text = fmt.Sprintf("用户 %v 在 IP %v 登录失败\n原因: %v", payload["username"], payload["ip"], reason)
+		}
+	case constant.EventBruteForceLogin:
+		title = "系统安全警告"
+		text = fmt.Sprintf("检测到 IP %v 正在尝试暴力破解用户 %v", payload["ip"], payload["username"])
+	case constant.EventPasswordChanged:
+		title = "账户安全通知"
+		text = fmt.Sprintf("用户 %v 刚刚修改了密码", payload["username"])
+	case constant.EventTaskSuccess:
+		title = fmt.Sprintf("任务[%v] 成功", payload["task_name"])
+		text = fmt.Sprintf("任务 #%v %v\n状态: 成功\n执行时间: %v\n耗时: %vms", payload["task_id"], payload["task_name"], payload["start_time"], payload["duration"])
+	case constant.EventTaskFailed:
+		title = fmt.Sprintf("任务[%v] 失败", payload["task_name"])
+		if errStr, ok := payload["error"]; ok {
+			text = fmt.Sprintf("任务 #%v %v\n执行失败\n执行时间: %v\n错误: %v", payload["task_id"], payload["task_name"], payload["start_time"], errStr)
+		} else {
+			text = fmt.Sprintf("任务 #%v %v\n执行失败\n状态: %v\n执行时间: %v\n耗时: %vms", payload["task_id"], payload["task_name"], payload["status"], payload["start_time"], payload["duration"])
+		}
+	case constant.EventTaskTimeout:
+		title = fmt.Sprintf("任务[%v] 超时", payload["task_name"])
+		text = fmt.Sprintf("任务 #%v %v\n执行超时\n执行时间: %v\n耗时: %vms", payload["task_id"], payload["task_name"], payload["start_time"], payload["duration"])
+	}
+	return title, text
+}
+
 // handleEvent 处理事件订阅并发送通知
 func (s *NotificationService) handleEvent(bindingType string) eventbus.Handler {
 	return func(e eventbus.Event) {
@@ -338,41 +387,79 @@ func (s *NotificationService) handleEvent(bindingType string) eventbus.Handler {
 		}
 
 		var title, text string
+
+		// 获取全局前缀和模板配置
+		prefix := s.settingsService.Get(constant.SectionNotify, constant.KeyNotifyPrefix)
+		var tmplTitleKey, tmplTextKey string
+
 		switch e.Type {
 		case constant.EventUserLogin:
+			tmplTitleKey = constant.KeyNotifyTemplateUserLoginTitle
+			tmplTextKey = constant.KeyNotifyTemplateUserLoginText
+			// 特殊处理登录状态
 			status, _ := payload["status"].(string)
 			if status == "success" {
-				title = "用户登录成功"
-				text = fmt.Sprintf("用户 %v 在 IP %v 登录成功", payload["username"], payload["ip"])
+				payload["status_label"] = "成功"
 			} else {
-				title = "用户登录失败"
-				reason, _ := payload["message"].(string)
-				text = fmt.Sprintf("用户 %v 在 IP %v 登录失败\n原因: %v", payload["username"], payload["ip"], reason)
+				payload["status_label"] = "失败"
 			}
+
 		case constant.EventBruteForceLogin:
-			title = "系统安全警告"
-			text = fmt.Sprintf("检测到 IP %v 正在尝试暴力破解用户 %v", payload["ip"], payload["username"])
+			tmplTitleKey = constant.KeyNotifyTemplateBruteForceLoginTitle
+			tmplTextKey = constant.KeyNotifyTemplateBruteForceLoginText
+
 		case constant.EventPasswordChanged:
-			title = "账户安全通知"
-			text = fmt.Sprintf("用户 %v 刚刚修改了密码", payload["username"])
-		case constant.EventTaskSuccess:
-			title = fmt.Sprintf("任务[%v] 成功", payload["task_name"])
-			text = fmt.Sprintf("任务 #%v %v\n状态: 成功\n执行时间: %v\n耗时: %vms", payload["task_id"], payload["task_name"], payload["start_time"], payload["duration"])
-		case constant.EventTaskFailed:
-			title = fmt.Sprintf("任务[%v] 失败", payload["task_name"])
-			if errStr, ok := payload["error"]; ok {
-				text = fmt.Sprintf("任务 #%v %v\n执行失败\n执行时间: %v\n错误: %v", payload["task_id"], payload["task_name"], payload["start_time"], errStr)
+			tmplTitleKey = constant.KeyNotifyTemplatePasswordChangedTitle
+			tmplTextKey = constant.KeyNotifyTemplatePasswordChangedText
+
+		case constant.EventTaskSuccess, constant.EventTaskFailed, constant.EventTaskTimeout:
+			if e.Type == constant.EventTaskSuccess {
+				tmplTitleKey = constant.KeyNotifyTemplateTaskSuccessTitle
+				tmplTextKey = constant.KeyNotifyTemplateTaskSuccessText
+			} else if e.Type == constant.EventTaskFailed {
+				tmplTitleKey = constant.KeyNotifyTemplateTaskFailedTitle
+				tmplTextKey = constant.KeyNotifyTemplateTaskFailedText
 			} else {
-				text = fmt.Sprintf("任务 #%v %v\n执行失败\n状态: %v\n执行时间: %v\n耗时: %vms", payload["task_id"], payload["task_name"], payload["status"], payload["start_time"], payload["duration"])
+				tmplTitleKey = constant.KeyNotifyTemplateTaskTimeoutTitle
+				tmplTextKey = constant.KeyNotifyTemplateTaskTimeoutText
 			}
-		case constant.EventTaskTimeout:
-			title = fmt.Sprintf("任务[%v] 超时", payload["task_name"])
-			text = fmt.Sprintf("任务 #%v %v\n执行超时\n执行时间: %v\n耗时: %vms", payload["task_id"], payload["task_name"], payload["start_time"], payload["duration"])
+
+			// 处理输出内容，避免过长
+			if output, ok := payload["output"].(string); ok {
+				// 如果输出包含了压缩后的 Base64 (以 "base64:" 开头)，由于是推送到通知，我们尽量不发大段 Base64
+				// 这里简单处理：如果过长则截断，或者如果是压缩的则记录一下
+				if len(output) > 1000 {
+					payload["output"] = output[len(output)-1000:] + "\n...(截断)"
+				}
+			}
+
 		case constant.EventSystemNotice:
 			title, _ = payload["title"].(string)
 			text, _ = payload["content"].(string)
 		default:
 			return
+		}
+
+		if tmplTitleKey != "" {
+			tmplTitle := s.settingsService.Get(constant.SectionNotify, tmplTitleKey)
+			tmplText := s.settingsService.Get(constant.SectionNotify, tmplTextKey)
+
+			if tmplTitle != "" {
+				title = s.parseTemplate(tmplTitle, payload)
+			}
+			if tmplText != "" {
+				text = s.parseTemplate(tmplText, payload)
+			}
+
+			// 如果模板为空，使用兜底默认逻辑（保持向上兼容）
+			if title == "" || text == "" {
+				title, text = s.getDefaultMessage(e.Type, payload)
+			}
+		}
+
+		// 添加全局前缀
+		if prefix != "" {
+			title = fmt.Sprintf("%s %s", prefix, title)
 		}
 
 		bindings := s.GetBindingsByEvent(bindingType, e.Type, dataID)
