@@ -16,6 +16,7 @@ import { useSiteSettings } from '@/composables/useSiteSettings'
 import { useRouter, useRoute } from 'vue-router'
 import { TASK_TYPE, AGENT_STATUS, TRIGGER_TYPE, TASK_STATUS } from '@/constants'
 import TextOverflow from '@/components/TextOverflow.vue'
+import { getCronDescription } from '@/utils/cron'
 
 
 const router = useRouter()
@@ -28,6 +29,7 @@ const showTaskDialog = ref(false)
 const showRepoDialog = ref(false)
 const editingTask = ref<Partial<Task>>({})
 const isEdit = ref(false)
+
 const showDeleteDialog = ref(false)
 const deleteTaskId = ref<string | null>(null)
 
@@ -222,6 +224,8 @@ async function toggleTask(task: Task, enabled: boolean) {
 const showLogViewer = ref(false)
 const selectedLog = ref<TaskLog | null>(null)
 const logContent = ref('')
+const logEmptyTitle = ref<string | undefined>(undefined)
+const logEmptyDesc = ref<string | undefined>(undefined)
 let logSocket: WebSocket | null = null
 
 function cleanupLogSocket() {
@@ -261,6 +265,8 @@ async function viewLogs(taskId: string) {
       if (!latestLog) return
       selectedLog.value = latestLog
       logContent.value = ''
+      logEmptyTitle.value = undefined
+      logEmptyDesc.value = undefined
       showLogViewer.value = true
 
       if (latestLog.status !== TASK_STATUS.RUNNING) {
@@ -286,7 +292,22 @@ async function viewLogs(taskId: string) {
         logContent.value += event.data
       }
     } else {
-      toast.info('该任务暂无执行日志')
+      // 如果没有日志，构造一个基础的任务信息对象用于展示弹窗
+      const task = tasks.value.find(t => t.id === taskId)
+      selectedLog.value = {
+        id: '',
+        task_id: taskId,
+        task_name: task?.name || '未知任务',
+        command: task?.command || '',
+        status: 'UNEXECUTED',
+        duration: 0,
+        start_time: '-',
+        end_time: '-',
+      } as TaskLog
+      logContent.value = ''
+      logEmptyTitle.value = '该任务暂无执行记录'
+      logEmptyDesc.value = '此任务尚未被触发执行，目前没有任何运行日志产生。'
+      showLogViewer.value = true
     }
   } catch {
     toast.error('获取日志失败')
@@ -538,7 +559,13 @@ watch(() => route.query.agent_id, (newVal: any) => {
             <div class="flex items-center gap-3">
               <span class="w-10 shrink-0 font-medium opacity-70">定时:</span>
               <span v-if="task.trigger_type === TRIGGER_TYPE.BAIHU_STARTUP" class="text-[10px] leading-tight bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded font-medium">服务启动时</span>
-              <span v-else-if="task.schedule" class="text-xs text-foreground bg-muted/40 px-1.5 py-0.5 rounded">{{ task.schedule }}</span>
+              <div v-else-if="task.schedule" class="flex items-center gap-1.5 flex-1 min-w-0">
+                <span class="text-xs text-foreground bg-muted/40 px-1.5 py-0.5 rounded shrink-0">{{ task.schedule }}</span>
+                <div class="flex items-center gap-1 text-[10px] text-muted-foreground/60 min-w-0 flex-1">
+                  <Zap class="h-2.5 w-2.5 fill-current opacity-50 shrink-0" />
+                  <TextOverflow :text="getCronDescription(task.schedule)" class="truncate" />
+                </div>
+              </div>
             </div>
             <div class="flex items-start gap-3">
               <span class="w-10 shrink-0 font-medium mt-0.5 opacity-70">命令:</span>
@@ -581,7 +608,9 @@ watch(() => route.query.agent_id, (newVal: any) => {
       title="最新日志"
       variant="full"
       :log="selectedLog"
-      :content="displayLogContent" />
+      :content="displayLogContent"
+      :empty-title="logEmptyTitle"
+      :empty-description="logEmptyDesc" />
 
     <!-- 删除确认 (批量) -->
     <AlertDialog v-model:open="showBatchDeleteDialog">

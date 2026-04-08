@@ -10,6 +10,8 @@ const props = withDefaults(defineProps<{
   title?: string
   loading?: boolean
   variant?: 'full' | 'simple'
+  emptyTitle?: string
+  emptyDescription?: string
 }>(), {
   variant: 'simple'
 })
@@ -68,6 +70,8 @@ onUnmounted(() => {
           :title="title"
           :loading="loading"
           :variant="isFullscreen ? 'simple' : variant"
+          :empty-title="emptyTitle"
+          :empty-description="emptyDescription"
           @close="close"
           @maximize="isFullscreen = !isFullscreen"
         />

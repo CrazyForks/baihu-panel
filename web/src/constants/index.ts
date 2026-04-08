@@ -28,6 +28,16 @@ export const TASK_STATUS = {
   CANCELLED: 'cancelled',
 } as const
 
+export const TASK_STATUS_TEXT: Record<string, string> = {
+  [TASK_STATUS.SUCCESS]: '已成功',
+  [TASK_STATUS.FAILED]: '执行失败',
+  [TASK_STATUS.RUNNING]: '正在运行',
+  [TASK_STATUS.PENDING]: '等待队列',
+  [TASK_STATUS.TIMEOUT]: '执行超时',
+  [TASK_STATUS.CANCELLED]: '手动取消',
+  'UNEXECUTED': '尚未执行',
+} as const
+
 // 任务类型
 export const TASK_TYPE = {
   NORMAL: 'task',

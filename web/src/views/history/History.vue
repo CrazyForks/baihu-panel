@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import { TASK_STATUS, TASK_TYPE } from '@/constants'
+import { TASK_STATUS, TASK_TYPE, TASK_STATUS_TEXT } from '@/constants'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Pagination from '@/components/Pagination.vue'
@@ -329,11 +329,11 @@ watch(() => route.query, (newQuery) => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">所有状态</SelectItem>
-              <SelectItem value="running">正在运行</SelectItem>
-              <SelectItem value="success">成功</SelectItem>
-              <SelectItem value="failed">失败</SelectItem>
-              <SelectItem value="timeout">超时</SelectItem>
-              <SelectItem value="cancelled">取消</SelectItem>
+              <SelectItem :value="TASK_STATUS.RUNNING">{{ TASK_STATUS_TEXT[TASK_STATUS.RUNNING] }}</SelectItem>
+              <SelectItem :value="TASK_STATUS.SUCCESS">{{ TASK_STATUS_TEXT[TASK_STATUS.SUCCESS] }}</SelectItem>
+              <SelectItem :value="TASK_STATUS.FAILED">{{ TASK_STATUS_TEXT[TASK_STATUS.FAILED] }}</SelectItem>
+              <SelectItem :value="TASK_STATUS.TIMEOUT">{{ TASK_STATUS_TEXT[TASK_STATUS.TIMEOUT] }}</SelectItem>
+              <SelectItem :value="TASK_STATUS.CANCELLED">{{ TASK_STATUS_TEXT[TASK_STATUS.CANCELLED] }}</SelectItem>
             </SelectContent>
           </Select>
         </div>

@@ -2,13 +2,13 @@
 import { ref } from 'vue'
 import { 
   X, Trash2, Maximize2, CheckCircle2, XCircle, AlertCircle, Clock, Ban, 
-  Zap as ZapIcon, Search
+  Zap as ZapIcon, Search, MinusCircle
 } from 'lucide-vue-next'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import LogContent from './LogContent.vue'
-import { TASK_STATUS } from '@/constants'
+import { TASK_STATUS, TASK_STATUS_TEXT } from '@/constants'
 import type { TaskLog } from '@/api'
 
 interface Props {
@@ -19,6 +19,8 @@ interface Props {
   isStopping?: boolean
   showClose?: boolean
   variant?: 'full' | 'simple'
+  emptyTitle?: string
+  emptyDescription?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -28,7 +30,9 @@ const props = withDefaults(defineProps<Props>(), {
   loading: false,
   isStopping: false,
   showClose: true,
-  variant: 'full'
+  variant: 'full',
+  emptyTitle: undefined,
+  emptyDescription: undefined
 })
 
 defineEmits<{
@@ -60,6 +64,8 @@ function getStatusBadgeClass(status: string) {
       return 'bg-orange-500/10 text-orange-600 border-orange-500/20 dark:bg-orange-500/20 dark:text-orange-400 dark:border-orange-500/30'
     case TASK_STATUS.CANCELLED:
       return 'bg-muted/50 text-muted-foreground border-muted-foreground/10'
+    case 'UNEXECUTED':
+      return 'bg-muted/30 text-muted-foreground/60 border-dashed border-muted-foreground/20 shadow-none'
     default:
       return 'bg-secondary text-secondary-foreground border-transparent'
   }
@@ -75,10 +81,10 @@ function getStatusBadgeClass(status: string) {
         
         <!-- Simple 模式下的状态显示 -->
         <Badge v-if="variant === 'simple'" variant="outline" :class="[
-          'capitalize px-2 py-0.5 font-normal rounded-full border text-[10px] hidden sm:flex',
+          'px-2 py-0.5 font-normal rounded-full border text-[10px] hidden sm:flex',
           getStatusBadgeClass(log.status)
         ]">
-          {{ log.status }}
+          {{ TASK_STATUS_TEXT[log.status] || log.status }}
         </Badge>
 
         <Button v-if="log.status === TASK_STATUS.RUNNING" variant="destructive" size="sm"
@@ -130,7 +136,10 @@ function getStatusBadgeClass(status: string) {
             <Clock v-else-if="log.status === TASK_STATUS.PENDING" class="h-3.5 w-3.5 fill-amber-500/20" />
             <AlertCircle v-else-if="log.status === TASK_STATUS.TIMEOUT" class="h-3.5 w-3.5 fill-orange-500/20" />
             <Ban v-else-if="log.status === TASK_STATUS.CANCELLED" class="h-3.5 w-3.5" />
-            <span class="text-[10px] font-normal uppercase">{{ log.status === TASK_STATUS.SUCCESS ? 'SUCCESS' : log.status }}</span>
+            <MinusCircle v-else-if="log.status === 'UNEXECUTED'" class="h-3.5 w-3.5 opacity-40" />
+            <span class="text-[10px] font-normal">
+              {{ TASK_STATUS_TEXT[log.status] || log.status }}
+            </span>
           </div>
         </Badge>
       </div>
@@ -184,7 +193,8 @@ function getStatusBadgeClass(status: string) {
           class="h-full"
           :content="content" 
           :loading="loading" 
-          empty-description="此任务执行期间未产生标准输出日志" 
+          :empty-title="emptyTitle"
+          :empty-description="emptyDescription || '此任务执行期间未产生标准输出日志'" 
         />
       </div>
     </div>
