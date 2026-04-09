@@ -417,8 +417,8 @@ onMounted(() => {
                                 <!-- 顶部：图标、名称、版本与删除 (移动端始终显示快捷删除，桌面端悬浮显示) -->
                                 <div class="flex items-start justify-between gap-3">
                                     <div class="flex items-center gap-3 overflow-hidden">
-                                        <!-- 序号 (小屏隐藏) -->
-                                        <div class="hidden sm:flex items-center justify-center w-7 shrink-0">
+                                        <!-- 序号 -->
+                                        <div class="flex items-center justify-center w-6 sm:w-7 shrink-0">
                                             <span class="text-[10px] font-mono text-muted-foreground/50 tabular-nums">#{{
                                                 filteredLanguages.length - index }}</span>
                                         </div>
