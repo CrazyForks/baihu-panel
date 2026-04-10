@@ -269,18 +269,18 @@ function onDialogClose(open: boolean) {
                 <div v-for="(log, index) in logs" :key="`large-${log.id}`"
                     class="hidden lg:flex items-center gap-4 px-4 py-2 hover:bg-muted/50 transition-colors cursor-pointer group"
                     :class="[selectedLogId === log.id && 'bg-accent/50']" @click="showDetail(log)">
-                    <span class="w-16 shrink-0 text-muted-foreground text-sm tabular-nums pl-1">#{{ total - (filters.page - 1) * pageSize - index }}</span>
-                    <div class="w-56 shrink-0 flex items-center gap-3 min-w-0 font-medium text-sm">
+                    <span class="w-16 shrink-0 text-muted-foreground text-[13px] tabular-nums pl-1">#{{ total - (filters.page - 1) * pageSize - index }}</span>
+                    <div class="w-56 shrink-0 flex items-center gap-3 min-w-0 text-[13px]">
                         <component :is="getLevelIcon(log.level)" :class="['h-4 w-4 shrink-0 opacity-80',
                             log.level === LOG_LEVEL.INFO ? 'text-blue-500' :
                                 log.level === LOG_LEVEL.WARNING ? 'text-yellow-500' : 'text-red-500']" />
                         <span class="truncate" :title="log.title">{{ log.title }}</span>
                     </div>
-                    <span class="flex-1 min-w-0 text-sm text-muted-foreground truncate"
+                    <span class="flex-1 min-w-0 text-[13px] text-muted-foreground truncate"
                         :title="log.content">
                         {{ log.content || '-' }}
                     </span>
-                    <span class="w-40 shrink-0 text-right text-xs text-muted-foreground tabular-nums opacity-60">
+                    <span class="w-40 shrink-0 text-right text-[13px] text-muted-foreground tabular-nums opacity-60">
                         {{ formatDate(log.created_at) }}
                     </span>
                 </div>

@@ -289,17 +289,17 @@ function onDialogClose(open: boolean) {
         <div v-for="(log, index) in logs" :key="`large-${log.id}`"
           class="hidden lg:flex items-center gap-4 px-4 py-2 hover:bg-muted/50 transition-colors cursor-pointer group"
           :class="[selectedLogId === log.id && 'bg-accent/50']" @click="showDetail(log)">
-          <span class="w-16 shrink-0 text-muted-foreground text-sm tabular-nums pl-1">#{{ getLogIndex(index) }}</span>
-          <div class="w-56 shrink-0 flex items-center gap-3 min-w-0 font-medium text-sm">
+          <span class="w-16 shrink-0 text-muted-foreground text-[13px] tabular-nums pl-1">#{{ getLogIndex(index) }}</span>
+          <div class="w-56 shrink-0 flex items-center gap-3 min-w-0 text-[13px]">
             <span :class="['h-2 w-2 rounded-full shrink-0', log.status === LOG_STATUS.SUCCESS ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.3)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.3)]']"></span>
             <span class="truncate" :title="log.title">
               <span v-if="log.channel_name" class="mr-1 text-muted-foreground opacity-60">[{{ log.channel_name }}]</span>{{ log.title }}
             </span>
           </div>
-          <span class="flex-1 min-w-0 text-sm text-muted-foreground truncate" :title="log.content">
+          <span class="flex-1 min-w-0 text-[13px] text-muted-foreground truncate" :title="log.content">
             {{ log.content || '-' }}
           </span>
-          <span class="w-40 shrink-0 text-right text-xs text-muted-foreground tabular-nums opacity-60">
+          <span class="w-40 shrink-0 text-right text-[13px] text-muted-foreground tabular-nums opacity-60">
             {{ formatDate(log.created_at) }}
           </span>
         </div>
