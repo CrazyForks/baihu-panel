@@ -49,6 +49,7 @@ const channelConfigFields: Record<string, { key: string; label: string; required
     { key: 'proxy_url', label: '代理地址', required: false, placeholder: 'http/https/socks5 代理' },
   ],
   Bark: [
+    { key: 'server', label: '服务地址', required: false, placeholder: '默认 https://api.day.app' },
     { key: 'push_key', label: 'Push Key', required: true, placeholder: 'Bark Push Key' },
     { key: 'sound', label: '推送声音', required: false, placeholder: '留空使用默认' },
     { key: 'group', label: '推送分组', required: false },

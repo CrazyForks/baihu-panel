@@ -24,6 +24,7 @@ func (c *BarkChannel) Send(config ChannelConfig, msg *Message) (*Result, error) 
 		URL:     config.GetString("url"),
 		Key:     config.GetString("key"),
 		IV:      config.GetString("iv"),
+		Server:  config.GetString("server"),
 	}
 
 	res, err := cli.Request(msg.Title, msg.Text)

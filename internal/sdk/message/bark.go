@@ -27,6 +27,7 @@ type Bark struct {
 	URL     string
 	Key     string
 	IV      string
+	Server  string
 }
 
 func (b *Bark) Request(title, content string) ([]byte, error) {
@@ -73,7 +74,11 @@ func (b *Bark) Request(title, content string) ([]byte, error) {
 		}
 		// When using encryption, use the push endpoint if PushKey is just a key
 		if !strings.HasPrefix(b.PushKey, "http") {
-			url = "https://api.day.app/push"
+			server := b.Server
+			if server == "" {
+				server = "https://api.day.app"
+			}
+			url = strings.TrimSuffix(server, "/") + "/push"
 		}
 	} else {
 		// Normal request
@@ -113,7 +118,12 @@ func (b *Bark) getURL() string {
 	if strings.HasPrefix(pushKey, "http") {
 		return pushKey
 	}
-	return fmt.Sprintf("https://api.day.app/%s", pushKey)
+	server := b.Server
+	if server == "" {
+		server = "https://api.day.app"
+	}
+	server = strings.TrimSuffix(server, "/")
+	return fmt.Sprintf("%s/%s", server, pushKey)
 }
 
 func (b *Bark) encryptPayload(payload string) (string, error) {
