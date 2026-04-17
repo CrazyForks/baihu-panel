@@ -3,12 +3,6 @@ import { ref, onMounted, computed } from 'vue'
 import { api, type AppLog, LOG_CATEGORY, LOG_STATUS } from '@/api'
 import { Badge } from '@/components/ui/badge'
 import Pagination from '@/components/Pagination.vue'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { toast } from 'vue-sonner'
 import { format } from 'date-fns'
 import {

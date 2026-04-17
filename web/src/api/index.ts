@@ -413,6 +413,8 @@ export interface EnvVar {
   type: string
   hidden: boolean
   enabled: boolean
+  created_at?: string
+  updated_at?: string
 }
 
 export interface EnvListResponse {
