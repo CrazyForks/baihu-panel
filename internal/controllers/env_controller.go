@@ -183,15 +183,15 @@ func (ec *EnvController) UpdateEnvVar(c *gin.Context) {
 
 	hidden := existing.Hidden
 	if req.Hidden != nil {
-		hidden = *req.Hidden
+		hidden = req.Hidden
 	}
 
 	enabled := existing.Enabled
 	if req.Enabled != nil {
-		enabled = *req.Enabled
+		enabled = req.Enabled
 	}
 
-	envVar := ec.envService.UpdateEnvVar(id, req.Name, req.Value, req.Remark, req.Type, hidden, enabled)
+	envVar := ec.envService.UpdateEnvVar(id, req.Name, req.Value, req.Remark, req.Type, utils.DerefBool(hidden, true), utils.DerefBool(enabled, true))
 	if envVar == nil {
 		utils.NotFound(c, "环境变量不存在")
 		return

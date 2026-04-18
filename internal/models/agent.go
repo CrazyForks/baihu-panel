@@ -20,7 +20,7 @@ type Agent struct {
 	OS          string         `json:"os" gorm:"size:20"`                             // 操作系统
 	Arch        string         `json:"arch" gorm:"size:20"`                           // 架构
 	ForceUpdate bool           `json:"force_update" gorm:"default:false"`             // 强制更新标志
-	Enabled     bool           `json:"enabled" gorm:"default:true"`                   // 是否启用
+	Enabled     *bool          `json:"enabled" gorm:"default:true"`                   // 是否启用
 	CreatedAt   LocalTime      `json:"created_at"`
 	UpdatedAt   LocalTime      `json:"updated_at"`
 }
@@ -37,7 +37,7 @@ type AgentToken struct {
 	MaxUses   int            `json:"max_uses" gorm:"default:0"`                 // 最大使用次数，0 表示无限制
 	UsedCount int            `json:"used_count" gorm:"default:0"`               // 已使用次数
 	ExpiresAt *LocalTime     `json:"expires_at"`                                // 过期时间，null 表示永不过期
-	Enabled   bool           `json:"enabled" gorm:"default:true"`               // 是否启用
+	Enabled   *bool          `json:"enabled" gorm:"default:true"`               // 是否启用
 	CreatedAt LocalTime      `json:"created_at"`
 	UpdatedAt LocalTime      `json:"updated_at"`
 }

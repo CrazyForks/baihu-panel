@@ -3,6 +3,7 @@ package vo
 import (
 	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/models"
+	"github.com/engigu/baihu-panel/internal/utils"
 )
 
 // UserVO 用户视图对象
@@ -58,8 +59,8 @@ func ToEnvVO(env *models.EnvironmentVariable) *EnvVO {
 		Value:     val,
 		Remark:    env.Remark,
 		Type:      env.Type,
-		Hidden:    env.Hidden,
-		Enabled:   env.Enabled,
+		Hidden:    utils.DerefBool(env.Hidden, true),
+		Enabled:   utils.DerefBool(env.Enabled, true),
 		CreatedAt: env.CreatedAt,
 		UpdatedAt: env.UpdatedAt,
 	}

@@ -311,7 +311,7 @@ func ParseRepoScriptsAndAddCron(es *ExecutorService, taskID string, logWriter io
 				}
 				database.DB.Save(&existing)
 				
-				if existing.Enabled && es != nil {
+				if utils.DerefBool(existing.Enabled, true) && es != nil {
 					es.AddCronTask(&existing)
 				}
 				log("[更新] 任务: %s (%s)", taskName, filename)
@@ -329,7 +329,7 @@ func ParseRepoScriptsAndAddCron(es *ExecutorService, taskID string, logWriter io
 					Languages:   repoTask.Languages,
 					Timeout:     repoTask.Timeout,
 					Config:      models.BigText(defaultTaskConfig),
-					Enabled:     true,
+					Enabled:     utils.BoolPtr(true),
 					WorkDir:     displayWorkDir,
 					SourceID:    sourceID,
 					RepoTaskID:  repoTask.ID,

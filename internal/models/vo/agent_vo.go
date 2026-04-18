@@ -2,6 +2,7 @@ package vo
 
 import (
 	"github.com/engigu/baihu-panel/internal/models"
+	"github.com/engigu/baihu-panel/internal/utils"
 )
 
 // AgentVO 代理视图对象
@@ -42,7 +43,7 @@ func ToAgentVO(agent *models.Agent) *AgentVO {
 		OS:          agent.OS,
 		Arch:        agent.Arch,
 		ForceUpdate: agent.ForceUpdate,
-		Enabled:     agent.Enabled,
+		Enabled:     utils.DerefBool(agent.Enabled, true),
 		CreatedAt:   agent.CreatedAt,
 		UpdatedAt:   agent.UpdatedAt,
 	}
@@ -93,7 +94,7 @@ func ToAgentTokenVO(token *models.AgentToken) *AgentTokenVO {
 		MaxUses:   token.MaxUses,
 		UsedCount: token.UsedCount,
 		ExpiresAt: token.ExpiresAt,
-		Enabled:   token.Enabled,
+		Enabled:   utils.DerefBool(token.Enabled, true),
 		CreatedAt: token.CreatedAt,
 	}
 }

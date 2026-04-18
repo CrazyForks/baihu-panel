@@ -44,7 +44,7 @@ func (ts *TaskService) CreateTask(name, command, schedule string, timeout int, w
 		Envs:          models.BigText(envs),
 		Languages:     languages,
 		AgentID:       agentID,
-		Enabled:       true,
+		Enabled:       utils.BoolPtr(true),
 		RetryCount:    retryCount,
 		RetryInterval: retryInterval,
 		RandomRange:   randomRange,
@@ -113,7 +113,7 @@ func (ts *TaskService) UpdateTask(id string, name, command, schedule string, tim
 	task.WorkDir = workDir
 	task.CleanConfig = cleanConfig
 	task.Envs = models.BigText(envs)
-	task.Enabled = enabled
+	task.Enabled = &enabled
 	task.AgentID = agentID
 	task.Languages = languages
 	task.Config = models.BigText(config)

@@ -287,7 +287,7 @@ func (tc *TaskController) UpdateTask(c *gin.Context) {
 		}
 	} else {
 		// 本地任务
-		if task.Enabled {
+		if utils.DerefBool(task.Enabled, true) {
 			tc.executorService.AddCronTask(task)
 		} else {
 			tc.executorService.RemoveCronTask(task.ID)

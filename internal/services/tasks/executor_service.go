@@ -370,7 +370,7 @@ func (es *ExecutorService) HandleTaskRetry(task *models.Task, req *executor.Exec
 
 			es.scheduler.EnqueueDelayed(time.Duration(task.RetryInterval)*time.Second, func() *executor.ExecutionRequest {
 				latestTask := es.taskService.GetTaskByID(task.ID)
-				if latestTask == nil || !latestTask.Enabled {
+				if latestTask == nil || !utils.DerefBool(latestTask.Enabled, true) {
 					return nil
 				}
 
@@ -536,7 +536,7 @@ func (es *ExecutorService) loadCronTasks() {
 	tasks := es.taskService.GetTasks()
 	count := 0
 	for _, task := range tasks {
-		if !task.Enabled {
+		if !utils.DerefBool(task.Enabled, true) {
 			continue
 		}
 
@@ -875,7 +875,7 @@ func (es *ExecutorService) ExecuteRemoteForScheduler(task *models.Task, logID st
 	if res.Error != nil || res.RowsAffected == 0 {
 		return nil, fmt.Errorf("Agent #%s 不存在", agentID)
 	}
-	if !agent.Enabled {
+	if !utils.DerefBool(agent.Enabled, true) {
 		return nil, fmt.Errorf("Agent #%s 已禁用", agentID)
 	}
 	if es.agentWSManager == nil {

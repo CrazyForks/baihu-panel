@@ -86,7 +86,7 @@ type Task struct {
 	RetryCount    int                 `json:"retry_count" gorm:"default:0"`               // 失败重试次数
 	RetryInterval int                 `json:"retry_interval" gorm:"default:0"`            // 失败重试间隔(秒)
 	RandomRange   int                 `json:"random_range" gorm:"default:0"`              // 随机延迟范围(秒)
-	Enabled       bool                `json:"enabled" gorm:"default:true"`
+	Enabled       *bool               `json:"enabled" gorm:"default:true"`
 	RunningGo     BigText             `json:"running_go"` // 正在运行的 go routine id 数组 (JSON)
 	RuntimeEnvs   []string            `json:"-" gorm:"-"`                  // 运行时环境变量（非持久化）
 	RuntimeSecrets []string           `json:"-" gorm:"-"`                  // 运行时安全机密（非持久化）

@@ -104,7 +104,7 @@ func (s *NotificationService) SaveChannel(channel NotifyChannel) error {
 			Name:    channel.Name,
 			Type:    channel.Type,
 			Config:  models.BigText(configJSON),
-			Enabled: channel.Enabled,
+			Enabled: utils.BoolPtr(channel.Enabled),
 		}
 		return database.DB.Create(notifyWay).Error
 	}
@@ -114,7 +114,7 @@ func (s *NotificationService) SaveChannel(channel NotifyChannel) error {
 		"name":    channel.Name,
 		"type":    channel.Type,
 		"config":  models.BigText(configJSON),
-		"enabled": channel.Enabled,
+		"enabled": &channel.Enabled,
 	}
 	return database.DB.Model(&models.NotifyWay{}).Where("id = ?", channel.ID).Updates(updates).Error
 }
@@ -282,7 +282,7 @@ func (s *NotificationService) SendByChannelID(channelID string, msg *NotifyMessa
 		return &NotifyResult{Success: false, Error: "渠道不存在"}
 	}
 
-	if !notifyWay.Enabled {
+	if !utils.DerefBool(notifyWay.Enabled, true) {
 		return &NotifyResult{Success: false, Error: "渠道已禁用"}
 	}
 
@@ -295,7 +295,7 @@ func (s *NotificationService) SendByChannelID(channelID string, msg *NotifyMessa
 		ID:      notifyWay.ID,
 		Name:    notifyWay.Name,
 		Type:    notifyWay.Type,
-		Enabled: notifyWay.Enabled,
+		Enabled: utils.DerefBool(notifyWay.Enabled, true),
 		Config:  config,
 	}
 	return s.SendToChannel(ch, msg)
@@ -533,7 +533,7 @@ func (s *NotificationService) getChannelsInternal() []NotifyChannel {
 			ID:        nw.ID,
 			Name:      nw.Name,
 			Type:      nw.Type,
-			Enabled:   nw.Enabled,
+			Enabled:   utils.DerefBool(nw.Enabled, true),
 			CreatedAt: nw.CreatedAt,
 			Config:    config,
 		})

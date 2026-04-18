@@ -30,8 +30,8 @@ func (es *EnvService) CreateEnvVar(name, value, remark, envType string, hidden, 
 		Value:     models.BigText(value),
 		Remark:    remark,
 		Type:      envType,
-		Hidden:    hidden,
-		Enabled:   enabled,
+		Hidden:    &hidden,
+		Enabled:   &enabled,
 		UserID:    userID,
 		CreatedAt: models.Now(),
 		UpdatedAt: models.Now(),
@@ -99,8 +99,8 @@ func (es *EnvService) UpdateEnvVar(id string, name, value, remark, envType strin
 		"value":   models.BigText(value),
 		"remark":  remark,
 		"type":    envType,
-		"hidden":  hidden,
-		"enabled": enabled,
+		"hidden":  &hidden,
+		"enabled": &enabled,
 	}
 	database.DB.Model(&env).Updates(updates)
 	return &env
@@ -224,7 +224,7 @@ func (es *EnvService) formatEnvVars(envs []models.EnvironmentVariable) []string 
 		}
 
 		value := string(env.Value)
-		if !env.Enabled {
+		if !utils.DerefBool(env.Enabled, true) {
 			value = ""
 		}
 
@@ -266,13 +266,13 @@ func (es *EnvService) formatEnvVarsAndSecrets(envs []models.EnvironmentVariable)
 		if env.Type == constant.EnvTypeSecret {
 			if decValue, err := utils.Decrypt(value); err == nil {
 				value = decValue
-				if env.Enabled && value != "" {
+				if utils.DerefBool(env.Enabled, true) && value != "" {
 					secrets = append(secrets, value)
 				}
 			}
 		}
 
-		if !env.Enabled {
+		if !utils.DerefBool(env.Enabled, true) {
 			value = ""
 		}
 

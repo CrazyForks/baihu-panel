@@ -72,7 +72,7 @@ func (c *AgentController) Update(ctx *gin.Context) {
 		utils.NotFound(ctx, "Agent 不存在")
 		return
 	}
-	wasEnabled := oldAgent.Enabled
+	wasEnabled := utils.DerefBool(oldAgent.Enabled, true)
 
 	if err := c.agentService.Update(id, req.Name, req.Description, req.Enabled); err != nil {
 		utils.ServerError(ctx, err.Error())
@@ -233,7 +233,7 @@ func (c *AgentController) GetTasks(ctx *gin.Context) {
 		return
 	}
 
-	if !agent.Enabled {
+	if !utils.DerefBool(agent.Enabled, true) {
 		utils.Forbidden(ctx, "Agent 已禁用")
 		return
 	}
@@ -259,7 +259,7 @@ func (c *AgentController) ReportResult(ctx *gin.Context) {
 		return
 	}
 
-	if !agent.Enabled {
+	if !utils.DerefBool(agent.Enabled, true) {
 		utils.Forbidden(ctx, "Agent 已禁用")
 		return
 	}
@@ -393,7 +393,7 @@ func (c *AgentController) WSConnect(ctx *gin.Context) {
 		logger.Infof("[AgentWS] 注册成功: Agent #%s, isNew=%v", agent.ID, isNewAgent)
 	}
 
-	if !agent.Enabled {
+	if !utils.DerefBool(agent.Enabled, true) {
 		c.wsManager.RecordConnectFail(ip)
 		logger.Warnf("[AgentWS] Agent #%s 已禁用, IP=%s", agent.ID, ip)
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "Agent 已禁用"})

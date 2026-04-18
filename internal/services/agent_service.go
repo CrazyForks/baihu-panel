@@ -54,7 +54,7 @@ func (s *AgentService) CreateToken(remark string, maxUses int, expiresAt *time.T
 		Remark:    remark,
 		MaxUses:   maxUses,
 		ExpiresAt: expires,
-		Enabled:   true,
+		Enabled:   utils.BoolPtr(true),
 	}
 
 	if err := database.DB.Create(agentToken).Error; err != nil {
@@ -85,7 +85,7 @@ func (s *AgentService) ValidateToken(token string) (*models.AgentToken, error) {
 		return nil, &ServiceError{Message: "无效的令牌"}
 	}
 
-	if !agentToken.Enabled {
+	if !utils.DerefBool(agentToken.Enabled, true) {
 		return nil, &ServiceError{Message: "令牌已禁用"}
 	}
 
@@ -147,7 +147,7 @@ func (s *AgentService) RegisterByToken(token string, machineID string, ip string
 		IP:        ip,
 		Status:    constant.AgentStatusOnline,
 		LastSeen:  &now,
-		Enabled:   true,
+		Enabled:   utils.BoolPtr(true),
 	}
 
 	if err := database.DB.Create(agent).Error; err != nil {
@@ -190,7 +190,7 @@ func (s *AgentService) Register(req *models.AgentRegisterRequest, ip string) (*m
 		IP:        ip,
 		Status:    constant.AgentStatusOnline,
 		LastSeen:  &now,
-		Enabled:   true,
+		Enabled:   utils.BoolPtr(true),
 	}
 
 	if err := database.DB.Create(agent).Error; err != nil {
@@ -207,7 +207,7 @@ func (s *AgentService) Update(id string, name, description string, enabled bool)
 	return database.DB.Model(&models.Agent{}).Where("id = ?", id).Updates(map[string]interface{}{
 		"name":        name,
 		"description": description,
-		"enabled":     enabled,
+		"enabled":     &enabled,
 	}).Error
 }
 
@@ -272,7 +272,7 @@ func (s *AgentService) Heartbeat(token, ip, version, buildTime, hostname, osType
 		return nil, &ServiceError{Message: "无效的 Token"}
 	}
 
-	if !agent.Enabled {
+	if !utils.DerefBool(agent.Enabled, true) {
 		return nil, &ServiceError{Message: "Agent 已禁用"}
 	}
 
@@ -355,7 +355,7 @@ func (s *AgentService) GetTasks(agentID string) []models.AgentTask {
 			Languages:   []map[string]string(task.Languages),
 			RandomRange: task.RandomRange,
 			Secrets:     secrets,
-			Enabled:     task.Enabled,
+			Enabled:     utils.DerefBool(task.Enabled, true),
 		}
 	}
 

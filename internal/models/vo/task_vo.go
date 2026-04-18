@@ -3,6 +3,7 @@ package vo
 import (
 	"github.com/engigu/baihu-panel/internal/executor"
 	"github.com/engigu/baihu-panel/internal/models"
+	"github.com/engigu/baihu-panel/internal/utils"
 )
 
 // TaskVO 任务视图对象
@@ -53,7 +54,7 @@ func ToTaskVO(task *models.Task) *TaskVO {
 		Languages:   task.Languages,
 		AgentID:       task.AgentID,
 		RepoTaskID:    task.RepoTaskID,
-		Enabled:       task.Enabled,
+		Enabled:       utils.DerefBool(task.Enabled, true),
 		RetryCount:    task.RetryCount,
 		RetryInterval: task.RetryInterval,
 		RandomRange:   task.RandomRange,

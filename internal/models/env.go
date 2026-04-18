@@ -11,8 +11,8 @@ type EnvironmentVariable struct {
 	Value     BigText        `json:"value"`
 	Remark    string         `json:"remark" gorm:"size:500"`
 	Type      string         `json:"type" gorm:"size:20;default:'normal'"`
-	Hidden    bool           `json:"hidden" gorm:"default:true"`
-	Enabled   bool           `json:"enabled" gorm:"default:true"`
+	Hidden    *bool          `json:"hidden" gorm:"default:true"`
+	Enabled   *bool          `json:"enabled" gorm:"default:true"`
 	UserID    string         `json:"user_id" gorm:"size:20;index"`
 	CreatedAt LocalTime      `json:"created_at"`
 	UpdatedAt LocalTime      `json:"updated_at"`
