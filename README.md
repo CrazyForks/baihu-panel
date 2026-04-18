@@ -1,9 +1,10 @@
 # 白虎面板 
 
 [![Hits](https://hits.sh/github.com/engigu/baihu-panel.svg?view=today-total)](https://hits.sh/github.com/engigu/baihu-panel/)
-![Latest Version](https://ghcr-badge.egpl.dev/engigu/baihu/latest_tag?color=%2344cc11&ignore=latest%2Cmain*&label=docker+version&trim=)
+![Version](https://img.shields.io/github/v/tag/engigu/baihu-panel?color=44cc11&label=docker%20version&sort=semver)
 ![Image Size](https://ghcr-badge.egpl.dev/engigu/baihu/size?color=%2344cc11&tag=latest&label=docker+image&trim=)
 ![Image pulls](https://img.shields.io/badge/dynamic/json?url=https://ghcr-badge.elias.eu.org/api/engigu/baihu-panel/baihu&query=downloadCount&style=flat&label=docker%20pulls&color=44cc11)
+
 
 白虎面板 (Baihu Panel) 是一款极致轻量、高性能的自动化任务调度平台。采用 Go + Vue3 架构，专注于高性能与低系统开销。通过深度集成 Mise 运行时管理，它原生支持 Python、Node.js、Go、Rust、PHP 等所有主流语言环境的动态安装（几乎所有的版本）与统一依赖管理。支持 Docker/Docker-Compose 一键部署，开箱即用，是您理想的轻量化脚本托管与任务调度解决方案。
 
