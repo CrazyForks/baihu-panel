@@ -1,14 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "@fontsource/inter/300.css";
-@import "@fontsource/inter/400.css";
-@import "@fontsource/inter/500.css";
-@import "@fontsource/inter/600.css";
-@import "@fontsource/inter/700.css";
-@import "@fontsource/noto-sans-sc/400.css";
-@import "@fontsource/noto-sans-sc/700.css";
-@import "@fontsource/jetbrains-mono/400.css";
-@import "@fontsource/jetbrains-mono/500.css";
+@import "@fontsource-variable/inter/index.css";
+@import "@fontsource-variable/noto-sans-sc/index.css";
+@import "@fontsource-variable/jetbrains-mono/index.css";
 
 /* Sonner toast styles */
 [data-sonner-toaster] {

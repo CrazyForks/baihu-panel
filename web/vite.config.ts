@@ -120,6 +120,28 @@ export default defineConfig({
           let safeName = name.replace(/[\0?*:|"<>\/\\&=$]/g, '-')
           // 去除开头可能引起静态托管平台屏蔽的下划线 '_'
           return safeName.replace(/^_/, '')
+        },
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            // 编辑器相关
+            if (id.includes('monaco-editor') || id.includes('@guolao/vue-monaco-editor')) {
+              return 'vendor-monaco'
+            }
+            // 图表相关
+            if (id.includes('apexcharts') || id.includes('chart.js') || id.includes('vue3-apexcharts') || id.includes('vue-chartjs')) {
+              return 'vendor-charts'
+            }
+            // 终端相关
+            if (id.includes('@xterm/xterm') || id.includes('xterm') || id.includes('ansi-to-html') || id.includes('ansi-to-vue3')) {
+              return 'vendor-terminal'
+            }
+            // 基础 UI 库
+            if (id.includes('radix-vue') || id.includes('reka-ui') || id.includes('lucide-vue-next') || id.includes('date-fns')) {
+              return 'vendor-ui'
+            }
+            // 其他基础依赖
+            return 'vendor'
+          }
         }
       }
     }
