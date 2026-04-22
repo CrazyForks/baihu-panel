@@ -30,6 +30,7 @@ func initSentences() {
 		var offset int64 = 0
 		for scanner.Scan() {
 			lineOffsets = append(lineOffsets, offset)
+			// scanner.Bytes() returns the line without newline
 			offset += int64(len(scanner.Bytes())) + 1 // +1 for newline
 			lineCount++
 		}
@@ -43,22 +44,33 @@ func GetRandomSentence() string {
 		return "欢迎使用白虎面板"
 	}
 
-	targetLine := rand.Intn(lineCount)
+	targetIndex := rand.Intn(lineCount)
+	start := lineOffsets[targetIndex]
 
-	scanner := bufio.NewScanner(bytes.NewReader(sentenceData))
-	currentLine := 0
-	for scanner.Scan() {
-		if currentLine == targetLine {
-			var s Sentence
-			if err := json.Unmarshal(scanner.Bytes(), &s); err == nil && s.Name != "" {
-				if s.From != "" {
-					return "\"" + s.Name + "\"—— " + s.From
-				}
-				return s.Name
-			}
-			break
+	// 找到行结束位置（通过下一个偏移量或文件末尾）
+	var end int64
+	if targetIndex < lineCount-1 {
+		end = lineOffsets[targetIndex+1] - 1 // -1 移除换行符
+	} else {
+		end = int64(len(sentenceData))
+	}
+
+	// 确保不越界并移除末尾可能的回车符 (Windows \r\n)
+	line := sentenceData[start:end]
+	line = bytes.TrimRight(line, "\r\n")
+
+	var sData []string
+	if err := json.Unmarshal(line, &sData); err == nil && len(sData) >= 1 {
+		name := sData[0]
+		from := ""
+		if len(sData) >= 2 {
+			from = sData[1]
 		}
-		currentLine++
+
+		if from != "" {
+			return "\"" + name + "\"—— " + from
+		}
+		return name
 	}
 
 	return "欢迎使用白虎面板"

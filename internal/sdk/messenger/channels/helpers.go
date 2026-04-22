@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/dysmsapi"
+	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
+	dysmsapi "github.com/alibabacloud-go/dysmsapi-20170525/v4/client"
+	"github.com/alibabacloud-go/tea/tea"
 )
 
 // replaceBodyPlaceholder 替换自定义 webhook body 中的 TEXT 占位符
@@ -15,12 +17,19 @@ func replaceBodyPlaceholder(body string, content string) string {
 	return strings.Replace(body, "TEXT", dataStr, -1)
 }
 
-// createAliyunSMSClient 创建阿里云短信客户端
+// createAliyunSMSClient 创建阿里云短信客户端 (V2.0)
 func createAliyunSMSClient(accessKeyId, accessKeySecret, regionId string) (*dysmsapi.Client, error) {
-	return dysmsapi.NewClientWithAccessKey(regionId, accessKeyId, accessKeySecret)
+	config := &openapi.Config{
+		AccessKeyId:     tea.String(accessKeyId),
+		AccessKeySecret: tea.String(accessKeySecret),
+		RegionId:        tea.String(regionId),
+	}
+	// 设置端点，通常为 dysmsapi.aliyuncs.com
+	config.Endpoint = tea.String("dysmsapi.aliyuncs.com")
+	return dysmsapi.NewClient(config)
 }
 
-// sendAliyunSMS 发送短信
+// sendAliyunSMS 发送短信 (V2.0)
 func sendAliyunSMS(client *dysmsapi.Client, phoneNumber, signName, templateCode, content string, extra map[string]any) (string, error) {
 	templateParam := map[string]interface{}{
 		"content": content,
@@ -32,21 +41,27 @@ func sendAliyunSMS(client *dysmsapi.Client, phoneNumber, signName, templateCode,
 	}
 	templateParamJSON, _ := json.Marshal(templateParam)
 
-	request := dysmsapi.CreateSendSmsRequest()
-	request.Scheme = "https"
-	request.PhoneNumbers = phoneNumber
-	request.SignName = signName
-	request.TemplateCode = templateCode
-	request.TemplateParam = string(templateParamJSON)
+	request := &dysmsapi.SendSmsRequest{
+		PhoneNumbers:  tea.String(phoneNumber),
+		SignName:      tea.String(signName),
+		TemplateCode:  tea.String(templateCode),
+		TemplateParam: tea.String(string(templateParamJSON)),
+	}
 
 	response, err := client.SendSms(request)
 	if err != nil {
 		return "", fmt.Errorf("发送短信失败: %s", err.Error())
 	}
 
-	if response.Code != "OK" {
-		return "", fmt.Errorf("发送失败: %s - %s", response.Code, response.Message)
+	if response.Body == nil || tea.StringValue(response.Body.Code) != "OK" {
+		msg := "Unknown Error"
+		code := "Unknown Code"
+		if response.Body != nil {
+			msg = tea.StringValue(response.Body.Message)
+			code = tea.StringValue(response.Body.Code)
+		}
+		return "", fmt.Errorf("发送失败: %s - %s", code, msg)
 	}
 
-	return fmt.Sprintf("RequestId: %s, BizId: %s", response.RequestId, response.BizId), nil
+	return fmt.Sprintf("RequestId: %s, BizId: %s", tea.StringValue(response.Body.RequestId), tea.StringValue(response.Body.BizId)), nil
 }
