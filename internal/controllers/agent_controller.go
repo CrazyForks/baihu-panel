@@ -20,9 +20,7 @@ import (
 )
 
 var agentUpgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
+	CheckOrigin: utils.CheckWSOrigin,
 }
 
 // AgentController Agent 控制器

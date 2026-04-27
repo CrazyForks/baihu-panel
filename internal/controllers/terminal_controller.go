@@ -4,11 +4,11 @@ import (
 	"bufio"
 	"encoding/json"
 	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sync"
+	"time"
 	"unicode/utf8"
 
 	"github.com/engigu/baihu-panel/internal/constant"
@@ -22,6 +22,7 @@ import (
 	"golang.org/x/text/transform"
 )
 
+
 type TerminalController struct {
 	envService *services.EnvService
 }
@@ -33,9 +34,7 @@ func NewTerminalController(envService *services.EnvService) *TerminalController 
 }
 
 var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
+	CheckOrigin: utils.CheckWSOrigin,
 }
 
 // toUTF8 将可能是 GBK 编码的字节转换为 UTF-8
@@ -98,6 +97,13 @@ func (tc *TerminalController) HandleWebSocket(c *gin.Context) {
 
 // handlePtyMode 使用 PTY 处理终端（Unix/macOS）
 func (tc *TerminalController) handlePtyMode(conn *websocket.Conn, userID string) {
+	conn.SetReadLimit(constant.MaxMessageSize)
+	conn.SetReadDeadline(time.Now().Add(constant.PongWait))
+	conn.SetPongHandler(func(string) error {
+		conn.SetReadDeadline(time.Now().Add(constant.PongWait))
+		return nil
+	})
+
 	// 发送 PTY 模式标识
 	conn.WriteMessage(websocket.TextMessage, []byte("__PTY_MODE__"))
 
@@ -124,6 +130,7 @@ func (tc *TerminalController) handlePtyMode(conn *websocket.Conn, userID string)
 	writeMessage := func(data []byte) {
 		connMu.Lock()
 		defer connMu.Unlock()
+		conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 		conn.WriteMessage(websocket.TextMessage, data)
 	}
 
@@ -139,6 +146,27 @@ func (tc *TerminalController) handlePtyMode(conn *websocket.Conn, userID string)
 			if n > 0 {
 				text := toUTF8(buf[:n])
 				writeMessage([]byte(text))
+			}
+		}
+	}()
+
+	// 启动 ping 协程
+	pingDone := make(chan struct{})
+	go func() {
+		ticker := time.NewTicker(constant.PingPeriod)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				connMu.Lock()
+				conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+				if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+					connMu.Unlock()
+					return
+				}
+				connMu.Unlock()
+			case <-pingDone:
+				return
 			}
 		}
 	}()
@@ -167,6 +195,7 @@ func (tc *TerminalController) handlePtyMode(conn *websocket.Conn, userID string)
 		}
 	}
 
+	close(pingDone)
 	cmd.Process.Kill()
 	cmd.Wait()
 	wg.Wait()
@@ -174,6 +203,13 @@ func (tc *TerminalController) handlePtyMode(conn *websocket.Conn, userID string)
 
 // handlePipeMode 使用 pipe 处理终端（Windows）
 func (tc *TerminalController) handlePipeMode(conn *websocket.Conn, userID string) {
+	conn.SetReadLimit(constant.MaxMessageSize)
+	conn.SetReadDeadline(time.Now().Add(constant.PongWait))
+	conn.SetPongHandler(func(string) error {
+		conn.SetReadDeadline(time.Now().Add(constant.PongWait))
+		return nil
+	})
+
 	// 发送 pipe 模式标识
 	conn.WriteMessage(websocket.TextMessage, []byte("__PIPE_MODE__"))
 
@@ -215,6 +251,7 @@ func (tc *TerminalController) handlePipeMode(conn *websocket.Conn, userID string
 	writeMessage := func(data []byte) {
 		connMu.Lock()
 		defer connMu.Unlock()
+		conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 		conn.WriteMessage(websocket.TextMessage, data)
 	}
 
@@ -238,6 +275,27 @@ func (tc *TerminalController) handlePipeMode(conn *websocket.Conn, userID string
 	go readOutput(stdout)
 	go readOutput(stderr)
 
+	// 启动 ping 协程
+	pingDone := make(chan struct{})
+	go func() {
+		ticker := time.NewTicker(constant.PingPeriod)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				connMu.Lock()
+				conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+				if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+					connMu.Unlock()
+					return
+				}
+				connMu.Unlock()
+			case <-pingDone:
+				return
+			}
+		}
+	}()
+
 	for {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
@@ -258,6 +316,7 @@ func (tc *TerminalController) handlePipeMode(conn *websocket.Conn, userID string
 		}
 	}
 
+	close(pingDone)
 	stdin.Close()
 	cmd.Process.Kill()
 	cmd.Wait()

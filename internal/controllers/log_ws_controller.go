@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 
+	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/database"
 	"github.com/engigu/baihu-panel/internal/models"
 	"github.com/engigu/baihu-panel/internal/services/tasks"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"time"
 )
 
 type LogWSController struct{}
@@ -31,6 +33,23 @@ func (lc *LogWSController) StreamLog(c *gin.Context) {
 		return
 	}
 	defer conn.Close()
+
+	// DoS 保护与心跳设置
+	conn.SetReadLimit(constant.MaxMessageSize) // 使用与终端一致的限制
+	conn.SetReadDeadline(time.Now().Add(constant.PongWait))
+	conn.SetPongHandler(func(string) error {
+		conn.SetReadDeadline(time.Now().Add(constant.PongWait))
+		return nil
+	})
+
+	// 启动一个读取循环，用于处理 pong 和检测断开
+	go func() {
+		for {
+			if _, _, err := conn.ReadMessage(); err != nil {
+				break
+			}
+		}
+	}()
 
 	// 1. 检查数据库中是否已结束
 	var taskLog models.TaskLog
@@ -68,9 +87,17 @@ func (lc *LogWSController) StreamLog(c *gin.Context) {
 	sub := tl.Subscribe()
 	defer tl.Unsubscribe(sub)
 
+	ticker := time.NewTicker(constant.PingPeriod)
+	defer ticker.Stop()
+
 	// 推送更新
 	for {
 		select {
+		case <-ticker.C:
+			conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
 		case data, ok := <-sub:
 			if !ok {
 				// 任务结束，尝试刷新最后一次库内完整内容

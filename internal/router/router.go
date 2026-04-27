@@ -2,6 +2,7 @@ package router
 
 import (
 	"strings"
+	"os"
 
 	"github.com/engigu/baihu-panel/internal/controllers"
 	"github.com/engigu/baihu-panel/internal/middleware"
@@ -31,7 +32,9 @@ type Controllers struct {
 }
 
 func Setup(c *Controllers) *gin.Engine {
-	gin.SetMode(gin.ReleaseMode)
+	if os.Getenv("GIN_MODE") == "" {
+		gin.SetMode(gin.ReleaseMode)
+	}
 	router := gin.New()
 	router.Use(middleware.GinLogger(), middleware.GinRecovery())
 

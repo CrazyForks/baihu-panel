@@ -1,5 +1,7 @@
 package constant
 
+import "time"
+
 const (
 
 	// ConfigPath 配置文件路径
@@ -159,6 +161,14 @@ const (
 	// Env Type
 	EnvTypeNormal = "normal"
 	EnvTypeSecret = "secret"
+
+	// WebSocket 安全常量
+	// PongWait 收到 pong 的超时时间
+	PongWait = 60 * time.Second
+	// PingPeriod 发送 ping 的周期
+	PingPeriod = (PongWait * 9) / 10
+	// MaxMessageSize 允许的最大消息大小
+	MaxMessageSize = 1024 * 1024 // 1MB
 )
 
 // TablePrefix 表前缀，从配置文件读取
