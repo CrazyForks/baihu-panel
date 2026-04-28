@@ -4,11 +4,13 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"os"
 	"sync"
 	"unicode/utf8"
 
+	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/utils"
 )
 
@@ -235,6 +237,33 @@ func (l *TinyLog) CompressAndCleanup() (string, error) {
 	// 使用 Pool 优化压缩
 	zw := utils.GetZlibWriter(b64Writer)
 	defer utils.PutZlibWriter(zw)
+
+	// 获取文件大小
+	stat, err := f.Stat()
+	if err != nil {
+		return "", err
+	}
+	size := stat.Size()
+	maxSize := int64(constant.MaxLogSize)
+	if maxSize < 1024*1024 {
+		maxSize = 1024 * 1024
+	}
+
+	var readStart int64 = 0
+	if size > maxSize {
+		readStart = size - maxSize
+		// 写入一条截断提示
+		truncatedMsg := fmt.Sprintf("\n\n[System] 日志过长，已自动截断，仅保留末尾 %d MB...\n\n", maxSize/1024/1024)
+		if _, err := zw.Write([]byte(truncatedMsg)); err != nil {
+			return "", err
+		}
+	}
+
+	if readStart > 0 {
+		if _, err := f.Seek(readStart, io.SeekStart); err != nil {
+			return "", err
+		}
+	}
 
 	// 流处理: 文件 -> Zlib -> Base64 -> 缓冲区
 	if _, err := io.Copy(zw, f); err != nil {

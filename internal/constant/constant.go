@@ -169,6 +169,8 @@ const (
 	PingPeriod = (PongWait * 9) / 10
 	// MaxMessageSize 允许的最大消息大小
 	MaxMessageSize = 1024 * 1024 // 1MB
+	// MaxLogSize 允许的最大日志大小 (保留末尾 10MB)
+	MaxLogSize = 10 * 1024 * 1024 // 10MB
 )
 
 // TablePrefix 表前缀，从配置文件读取

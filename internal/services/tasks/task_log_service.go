@@ -8,6 +8,7 @@ import (
 	"github.com/engigu/baihu-panel/internal/logger"
 	"github.com/engigu/baihu-panel/internal/models"
 	"github.com/engigu/baihu-panel/internal/systime"
+	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/utils"
 )
 
@@ -161,8 +162,9 @@ func (s *TaskLogService) ProcessTaskCompletion(taskLog *models.TaskLog) error {
 
 // CreateTaskLogFromAgentResult 从 Agent 结果创建任务日志
 func (s *TaskLogService) CreateTaskLogFromAgentResult(result *models.AgentTaskResult) (*models.TaskLog, error) {
-	// 压缩输出
-	compressed, err := utils.CompressToBase64(result.Output)
+	// 裁剪并压缩输出
+	trimmedOutput := utils.TrimLog(result.Output, constant.MaxLogSize)
+	compressed, err := utils.CompressToBase64(trimmedOutput)
 	if err != nil {
 		logger.Errorf("[TaskLog] 压缩日志失败: %v", err)
 		compressed = ""
@@ -202,8 +204,9 @@ func (s *TaskLogService) CreateTaskLogFromLocalExecution(taskID string, command,
 	if isCompressed {
 		compressed = output
 	} else {
-		// 压缩输出
-		compressed, err = utils.CompressToBase64(output)
+		// 裁剪并压缩输出
+		trimmedOutput := utils.TrimLog(output, constant.MaxLogSize)
+		compressed, err = utils.CompressToBase64(trimmedOutput)
 		if err != nil {
 			logger.Errorf("[TaskLog] 压缩日志失败: %v", err)
 			compressed = ""
