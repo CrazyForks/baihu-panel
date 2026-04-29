@@ -9,10 +9,16 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"unicode/utf8"
 
 	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/logger"
 	"github.com/engigu/baihu-panel/internal/utils"
+)
+
+const (
+	// maxLogBufferLen 定义了没有换行符时的最大缓冲长度 (4KB)
+	maxLogBufferLen = 4096
 )
 
 var (
@@ -98,12 +104,30 @@ func (l *TinyLog) Write(p []byte) (n int, err error) {
 		l.remainder = nil
 	}
 
-	// 1. 寻找最后一个换行符
-	lastNewline := bytes.LastIndexByte(payload, '\n')
-	if lastNewline == -1 {
-		// 没有换行符，且如果长度超过 4KB，强制截断并输出，防止内存无限制增长
-		if len(payload) > 4096 {
-			lastNewline = len(payload) - 1
+	// 1. 寻找最后一个换行符 (\n 或 \r)
+	lastLineBreak := bytes.LastIndexAny(payload, "\n\r")
+	var completeBytes []byte
+	var remainder []byte
+
+	if lastLineBreak != -1 {
+		// 2. 提取出完整的行
+		completeBytes = payload[:lastLineBreak+1]
+		remainder = payload[lastLineBreak+1:]
+	} else {
+		// 3. 没有换行符，且如果长度超过最大缓冲，强制截断并输出，防止内存无限制增长
+		if len(payload) > maxLogBufferLen {
+			// 寻找最后一个完整的 UTF-8 字符边界，避免乱码
+			lastSafe := maxLogBufferLen
+			for i := maxLogBufferLen; i > 0 && i > maxLogBufferLen-4; i-- {
+				if utf8.RuneStart(payload[i-1]) {
+					if !utf8.FullRune(payload[i-1 : maxLogBufferLen]) {
+						lastSafe = i - 1
+					}
+					break
+				}
+			}
+			completeBytes = payload[:lastSafe]
+			remainder = payload[lastSafe:]
 		} else {
 			// 保留当前所有内容到下一轮
 			l.remainder = payload
@@ -111,20 +135,14 @@ func (l *TinyLog) Write(p []byte) (n int, err error) {
 		}
 	}
 
-	// 2. 提取出完整的行
-	completeBytes := payload[:lastNewline+1]
+	// 4. 将剩余部分保存
+	l.remainder = remainder
 
-	// 3. 剥离并保存剩余的部分
-	if lastNewline+1 < len(payload) {
-		l.remainder = make([]byte, len(payload)-(lastNewline+1))
-		copy(l.remainder, payload[lastNewline+1:])
-	}
-
-	// 4. 将完整行转换为 UTF-8 并脱敏
+	// 5. 将完整行转换为 UTF-8 并脱敏
 	text := utils.MaskSecrets(utils.ToUTF8(completeBytes), l.masks)
 	outData := []byte(text)
 
-	// 5. 输出安全部分
+	// 6. 输出安全部分
 	_, err = l.writer.Write(outData)
 	if err != nil {
 		return 0, err
