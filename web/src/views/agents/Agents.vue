@@ -7,14 +7,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
-  RefreshCw, Trash2, Edit, Copy, Server, Search, Download, RotateCw,
-  Plus, Ticket, ListTodo, Eye, Wifi as WifiIcon, WifiOff as WifiOffIcon,
-  Zap as ZapIcon, ZapOff as ZapOffIcon, Check, X
+  RefreshCw, Trash2, Pencil, Copy, Server, Search, Download, RotateCw,
+  Plus, Ticket, ListTodo, Eye, Wifi, WifiOff,
+  Zap, ZapOff, Check, X, MoreHorizontal, Loader2, Monitor, Terminal, GitBranch
 } from 'lucide-vue-next'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
 import { api, type Agent, type AgentToken } from '@/api'
 import { toast } from 'vue-sonner'
 import { useRouter } from 'vue-router'
 import { AGENT_STATUS } from '@/constants'
+import TextOverflow from '@/components/TextOverflow.vue'
 
 const router = useRouter()
 
@@ -248,208 +256,261 @@ onUnmounted(() => {
 
 
 <template>
-  <div class="space-y-6">
-    <Tabs v-model="activeTab">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div>
-          <h2 class="text-xl sm:text-2xl font-bold tracking-tight">Agent 管理</h2>
-          <p class="text-muted-foreground text-sm">管理远程执行代理</p>
-        </div>
-        <div class="flex flex-col sm:flex-row items-center sm:justify-end gap-3 w-full md:w-auto">
-          <div class="flex w-full sm:w-auto items-center gap-2">
-            <div class="relative flex-1 sm:flex-none">
-              <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input v-model="searchQuery" placeholder="搜索..." class="h-9 pl-9 w-full sm:w-40 md:w-48 text-sm" />
-            </div>
-            <Button variant="outline" size="sm" class="h-9 shrink-0" @click="openDownloadDialog">
-              <Download class="h-4 w-4 sm:mr-1.5" /> <span class="hidden sm:inline">下载</span>
-            </Button>
-            <Button variant="outline" size="icon" class="h-9 w-9 shrink-0" @click="loadAgents" :disabled="loading">
-              <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': loading }" />
-            </Button>
-          </div>
-          <TabsList class="grid w-full grid-cols-2 sm:w-[180px] h-9 shrink-0">
-            <TabsTrigger value="agents" class="text-sm">Agent 列表</TabsTrigger>
-            <TabsTrigger value="regcodes" class="text-sm">
-              <Ticket class="h-3.5 w-3.5 mr-1" />
-              <span>令牌</span>
-            </TabsTrigger>
-          </TabsList>
-        </div>
+  <Tabs v-model="activeTab" class="space-y-6">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="flex flex-col shrink-0">
+        <h2 class="text-xl sm:text-2xl font-bold tracking-tight">Agent 管理</h2>
+        <p class="text-muted-foreground text-xs mt-0.5 ml-0.5">管理远程执行代理</p>
       </div>
 
-      <TabsContent value="agents" class="mt-4">
-        <div class="rounded-lg border bg-card overflow-x-auto">
-          <div class="min-w-full w-max">
-            <!-- 大屏表头 -->
-            <div
-              class="hidden sm:flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 border-b bg-muted/50 text-xs sm:text-sm text-muted-foreground font-medium">
-            <span class="w-10 sm:w-12 shrink-0">序号</span>
-            <span class="w-6 shrink-0"></span>
-            <span class="w-24 sm:w-32 shrink-0">名称</span>
-            <span class="w-24 sm:w-28 shrink-0">IP</span>
-            <span class="w-20 sm:w-32 shrink-0 hidden md:block">主机名</span>
-            <span class="w-20 sm:w-36 shrink-0 hidden lg:block">版本</span>
-            <span class="w-40 shrink-0 hidden xl:block">心跳时间</span>
-            <span class="w-40 shrink-0 hidden xl:block">创建时间</span>
-            <span class="flex-1 min-w-[180px] text-center sm:text-right sm:pr-2">操作</span>
+      <div class="flex flex-row items-center flex-wrap gap-2 w-full md:w-auto md:ml-auto md:justify-end">
+        <!-- 搜索与操作 -->
+        <div class="flex flex-row items-center gap-2 w-full sm:flex-1 md:flex-none md:w-auto text-sm">
+          <div class="relative flex-1 md:flex-none md:w-[200px] group">
+            <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+            <Input v-model="searchQuery" placeholder="搜索 Agent..." class="h-9 pl-9 w-full bg-muted/20 border-muted-foreground/10 focus:bg-background text-sm" />
           </div>
-          <div class="divide-y">
-            <div v-if="filteredAgents.length === 0" class="text-center py-8 text-muted-foreground">
-              <Server class="h-8 w-8 mx-auto mb-2 opacity-50" />
-              {{ searchQuery ? '无匹配结果' : '暂无 Agent' }}
+          
+          <Button variant="outline" size="icon" class="h-9 w-9 shrink-0" @click="loadAgents" :disabled="loading" title="刷新">
+            <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': loading }" />
+          </Button>
+
+          <Button variant="outline" class="h-9 px-3 shrink-0 shadow-sm" @click="openDownloadDialog">
+            <Download class="h-4 w-4 md:mr-2" /> <span class="hidden md:inline">下载 Agent</span>
+          </Button>
+        </div>
+
+        <TabsList class="h-9 p-1 bg-muted/30 border w-full sm:w-auto">
+          <TabsTrigger value="agents" class="px-4 h-7 text-sm flex-1 sm:flex-none">Agent 列表</TabsTrigger>
+          <TabsTrigger value="regcodes" class="px-4 h-7 text-sm flex-1 sm:flex-none">
+            <Ticket class="h-3.5 w-3.5 mr-1.5" />令牌
+          </TabsTrigger>
+        </TabsList>
+      </div>
+    </div>
+
+    <TabsContent value="agents" class="mt-0">
+        <div class="rounded-lg border bg-card overflow-hidden">
+          <!-- ========== 1. 大屏布局 (Large >= 1280px) ========== -->
+          <div class="hidden xl:block">
+            <!-- 表头 -->
+            <div class="flex items-center gap-4 px-4 py-1.5 border-b bg-muted/20 text-xs text-muted-foreground font-medium">
+              <span class="w-12 shrink-0 pl-1">序号</span>
+              <span class="w-8 shrink-0 text-center">状态</span>
+              <span class="w-48 shrink-0">名称</span>
+              <span class="w-32 shrink-0">IP 地址</span>
+              <span class="w-32 shrink-0">主机名</span>
+              <span class="w-28 shrink-0">版本</span>
+              <span class="flex-1 min-w-0">心跳时间</span>
+              <span class="w-24 shrink-0 text-center">操作</span>
             </div>
-            <!-- 小屏布局 -->
-            <div v-for="(agent, index) in filteredAgents" :key="agent.id"
-              class="sm:hidden p-3 hover:bg-muted/50 transition-colors">
-              <div class="flex items-start justify-between mb-2">
-                <div class="flex items-center gap-2 flex-1 min-w-0">
-                  <span class="text-xs text-muted-foreground shrink-0">#{{ filteredAgents.length - index }}</span>
-                  <span class="flex items-center shrink-0" :title="isOnline(agent) ? '在线' : '离线'">
-                    <div v-if="isOnline(agent)"
-                      class="h-5 w-5 rounded-full bg-green-500/10 flex items-center justify-center">
-                      <WifiIcon class="h-3 w-3 text-green-500" />
-                    </div>
-                    <div v-else class="h-5 w-5 rounded-full bg-muted flex items-center justify-center">
-                      <WifiOffIcon class="h-3 w-3 text-muted-foreground" />
-                    </div>
-                  </span>
-                  <span class="font-medium text-sm truncate cursor-pointer hover:text-primary"
-                    @click="viewDetail(agent)" :title="agent.name">{{ agent.name }}</span>
-                </div>
-                <div class="flex items-center gap-2 shrink-0 ml-2">
-                  <span class="cursor-pointer group" @click="toggleEnabled(agent)"
-                    :title="agent.enabled ? '点击禁用' : '点击启用'">
-                    <div v-if="agent.enabled"
-                      class="h-6 w-6 rounded-md bg-green-500/10 flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
-                      <ZapIcon class="h-3.5 w-3.5 text-green-500 fill-green-500" />
-                    </div>
-                    <div v-else
-                      class="h-6 w-6 rounded-md bg-muted flex items-center justify-center group-hover:bg-muted/80 transition-colors">
-                      <ZapOffIcon class="h-3.5 w-3.5 text-muted-foreground" />
-                    </div>
-                  </span>
-                  <Button variant="ghost" size="icon" class="h-7 w-7" @click="viewDetail(agent)" title="详情">
-                    <Eye class="h-3.5 w-3.5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" class="h-7 w-7" @click="viewTasks(agent)" title="查看任务">
-                    <ListTodo class="h-3.5 w-3.5" />
-                  </Button>
-                </div>
+            <!-- 列表 -->
+            <div class="divide-y text-sm">
+              <div v-if="filteredAgents.length === 0" class="text-center py-12 text-muted-foreground">
+                <Server class="h-8 w-8 mx-auto mb-2 opacity-50" />
+                {{ searchQuery ? '无匹配结果' : '暂无 Agent' }}
               </div>
-              <div class="space-y-1 text-xs text-muted-foreground">
-                <div class="flex items-center gap-2">
-                  <span class="w-12 shrink-0">IP:</span>
-                  <span class="truncate">{{ agent.ip || '-' }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="w-12 shrink-0">主机:</span>
-                  <span class="truncate">{{ agent.hostname || '-' }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="w-12 shrink-0">版本:</span>
-                  <span class="truncate">{{ agent.version || '-' }}</span>
-                </div>
-              </div>
-              <div class="flex items-center justify-end gap-1 mt-2 pt-2 border-t">
-                <Button variant="ghost" size="sm" class="h-7 text-xs" @click="forceUpdate(agent)">
-                  <RotateCw class="h-3 w-3 mr-1" />更新
-                </Button>
-                <Button variant="ghost" size="sm" class="h-7 text-xs" @click="openEditDialog(agent)">
-                  <Edit class="h-3 w-3 mr-1" />编辑
-                </Button>
-                <Button variant="ghost" size="sm" class="h-7 text-xs text-destructive" @click="confirmDelete(agent)">
-                  <Trash2 class="h-3 w-3 mr-1" />删除
-                </Button>
-              </div>
-            </div>
-            <!-- 大屏布局 -->
-            <div v-for="(agent, index) in filteredAgents" :key="`desktop-${agent.id}`"
-              class="hidden sm:flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 hover:bg-muted/50 transition-colors">
-              <span class="w-10 sm:w-12 shrink-0 text-muted-foreground text-xs sm:text-sm">#{{ filteredAgents.length - index }}</span>
-              <span class="w-6 shrink-0 flex justify-center">
-                <span class="flex justify-center shrink-0" :title="isOnline(agent) ? '在线' : '离线'">
-                  <div v-if="isOnline(agent)"
-                    class="h-6 w-6 rounded-full bg-green-500/10 flex items-center justify-center">
-                    <WifiIcon class="h-3.5 w-3.5 text-green-500" />
+              <div v-for="(agent, index) in filteredAgents" :key="`large-${agent.id}`"
+                class="flex items-center gap-4 px-4 py-1.5 hover:bg-muted/30 transition-colors">
+                <div class="w-12 shrink-0 pl-1 text-muted-foreground tabular-nums">#{{ filteredAgents.length - index }}</div>
+                <span class="w-8 shrink-0 flex justify-center" :title="isOnline(agent) ? '在线' : '离线'">
+                  <div v-if="isOnline(agent)" class="h-5 w-5 rounded-full bg-green-500/10 flex items-center justify-center">
+                    <Wifi class="h-3 w-3 text-green-500" />
                   </div>
-                  <div v-else class="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
-                    <WifiOffIcon class="h-3.5 w-3.5 text-muted-foreground" />
+                  <div v-else class="h-5 w-5 rounded-full bg-muted flex items-center justify-center">
+                    <WifiOff class="h-3 w-3 text-muted-foreground" />
                   </div>
                 </span>
-              </span>
-              <span
-                class="w-24 sm:w-32 shrink-0 font-medium text-xs sm:text-sm truncate cursor-pointer hover:text-primary"
-                @click="viewDetail(agent)" :title="agent.name">{{ agent.name }}</span>
-              <span class="w-24 sm:w-28 shrink-0 text-xs sm:text-sm text-muted-foreground truncate">{{ agent.ip || '-'
-              }}</span>
-              <span class="w-20 sm:w-32 shrink-0 text-xs sm:text-sm text-muted-foreground truncate hidden md:block">{{
-                agent.hostname || '-' }}</span>
-              <span class="w-20 sm:w-36 shrink-0 text-xs sm:text-sm text-muted-foreground truncate hidden lg:block">{{
-                agent.version || '-' }}</span>
-              <span class="w-40 shrink-0 text-xs sm:text-sm text-muted-foreground hidden xl:block">{{ agent.last_seen ||
-                '-' }}</span>
-              <span class="w-40 shrink-0 text-xs sm:text-sm text-muted-foreground hidden xl:block">{{ agent.created_at
-                || '-' }}</span>
-              <span class="flex-1 min-w-[180px] flex justify-end gap-1 sm:gap-2 items-center">
-                <span class="cursor-pointer group shrink-0" @click="toggleEnabled(agent)"
-                  :title="agent.enabled ? '点击禁用' : '点击启用'">
-                  <div v-if="agent.enabled"
-                    class="h-6 w-6 rounded-md bg-green-500/10 flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
-                    <ZapIcon class="h-3.5 w-3.5 text-green-500 fill-green-500" />
-                  </div>
-                  <div v-else
-                    class="h-6 w-6 rounded-md bg-muted flex items-center justify-center group-hover:bg-muted/80 transition-colors">
-                    <ZapOffIcon class="h-3.5 w-3.5 text-muted-foreground" />
-                  </div>
+                <div class="w-48 shrink-0 flex flex-col justify-center gap-0.5 overflow-hidden">
+                  <span class="font-medium truncate cursor-pointer hover:text-primary transition-colors" @click="viewDetail(agent)">{{ agent.name }}</span>
+                  <div v-if="agent.description" class="text-[10px] text-muted-foreground truncate">{{ agent.description }}</div>
+                </div>
+                <span class="w-32 shrink-0 text-xs text-muted-foreground truncate">{{ agent.ip || '-' }}</span>
+                <span class="w-32 shrink-0 text-xs text-muted-foreground truncate">{{ agent.hostname || '-' }}</span>
+                <span class="w-28 shrink-0 text-xs text-muted-foreground truncate">{{ agent.version || '-' }}</span>
+                <span class="flex-1 min-w-0 text-[11px] text-muted-foreground tabular-nums truncate">
+                  {{ agent.last_seen || '-' }}
                 </span>
-                <Button variant="ghost" size="icon" class="h-7 w-7 shrink-0" @click="viewDetail(agent)" title="详情">
-                  <Eye class="h-3.5 w-3.5" />
-                </Button>
-                <Button variant="ghost" size="icon" class="h-7 w-7 shrink-0" @click="viewTasks(agent)" title="查看任务">
-                  <ListTodo class="h-3.5 w-3.5" />
-                </Button>
-                <Button variant="ghost" size="icon" class="h-7 w-7 shrink-0" @click="forceUpdate(agent)" title="强制更新">
-                  <RotateCw class="h-3.5 w-3.5" />
-                </Button>
-                <Button variant="ghost" size="icon" class="h-7 w-7 shrink-0" @click="openEditDialog(agent)" title="编辑">
-                  <Edit class="h-3.5 w-3.5" />
-                </Button>
-                <Button variant="ghost" size="icon" class="h-7 w-7 text-destructive shrink-0" @click="confirmDelete(agent)"
-                  title="删除">
-                  <Trash2 class="h-3.5 w-3.5" />
-                </Button>
-              </span>
+                <span class="w-24 shrink-0 flex justify-center items-center">
+                  <span class="cursor-pointer group mr-1" @click="toggleEnabled(agent)" :title="agent.enabled ? '点击禁用' : '点击启用'">
+                    <div v-if="agent.enabled" class="h-6 w-6 rounded-md bg-green-500/5 flex items-center justify-center group-hover:bg-green-500/10">
+                      <Zap class="h-3 w-3 text-green-500 fill-green-500" />
+                    </div>
+                    <div v-else class="h-6 w-6 rounded-md bg-muted flex items-center justify-center group-hover:bg-muted/80">
+                      <ZapOff class="h-3 w-3 text-muted-foreground" />
+                    </div>
+                  </span>
+                  <Button variant="ghost" size="icon" class="h-6 w-6" @click="viewDetail(agent)" title="详情"><Eye class="h-3 w-3" /></Button>
+                  <Button variant="ghost" size="icon" class="h-6 w-6" @click="viewTasks(agent)" title="查看任务"><ListTodo class="h-3 w-3" /></Button>
+                  <Button variant="ghost" size="icon" class="h-6 w-6" @click="openEditDialog(agent)" title="编辑"><Pencil class="h-3 w-3" /></Button>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger as-child>
+                      <Button variant="ghost" size="icon" class="h-6 w-6"><MoreHorizontal class="h-3 w-3" /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" class="w-32">
+                      <DropdownMenuItem @click="forceUpdate(agent)">
+                        <RotateCw class="h-3.5 w-3.5 mr-2" />
+                        <span>强制更新</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem class="text-destructive focus:text-destructive" @click="confirmDelete(agent)">
+                        <Trash2 class="h-3.5 w-3.5 mr-2" />
+                        <span>删除 Agent</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </span>
+              </div>
             </div>
           </div>
+
+          <!-- ========== 2. 中屏布局 (Medium 640px - 1280px) ========== -->
+          <div class="hidden sm:block xl:hidden">
+            <!-- 表头 -->
+            <div class="flex items-center gap-4 px-4 py-1.5 border-b bg-muted/20 text-xs text-muted-foreground font-medium">
+              <span class="w-12 shrink-0 pl-1">序号</span>
+              <span class="w-8 shrink-0 text-center">状态</span>
+              <span class="w-48 shrink-0">名称</span>
+              <span class="flex-1 min-w-0">IP 地址</span>
+              <span class="w-24 shrink-0 text-center">操作</span>
+            </div>
+            <!-- 列表 -->
+            <div class="divide-y text-sm">
+              <div v-for="(agent, index) in filteredAgents" :key="`medium-${agent.id}`"
+                class="flex items-center gap-4 px-4 py-2.5 hover:bg-muted/30 transition-colors">
+                <div class="w-12 shrink-0 pl-1 text-muted-foreground tabular-nums text-xs">#{{ filteredAgents.length - index }}</div>
+                <span class="w-8 shrink-0 flex justify-center" :title="isOnline(agent) ? '在线' : '离线'">
+                  <div v-if="isOnline(agent)" class="h-5 w-5 rounded-full bg-green-500/10 flex items-center justify-center">
+                    <Wifi class="h-3 w-3 text-green-500" />
+                  </div>
+                  <div v-else class="h-5 w-5 rounded-full bg-muted flex items-center justify-center">
+                    <WifiOff class="h-3 w-3 text-muted-foreground" />
+                  </div>
+                </span>
+                <div class="w-48 shrink-0 flex flex-col justify-center gap-0.5 overflow-hidden">
+                  <span class="font-medium truncate">{{ agent.name }}</span>
+                  <div v-if="agent.description" class="text-[10px] text-muted-foreground truncate">{{ agent.description }}</div>
+                </div>
+                <span class="flex-1 min-w-0 text-xs text-muted-foreground truncate">{{ agent.ip || '-' }}</span>
+                <div class="w-24 shrink-0 flex justify-center">
+                  <Button variant="ghost" size="icon" class="h-6 w-6" @click="viewDetail(agent)"><Eye class="h-3 w-3" /></Button>
+                  <Button variant="ghost" size="icon" class="h-6 w-6" @click="viewTasks(agent)"><ListTodo class="h-3 w-3" /></Button>
+                  <Button variant="ghost" size="icon" class="h-6 w-6" @click="openEditDialog(agent)"><Pencil class="h-3 w-3" /></Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger as-child>
+                      <Button variant="ghost" size="icon" class="h-6 w-6"><MoreHorizontal class="h-3 w-3" /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem @click="forceUpdate(agent)">
+                        <RotateCw class="h-3.5 w-3.5 mr-2" />更新
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem class="text-destructive" @click="confirmDelete(agent)">
+                        <Trash2 class="h-3.5 w-3.5 mr-2" />删除
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ========== 3. 小屏布局 (Small < 640px) ========== -->
+          <div class="divide-y sm:hidden">
+            <div v-if="filteredAgents.length === 0" class="text-sm text-muted-foreground text-center py-12">暂无 Agent</div>
+            <div v-for="(agent, index) in filteredAgents" :key="`small-${agent.id}`" class="p-3 hover:bg-muted/50 transition-colors">
+              <div class="flex items-start justify-between mb-3 border-b border-border/40 pb-2">
+                <div class="flex items-center gap-2 flex-1 min-w-0 pr-2">
+                  <span class="text-xs text-muted-foreground tabular-nums flex-shrink-0">#{{ filteredAgents.length - index }}</span>
+                  <span class="flex items-center shrink-0">
+                    <Wifi v-if="isOnline(agent)" class="h-3.5 w-3.5 text-green-500" />
+                    <WifiOff v-else class="h-3.5 w-3.5 text-muted-foreground" />
+                  </span>
+                  <div class="flex items-center gap-1.5 min-w-0 flex-1">
+                    <span class="font-bold text-sm truncate" @click="viewDetail(agent)">{{ agent.name }}</span>
+                  </div>
+                </div>
+                <span @click="toggleEnabled(agent)" class="cursor-pointer">
+                  <div v-if="agent.enabled" class="h-6 w-6 rounded-md bg-green-500/10 flex items-center justify-center">
+                    <Zap class="h-3.5 w-3.5 text-green-500 fill-green-500" />
+                  </div>
+                  <div v-else class="h-6 w-6 rounded-md bg-muted flex items-center justify-center">
+                    <ZapOff class="h-3.5 w-3.5 text-muted-foreground" />
+                  </div>
+                </span>
+              </div>
+              <!-- 详情信息 -->
+              <div class="space-y-1.5 text-xs text-muted-foreground mb-3 px-1">
+                <div class="flex items-center gap-3">
+                  <span class="w-10 shrink-0 font-medium opacity-70">IP:</span>
+                  <span class="flex-1 truncate text-foreground">{{ agent.ip || '-' }}</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="w-10 shrink-0 font-medium opacity-70">主机:</span>
+                  <span class="flex-1 truncate">{{ agent.hostname || '-' }}</span>
+                </div>
+                <div v-if="agent.description" class="flex items-start gap-3">
+                  <span class="w-10 shrink-0 font-medium mt-0.5 opacity-70">描述:</span>
+                  <span class="flex-1 text-[11px] line-clamp-1">{{ agent.description }}</span>
+                </div>
+              </div>
+              <div class="grid grid-cols-4 items-center pt-2 mt-2 border-t border-border/40 -mx-1">
+                <Button variant="ghost" class="h-9 px-0 text-xs gap-1.5 hover:bg-primary/5 rounded-none" @click="viewDetail(agent)">
+                  <Eye class="h-3.5 w-3.5" />详情
+                </Button>
+                <Button variant="ghost" class="h-9 px-0 text-xs gap-1.5 hover:bg-primary/5 rounded-none border-l border-border/10" @click="viewTasks(agent)">
+                  <ListTodo class="h-3.5 w-3.5" />任务
+                </Button>
+                <Button variant="ghost" class="h-9 px-0 text-xs gap-1.5 hover:bg-primary/5 rounded-none border-l border-border/10" @click="openEditDialog(agent)">
+                  <Pencil class="h-3.5 w-3.5" />编辑
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger as-child>
+                    <Button variant="ghost" class="h-9 px-0 text-xs gap-1.5 hover:bg-primary/5 rounded-none border-l border-border/10 w-full">
+                      <MoreHorizontal class="h-3.5 w-3.5" />更多
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" class="w-40">
+                    <DropdownMenuItem @click="forceUpdate(agent)">
+                      <RotateCw class="h-4 w-4 mr-2" />更新 Agent
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem class="text-destructive" @click="confirmDelete(agent)">
+                      <Trash2 class="h-4 w-4 mr-2" />删除 Agent
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
           </div>
         </div>
       </TabsContent>
 
-      <TabsContent value="regcodes" class="mt-4">
-        <div class="rounded-lg border bg-card">
+      <TabsContent value="regcodes" class="mt-0">
+        <div class="rounded-lg border bg-card overflow-hidden">
           <!-- 表头 -->
-          <div class="flex items-center gap-2 px-3 py-2 border-b bg-muted/50 text-xs text-muted-foreground font-medium">
-            <span class="w-5 shrink-0"></span>
+          <div class="flex items-center gap-4 px-4 py-1.5 border-b bg-muted/20 text-xs text-muted-foreground font-medium">
+            <span class="w-8 shrink-0">状态</span>
             <span class="flex-1 min-w-0">令牌</span>
-            <span class="w-20 shrink-0 hidden sm:block">备注</span>
-            <span class="w-14 shrink-0 text-center hidden sm:block">次数</span>
-            <span class="w-28 shrink-0 hidden md:block">过期时间</span>
-            <span class="w-16 shrink-0 flex justify-end">
-              <Button size="sm" class="h-7 px-2" @click="openTokenDialog">
-                <Plus class="h-3.5 w-3.5 sm:mr-1" /><span class="hidden sm:inline">生成</span>
+            <span class="w-32 shrink-0 hidden sm:block">备注</span>
+            <span class="w-16 shrink-0 text-center hidden sm:block">次数</span>
+            <span class="w-32 shrink-0 hidden md:block">过期时间</span>
+            <span class="w-24 shrink-0 flex justify-end">
+              <Button size="sm" class="h-6 px-2 text-[10px]" @click="openTokenDialog">
+                <Plus class="h-3 w-3 mr-1" />生成
               </Button>
             </span>
           </div>
           <!-- 数据行 -->
-          <div class="divide-y">
-            <div v-if="tokens.length === 0" class="text-center py-8 text-muted-foreground">
+          <div class="divide-y text-sm">
+            <div v-if="tokens.length === 0" class="text-center py-12 text-muted-foreground">
               <Ticket class="h-8 w-8 mx-auto mb-2 opacity-50" />暂无令牌
             </div>
             <div v-for="token in tokens" :key="token.id"
-              class="flex items-center gap-2 px-3 py-2 hover:bg-muted/50 transition-colors">
+              class="flex items-center gap-4 px-4 py-1.5 hover:bg-muted/30 transition-colors">
               <!-- 状态 -->
-              <span class="w-5 shrink-0 flex justify-center">
+              <span class="w-8 shrink-0 flex justify-center">
                 <div v-if="!isTokenExpired(token) && !isTokenExhausted(token)"
                   class="h-5 w-5 rounded-full bg-green-500/10 flex items-center justify-center">
                   <Check class="h-3 w-3 text-green-500 stroke-[3]" />
@@ -458,36 +519,34 @@ onUnmounted(() => {
                   <X class="h-3 w-3 text-red-500 stroke-[3]" />
                 </div>
               </span>
-              <!-- Token（截断省略号，撑满剩余空间） -->
-              <code
-                class="flex-1 min-w-0 font-mono text-xs bg-muted px-2 py-0.5 rounded truncate">{{ token.token }}</code>
-              <!-- 备注（小屏隐藏） -->
-              <span class="w-20 shrink-0 text-xs text-muted-foreground truncate hidden sm:block">{{ token.remark || '-' }}</span>
-              <!-- 使用次数（小屏隐藏） -->
-              <span class="w-14 shrink-0 text-xs text-muted-foreground text-center hidden sm:block">
+              <!-- Token -->
+              <code class="flex-1 min-w-0 font-mono text-xs bg-muted/40 px-2 py-0.5 rounded truncate text-muted-foreground">{{ token.token }}</code>
+              <!-- 备注 -->
+              <span class="w-32 shrink-0 text-xs text-muted-foreground truncate hidden sm:block">{{ token.remark || '-' }}</span>
+              <!-- 使用次数 -->
+              <span class="w-16 shrink-0 text-xs text-muted-foreground text-center hidden sm:block tabular-nums">
                 {{ token.used_count }}/{{ token.max_uses === 0 ? '∞' : token.max_uses }}
               </span>
-              <!-- 过期时间（md 以上才显示） -->
-              <span class="w-28 shrink-0 text-xs text-muted-foreground truncate hidden md:block">
+              <!-- 过期时间 -->
+              <span class="w-32 shrink-0 text-[11px] text-muted-foreground truncate hidden md:block tabular-nums">
                 {{ token.expires_at || '永不过期' }}
               </span>
               <!-- 操作 -->
-              <span class="w-24 shrink-0 flex justify-end gap-1">
-                <Button variant="ghost" size="icon" class="h-7 w-7" @click="copyToken(token.token)" title="复制">
-                  <Copy class="h-3.5 w-3.5" />
+              <span class="w-24 shrink-0 flex justify-end items-center">
+                <Button variant="ghost" size="icon" class="h-6 w-6" @click="copyToken(token.token)" title="复制">
+                  <Copy class="h-3 w-3" />
                 </Button>
-                <Button variant="ghost" size="icon" class="h-7 w-7" @click="openEditToken(token)" title="编辑">
-                  <Edit class="h-3.5 w-3.5" />
+                <Button variant="ghost" size="icon" class="h-6 w-6" @click="openEditToken(token)" title="编辑">
+                  <Pencil class="h-3 w-3" />
                 </Button>
-                <Button variant="ghost" size="icon" class="h-7 w-7 text-destructive" @click="deleteToken(token.id)" title="删除">
-                  <Trash2 class="h-3.5 w-3.5" />
+                <Button variant="ghost" size="icon" class="h-6 w-6 text-destructive" @click="deleteToken(token.id)" title="删除">
+                  <Trash2 class="h-3 w-3" />
                 </Button>
               </span>
             </div>
           </div>
         </div>
       </TabsContent>
-    </Tabs>
 
     <!-- 详情对话框 -->
     <Dialog v-model:open="showDetailDialog">
@@ -533,8 +592,8 @@ onUnmounted(() => {
             <div class="flex items-center justify-between sm:block">
               <Label class="text-muted-foreground text-xs">在线状态</Label>
               <div class="flex items-center gap-2">
-                <WifiIcon v-if="isOnline(viewingAgent)" class="h-4 w-4 text-green-500" />
-                <WifiOffIcon v-else class="h-4 w-4 text-muted-foreground" />
+                <Wifi v-if="isOnline(viewingAgent)" class="h-4 w-4 text-green-500" />
+                <WifiOff v-else class="h-4 w-4 text-muted-foreground" />
                 <span class="text-sm">{{ isOnline(viewingAgent) ? '在线' : '离线' }}</span>
               </div>
             </div>
@@ -710,5 +769,5 @@ onUnmounted(() => {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  </div>
+  </Tabs>
 </template>
