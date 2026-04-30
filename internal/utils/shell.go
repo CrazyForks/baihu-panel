@@ -5,45 +5,65 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+	"sync"
 )
+
+var (
+	defaultShell string
+	defaultArgs  []string
+	shellOnce    sync.Once
+)
+
 
 // GetShell 返回当前操作系统的 shell 和参数
 func GetShell() (shell string, args []string) {
-	if runtime.GOOS == "windows" {
-		return "cmd", []string{}
-	}
-
-	// 优先使用环境变量中的 SHELL
-	if envShell := os.Getenv("SHELL"); envShell != "" {
-		if _, err := os.Stat(envShell); err == nil {
-			return envShell, []string{}
+	shellOnce.Do(func() {
+		if runtime.GOOS == "windows" {
+			defaultShell = "cmd"
+			defaultArgs = []string{}
+			return
 		}
-	}
 
-	// 尝试在 PATH 中查找 bash
-	if path, err := exec.LookPath("bash"); err == nil {
-		return path, []string{}
-	}
-
-	// 尝试在 PATH 中查找 zsh
-	if path, err := exec.LookPath("zsh"); err == nil {
-		return path, []string{}
-	}
-
-	// 尝试在 PATH 中查找 sh
-	if path, err := exec.LookPath("sh"); err == nil {
-		return path, []string{}
-	}
-
-	// 最后回退到最常见的硬编码路径
-	shells := []string{"/bin/bash", "/usr/bin/bash", "/bin/sh"}
-	for _, sh := range shells {
-		if _, err := os.Stat(sh); err == nil {
-			return sh, []string{}
+		// 1. 优先在 PATH 中查找 bash
+		if path, err := exec.LookPath("bash"); err == nil {
+			defaultShell = path
+			defaultArgs = []string{}
+			return
 		}
-	}
 
-	return "sh", []string{}
+		// 2. 其次使用环境变量中的 SHELL
+		if envShell := os.Getenv("SHELL"); envShell != "" {
+			if _, err := os.Stat(envShell); err == nil {
+				defaultShell = envShell
+				defaultArgs = []string{}
+				return
+			}
+		}
+
+		// 3. 尝试在 PATH 中查找 zsh 或 sh
+		for _, s := range []string{"zsh", "sh"} {
+			if path, err := exec.LookPath(s); err == nil {
+				defaultShell = path
+				defaultArgs = []string{}
+				return
+			}
+		}
+
+		// 4. 最后回退到硬编码路径
+		shells := []string{"/usr/bin/bash", "/bin/bash", "/usr/bin/sh", "/bin/sh"}
+		for _, sh := range shells {
+			if _, err := os.Stat(sh); err == nil {
+				defaultShell = sh
+				defaultArgs = []string{}
+				return
+			}
+		}
+
+		defaultShell = "sh"
+		defaultArgs = []string{}
+	})
+
+	return defaultShell, defaultArgs
 }
 
 // GetShellCommand 返回执行命令的 shell 和参数

@@ -32,6 +32,7 @@ type TaskVO struct {
 	NextRun     *models.LocalTime   `json:"next_run"`
 	CreatedAt   models.LocalTime    `json:"created_at"`
 	UpdatedAt   models.LocalTime    `json:"updated_at"`
+	RunningStatus string              `json:"running_status"`
 }
 
 // ToTaskVO 将 Task 模型转换为 TaskVO
@@ -64,6 +65,12 @@ func ToTaskVO(task *models.Task) *TaskVO {
 		NextRun:     task.NextRun,
 		CreatedAt:   task.CreatedAt,
 		UpdatedAt:   task.UpdatedAt,
+		RunningStatus: func() string {
+			if task.IsRunning() {
+				return "running"
+			}
+			return "idle"
+		}(),
 	}
 }
 

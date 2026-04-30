@@ -99,6 +99,13 @@ type Task struct {
 	UpdatedAt     LocalTime           `json:"updated_at"`
 }
 
+func (t *Task) IsRunning() bool {
+	if string(t.RunningGo) == "" || string(t.RunningGo) == "[]" {
+		return false
+	}
+	return true
+}
+
 func (Task) TableName() string {
 	return constant.TablePrefix + "tasks"
 }

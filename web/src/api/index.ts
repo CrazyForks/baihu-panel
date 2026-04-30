@@ -362,6 +362,7 @@ export interface Task {
   enabled: boolean
   last_run: string
   next_run: string
+  running_status?: string
   created_at?: string
   updated_at?: string
 }
