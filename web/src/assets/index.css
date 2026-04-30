@@ -95,12 +95,12 @@
   --sidebar-border: #e5e7eb;
   --sidebar-ring: #9ca3af;
   
-  /* 字体栈定义 */
-  --font-main: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans CN", sans-serif;
+  /* 字体栈定义 - 优先使用 Inter Variable 以获得最佳的可变字体支持 */
+  --font-main: 'Inter Variable', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans CN", sans-serif;
 }
 
 .is-windows {
-  --font-main: 'Inter', 'Noto Sans SC', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans CN", sans-serif;
+  --font-main: 'Inter Variable', 'Inter', 'Noto Sans SC', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans CN", sans-serif;
 }
 
 /* OKLCH support targeting modern browsers */
@@ -216,12 +216,23 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
-    /* 增强字体栈：根据平台差异化 Noto Sans SC 与 system-ui 的优先级 */
+    @apply bg-background text-foreground;
+    /* 增强字体栈与高级特性优化 */
     font-family: var(--font-main);
     font-size: 14px;
     line-height: 1.5;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.011em;
+    
+    /* Inter 字体高级特性优化: 
+       cv05: l 增加尾钩 (提升识别)
+       cv08: G 增加尖角
+       cv11: 单层小写 a
+       ss01: 开口数字 (更现代)
+       ss03: 圆形 0 
+    */
+    font-feature-settings: "cv05", "cv08", "cv11", "ss01", "ss03";
+    font-optical-sizing: auto;
+
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -247,8 +258,11 @@
   body {
     font-size: 15.5px;
     line-height: 1.55;
-    letter-spacing: -0.01em;
-    /* 移动端使用 antialiased 以匹配高 DPI 渲染 */
+    letter-spacing: -0.011em;
+    /* 移动端增强字体渲染 */
+    font-family: var(--font-main);
+    font-feature-settings: "cv05", "cv08", "cv11", "ss01", "ss03";
+    font-optical-sizing: auto;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

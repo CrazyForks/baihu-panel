@@ -1,7 +1,6 @@
 package constant
 
 import (
-	"bufio"
 	"bytes"
 	_ "embed"
 	"encoding/json"
@@ -26,13 +25,25 @@ var (
 // initSentences 初始化：统计行数和记录每行偏移
 func initSentences() {
 	sentenceOnce.Do(func() {
-		scanner := bufio.NewScanner(bytes.NewReader(sentenceData))
+		data := sentenceData
 		var offset int64 = 0
-		for scanner.Scan() {
+		for {
+			// 记录当前行的起始位置
 			lineOffsets = append(lineOffsets, offset)
-			// scanner.Bytes() returns the line without newline
-			offset += int64(len(scanner.Bytes())) + 1 // +1 for newline
 			lineCount++
+
+			// 寻找下一个换行符
+			idx := bytes.IndexByte(data[offset:], '\n')
+			if idx == -1 {
+				// 最后一行没有换行符
+				break
+			}
+
+			// 移动到下一行的起始位置
+			offset += int64(idx) + 1
+			if offset >= int64(len(data)) {
+				break
+			}
 		}
 	})
 }
@@ -40,24 +51,26 @@ func initSentences() {
 // GetRandomSentence 随机获取一条古诗词
 func GetRandomSentence() string {
 	initSentences()
-	if lineCount == 0 {
+	if lineCount <= 0 {
 		return "欢迎使用白虎面板"
 	}
 
 	targetIndex := rand.Intn(lineCount)
 	start := lineOffsets[targetIndex]
 
-	// 找到行结束位置（通过下一个偏移量或文件末尾）
+	// 确定当前行的结束位置
 	var end int64
 	if targetIndex < lineCount-1 {
-		end = lineOffsets[targetIndex+1] - 1 // -1 移除换行符
+		end = lineOffsets[targetIndex+1]
 	} else {
 		end = int64(len(sentenceData))
 	}
 
-	// 确保不越界并移除末尾可能的回车符 (Windows \r\n)
-	line := sentenceData[start:end]
-	line = bytes.TrimRight(line, "\r\n")
+	// 提取行并清理两端的空白字符（包括 \r, \n）
+	line := bytes.TrimSpace(sentenceData[start:end])
+	if len(line) == 0 {
+		return "欢迎使用白虎面板"
+	}
 
 	var sData []string
 	if err := json.Unmarshal(line, &sData); err == nil && len(sData) >= 1 {
