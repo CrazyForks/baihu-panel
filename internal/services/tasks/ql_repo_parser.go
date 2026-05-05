@@ -19,8 +19,8 @@ import (
 
 // regex patterns for script comment parsing
 var (
-	envRegex  = regexp.MustCompile(`(?i)[new ]*Env\(['"]?([^'"]+)['"]?\)[;]?`)
-	cronRegex = regexp.MustCompile(`(?i)(?:cron[ \t]*[:=]?[ \t]*['"]([^'"]+)['"])|(?:(?:^|[ \t\*\/])([0-9\*\/\-,L?]+[ \t]+[0-9\*\/\-,L?#]+[ \t]+[0-9\*\/\-,L?#]+[ \t]+[0-9\*\/\-,L?#]+[ \t]+[0-9\*\/\-,L?#]+(?:[ \t]+[0-9\*\/\-,L?#]+)?))`)
+	envRegex  = regexp.MustCompile(`(?i)(?:new[ \t]+)?Env\(['"]?([^'"]+)['"]?\)`)
+	cronRegex = regexp.MustCompile(`(?i)(?:cron[ \t]*[:=]?[ \t]*['"]?([^'"\r\n]+?)['"]?(?:\s|$))|(?:(?:^|[ \t\*\/])([0-9\*\/\-,L?]+[ \t]+[0-9\*\/\-,L?#]+[ \t]+[0-9\*\/\-,L?#]+[ \t]+[0-9\*\/\-,L?#]+[ \t]+[0-9\*\/\-,L?#]+(?:[ \t]+[0-9\*\/\-,L?#]+)?))`)
 )
 
 // ParseRepoScriptsAndAddCron scans the repo dir for scripts, parses cron and env comments, and registers tasks
