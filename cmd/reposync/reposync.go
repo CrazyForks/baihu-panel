@@ -172,11 +172,23 @@ func syncGit(cfg Config) {
 	defer restore()
 
 	if pathExists(gitDir) {
-		fmt.Println("检测到已存在仓库，执行 git pull")
-		if cfg.Branch != "" {
-			runCmd([]string{"git", "checkout", cfg.Branch}, dest, env)
+		fmt.Println("检测到已存在仓库，正在更新...")
+		runCmd([]string{"git", "fetch", "--all"}, dest, env)
+		
+		targetBranch := cfg.Branch
+		if targetBranch != "" {
+			// 如果切换了分支，或者当前分支偏离，强制切换并对齐远程
+			runCmd([]string{"git", "checkout", "-B", targetBranch, "origin/" + targetBranch}, dest, env)
+		} else {
+			targetBranch = getCurrentBranch(dest, env)
 		}
-		runCmd([]string{"git", "pull"}, dest, env)
+
+		if targetBranch != "" {
+			fmt.Printf("执行强制同步 (reset --hard origin/%s)\n", targetBranch)
+			runCmd([]string{"git", "reset", "--hard", "origin/" + targetBranch}, dest, env)
+		} else {
+			runCmd([]string{"git", "pull", "--rebase"}, dest, env)
+		}
 	} else {
 		fmt.Println("执行 git clone")
 		parentDir := filepath.Dir(dest)
@@ -476,6 +488,17 @@ func isDirEmpty(path string) bool {
 	defer f.Close()
 	_, err = f.Readdirnames(1)
 	return err == io.EOF
+}
+
+func getCurrentBranch(dir string, env []string) string {
+	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
+	cmd.Dir = dir
+	cmd.Env = env
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
 }
 
 // preserve moves specified paths to a temporary location and returns a function to restore them
