@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 	"github.com/engigu/baihu-panel/internal/utils"
+	"github.com/robfig/cron/v3"
 )
 
 var (
@@ -136,9 +137,23 @@ func ExtractScriptMeta(path string, ext string) (taskName string, taskCron strin
 	return taskName, taskCron
 }
 
-// isLikelyCron 校验字符串是否符合 Cron 表达式的格式特征
+// isLikelyCron 校验字符串是否符合 Cron 表达式的格式特征且数值合法
 func isLikelyCron(s string) bool {
-	return cronFormatRegex.MatchString(s)
+	if !cronFormatRegex.MatchString(s) {
+		return false
+	}
+
+	// 语义校验：确保数值在合法范围内（解决如 JS 数组数字超出 Cron 范围的问题）
+	fields := strings.Fields(s)
+	testCron := s
+	if len(fields) == 5 {
+		testCron = "0 " + s
+	}
+
+	// 使用与面板执行器一致的 Parser 进行校验
+	parser := cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor)
+	_, err := parser.Parse(testCron)
+	return err == nil
 }
 
 // splitKeywords 按竖线或逗号分割字符串
