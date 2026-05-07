@@ -196,7 +196,10 @@ func upsertRepoTask(parentTask *models.Task, sourceID, name, command, cron, work
 		if existing.CleanConfig == "" {
 			existing.CleanConfig = `{"type":"count","keep":30}`
 		}
-		database.DB.Save(&existing)
+		// 显式白名单模式：只更新脚本核心相关的字段，其他所有字段（如 Enabled, Pin, Remark 等）均不触碰
+		database.DB.Model(&existing).
+			Select("Name", "Command", "Schedule", "WorkDir", "Languages").
+			Updates(&existing)
 		return existing.ID, false
 	} else {
 		// 创建新任务
