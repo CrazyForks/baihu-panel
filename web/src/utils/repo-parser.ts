@@ -117,6 +117,12 @@ export function parseBaihuCommand(command: string): ParsedRepoResult | null {
           console.error('Parse task-langs failed', e)
         }
         break
+      case '--pre-command':
+        task.pre_command = value
+        break
+      case '--post-command':
+        task.post_command = value
+        break
     }
   }
 

@@ -20,14 +20,14 @@ import (
 )
 
 type Config struct {
-	SourceType string
-	SourceURL  string
-	TargetPath string
-	Branch     string
-	Path       string
-	SingleFile bool
-	Proxy      string
-	ProxyURL   string
+	SourceType     string
+	SourceURL      string
+	TargetPath     string
+	Branch         string
+	Path           string
+	SingleFile     bool
+	Proxy          string
+	ProxyURL       string
 	AuthToken      string
 	HttpProxy      string
 	WhitelistPaths string // Comma or vertical line separated paths to preserve or filter (whitelist)
@@ -38,6 +38,8 @@ type Config struct {
 	TaskLanguages  string
 	TaskTimeout    int
 	CommentToTask  string
+	PreCommand     string
+	PostCommand    string
 }
 
 func Run(args []string) {
@@ -62,9 +64,11 @@ func Run(args []string) {
 	fs.StringVar(&cfg.TaskID, "repo-task-id", "", "Original Task ID")
 	fs.IntVar(&cfg.TaskTimeout, "task-timeout", 30, "Task timeout (minutes)")
 	fs.StringVar(&cfg.CommentToTask, "commenttotask", "false", "Compatible with QL format script comment parsing (true/false)")
+	fs.StringVar(&cfg.PreCommand, "pre-command", "", "Default pre-command for discovered tasks")
+	fs.StringVar(&cfg.PostCommand, "post-command", "", "Default post-command for discovered tasks")
 
 	fs.Parse(args)
-	
+
 	// 处理 $SCRIPTS_DIR$ 代号替换
 	if strings.Contains(cfg.TargetPath, "$SCRIPTS_DIR$") {
 		scriptsDir := os.Getenv("BH_SCRIPTS_DIR")
@@ -86,6 +90,19 @@ func Run(args []string) {
 		syncURL(cfg)
 	}
 
+	// 执行前置指令
+	if cfg.PreCommand != "" {
+		fmt.Printf("[准备] 执行同步前指令: %s\n", cfg.PreCommand)
+		// 计算当前仓库真实的物理路径
+		repoDir := getActualRepoDir(cfg)
+		fmt.Printf("[准备] 工作目录: %s\n", repoDir)
+		fmt.Printf("[准备] 注入环境变量: CURR_REPO_DIR=%s\n", repoDir)
+
+		shell, shellArgs := utils.GetShellCommand(cfg.PreCommand)
+		envs := append(os.Environ(), "CURR_REPO_DIR="+repoDir)
+		runCmd(append([]string{shell}, shellArgs...), repoDir, envs)
+	}
+
 	// 执行脚本过滤（仅限 git 模式，url 加载通常为单文件，暂不处理过滤）
 	if cfg.SourceType == "git" {
 		fmt.Printf("[3/3] 正在执行脚本过滤与文件清理...\n")
@@ -98,9 +115,32 @@ func Run(args []string) {
 			}
 		}
 	}
+
+	// 执行后置指令
+	if cfg.PostCommand != "" {
+		fmt.Printf("[收尾] 执行同步后指令: %s\n", cfg.PostCommand)
+
+		// 计算当前仓库真实的物理路径
+		repoDir := getActualRepoDir(cfg)
+		fmt.Printf("[收尾] 工作目录: %s\n", repoDir)
+		fmt.Printf("[收尾] 注入环境变量: CURR_REPO_DIR=%s\n", repoDir)
+
+		shell, shellArgs := utils.GetShellCommand(cfg.PostCommand)
+		envs := append(os.Environ(), "CURR_REPO_DIR="+repoDir)
+		runCmd(append([]string{shell}, shellArgs...), repoDir, envs)
+	}
+
 	fmt.Println("\n========================================")
 	fmt.Println("  仓库同步任务完成  ")
 	fmt.Println("========================================")
+}
+
+func getActualRepoDir(cfg Config) string {
+	if cfg.SourceType == "git" {
+		repoName := utils.GetRepoIdentifier(cfg.SourceURL, cfg.Branch)
+		return filepath.Join(cfg.TargetPath, repoName)
+	}
+	return cfg.TargetPath
 }
 
 func notifyMainServerToSyncRepoTasks(repoID string, upsertedIDs []string, deletedIDs []string) {
@@ -174,7 +214,7 @@ func syncGit(cfg Config) {
 	if pathExists(gitDir) {
 		fmt.Println("检测到已存在仓库，正在更新...")
 		runCmd([]string{"git", "fetch", "--all"}, dest, env)
-		
+
 		targetBranch := cfg.Branch
 		if targetBranch != "" {
 			// 如果切换了分支，或者当前分支偏离，强制切换并对齐远程
@@ -205,7 +245,7 @@ func syncGit(cfg Config) {
 			fmt.Println("提示: 请清空目标目录或指定一个新目录")
 			os.Exit(1)
 		}
-		// If dest exists but is empty now, git clone might still complain if the directory itself exists? 
+		// If dest exists but is empty now, git clone might still complain if the directory itself exists?
 		// No, git clone works if dir is empty.
 
 		cloneCmd := []string{"git", "clone", "--depth", "1"}
@@ -306,7 +346,7 @@ func buildProxyURL(url string, proxyType string, proxyURL string) string {
 	if proxyType == "" || proxyType == "none" {
 		return url
 	}
-	
+
 	// 如果 URL 已经包含明显的代理前缀 (如用户手动填写的 http://ghproxy.com/...)
 	// 则跳过内置代理逻辑
 	if strings.Contains(url, "googo.win") || (proxyType == "custom" && strings.HasPrefix(url, proxyURL)) {
@@ -392,8 +432,6 @@ func isRawFileURL(url string) bool {
 	return false
 }
 
-
-
 var ansiRegex = regexp.MustCompile("\x1b\\[[0-9;]*[a-zA-Z]")
 
 type cleanWriter struct {
@@ -454,11 +492,11 @@ func runCmd(args []string, dir string, env []string) {
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = dir
 	cmd.Env = env
-	
+
 	cw := &cleanWriter{out: os.Stdout}
 	cmd.Stdout = cw
 	cmd.Stderr = cw
-	
+
 	if err := cmd.Run(); err != nil {
 		cw.Flush()
 		fmt.Printf("命令执行失败: %v\n", err)
@@ -601,18 +639,7 @@ func filterFiles(cfg Config) {
 		return
 	}
 
-	dest := cfg.TargetPath
-	// If the dest appended a repo name in syncGit, we need to find it.
-	// However, BuildRepoCommand already passes the abs path which might already be the specific repo dir.
-	// We'll walk from cfg.TargetPath.
-	
-	gitDir := filepath.Join(dest, ".git")
-	if isDir(dest) && !pathExists(gitDir) {
-		repoName := utils.GetRepoIdentifier(cfg.SourceURL, cfg.Branch)
-		if pathExists(filepath.Join(dest, repoName)) {
-			dest = filepath.Join(dest, repoName)
-		}
-	}
+	dest := getActualRepoDir(cfg)
 
 	fmt.Printf("开始执行脚本过滤: %s\n", dest)
 
@@ -623,7 +650,7 @@ func filterFiles(cfg Config) {
 
 	// We'll collect files to delete to avoid modifying while walking if possible.
 	// But os.RemoveAll is fine.
-	
+
 	count := 0
 	filepath.Walk(dest, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -704,7 +731,7 @@ func splitKeywords(s string) []string {
 	} else {
 		parts = []string{s}
 	}
-	
+
 	var res []string
 	for _, p := range parts {
 		p = strings.TrimSpace(p)
@@ -761,13 +788,15 @@ func cleanEmptyDirs(root string) {
 		}
 		return nil
 	})
-	
+
 	// Actually we need to do this recursively or multiple times.
 	// A simpler way:
 	entries, _ := os.ReadDir(root)
 	for _, entry := range entries {
 		if entry.IsDir() {
-			if entry.Name() == ".git" { continue }
+			if entry.Name() == ".git" {
+				continue
+			}
 			dirPath := filepath.Join(root, entry.Name())
 			cleanEmptyDirs(dirPath)
 			// Check if now empty
@@ -778,4 +807,3 @@ func cleanEmptyDirs(root string) {
 	}
 
 }
-

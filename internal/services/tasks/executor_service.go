@@ -404,7 +404,9 @@ func (es *ExecutorService) HandleTaskRetry(task *models.Task, req *executor.Exec
 				return &executor.ExecutionRequest{
 					TaskID:    req.TaskID,
 					Name:      latestTask.Name,
-					Command:   string(latestTask.Command),
+					Command:     string(latestTask.Command),
+					PreCommand:  string(latestTask.PreCommand),
+					PostCommand: string(latestTask.PostCommand),
 					WorkDir:   latestTask.WorkDir,
 					Envs:      newEnvs,
 					Secrets:   newSecrets,
@@ -454,6 +456,8 @@ func (es *ExecutorService) ExecuteDispatcher(ctx context.Context, req *executor.
 
 	// 解析路径变量 (如 $SCRIPTS_DIR$)
 	req.Command = es.ResolvePath(req.Command)
+	req.PreCommand = es.ResolvePath(req.PreCommand)
+	req.PostCommand = es.ResolvePath(req.PostCommand)
 	req.WorkDir = es.ResolvePath(req.WorkDir)
 
 	task := es.taskService.GetTaskByID(taskID)
@@ -478,10 +482,14 @@ func (es *ExecutorService) ExecuteDispatcher(ctx context.Context, req *executor.
 			req.Command = cmd
 			req.WorkDir = workDir
 			req.UseMise = false // 仓库同步任务不使用 mise，由系统原生执行
+			// 仓库任务的前置/后置命令已作为参数传给 reposync 内部处理，此处清空防止重复执行
+			req.PreCommand = ""
+			req.PostCommand = ""
+
 			// 强制脱敏并更新数据库日志
 			masks := append([]string{}, req.Secrets...)
 			masks = append(masks, utils.GetSystemSecrets()...)
-			
+
 			// 补充仓库特有的 AuthToken
 			var repoCfg models.RepoConfig
 			if err := json.Unmarshal([]byte(task.Config), &repoCfg); err == nil && repoCfg.AuthToken != "" {
@@ -489,17 +497,20 @@ func (es *ExecutorService) ExecuteDispatcher(ctx context.Context, req *executor.
 			}
 
 			maskedCmd := utils.MaskSecrets(req.Command, masks)
-			
+
 			// 更新数据库中的任务日志命令内容
 			if req.LogID != "" {
 				es.taskLogService.UpdateLogCommand(req.LogID, maskedCmd)
 			}
-			
+
 			// 在控制台打印最终执行的脱敏命令
 			logger.Infof("[Executor] 仓库同步最终执行命令: %s", maskedCmd)
 		}
 	}
 
+	// 组合指令逻辑已移至 executor.ExecuteWithHooks 中，此处不再处理
+	// 以避免指令被重复组合。
+	
 	// 远程任务
 	if task.AgentID != nil && *task.AgentID != "" {
 		// 将请求中已包含的环境变量（已合并）传递给 Agent
@@ -651,7 +662,9 @@ func (es *ExecutorService) ExecuteTask(taskID string, extraEnvs []string) *execu
 	req := &executor.ExecutionRequest{
 		TaskID:    task.ID,
 		Name:      task.Name,
-		Command:   string(task.Command),
+		Command:     string(task.Command),
+		PreCommand:  string(task.PreCommand),
+		PostCommand: string(task.PostCommand),
 		WorkDir:   task.WorkDir,
 		Envs:      envs,
 		Secrets:   secrets,
@@ -1039,6 +1052,11 @@ func (es *ExecutorService) HandleAgentResult(result *models.AgentTaskResult) err
 
 // BuildRepoCommand 构建仓库同步任务的命令
 func (es *ExecutorService) BuildRepoCommand(task *models.Task) (string, string) {
+	return BuildRepoCommand(task)
+}
+
+// BuildRepoCommand 构建仓库同步任务的命令（独立函数，方便 AgentService 调用）
+func BuildRepoCommand(task *models.Task) (string, string) {
 	var config models.RepoConfig
 	if err := json.Unmarshal([]byte(task.Config), &config); err != nil {
 		return "", ""
@@ -1106,6 +1124,12 @@ func (es *ExecutorService) BuildRepoCommand(task *models.Task) (string, string) 
 	}
 	if config.Extensions != "" {
 		args = append(args, "--extensions", config.Extensions)
+	}
+	if string(task.PreCommand) != "" {
+		args = append(args, "--pre-command", string(task.PreCommand))
+	}
+	if string(task.PostCommand) != "" {
+		args = append(args, "--post-command", string(task.PostCommand))
 	}
 
 	// 传递任务 ID，以便 reposync 内部直接处理脚本注册并输出日志

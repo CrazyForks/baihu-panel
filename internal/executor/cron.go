@@ -107,7 +107,9 @@ func (m *CronManager) AddTask(task CronTask) error {
 			return &ExecutionRequest{
 				TaskID:    taskID,
 				Name:      name,
-				Command:   cmd,
+				Command:     cmd,
+				PreCommand:  task.GetPreCommand(),
+				PostCommand: task.GetPostCommand(),
 				Type:      TaskTypeCron,
 				Timeout:   timeout,
 				WorkDir:   workDir,

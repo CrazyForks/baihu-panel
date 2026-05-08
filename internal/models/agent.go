@@ -50,11 +50,13 @@ func (AgentToken) TableName() string {
 type AgentTask struct {
 	ID        string              `json:"id"`
 	Name      string              `json:"name"`
-	Command   string              `json:"command"`
-	Schedule  string              `json:"schedule"`
-	Timeout   int                 `json:"timeout"`
-	WorkDir   string              `json:"work_dir"`
-	Envs      string              `json:"envs"`
+	Command     string              `json:"command"`
+	PreCommand  string              `json:"pre_command"`
+	PostCommand string              `json:"post_command"`
+	Schedule    string              `json:"schedule"`
+	Timeout     int                 `json:"timeout"`
+	WorkDir     string              `json:"work_dir"`
+	Envs        string              `json:"envs"`
 	Languages   []map[string]string `json:"languages"`
 	RandomRange int                 `json:"random_range"`
 	Secrets     []string            `json:"secrets"`
@@ -71,6 +73,14 @@ func (t AgentTask) GetName() string {
 
 func (t AgentTask) GetCommand() string {
 	return t.Command
+}
+
+func (t AgentTask) GetPreCommand() string {
+	return t.PreCommand
+}
+
+func (t AgentTask) GetPostCommand() string {
+	return t.PostCommand
 }
 
 func (t AgentTask) GetSchedule() string {

@@ -21,6 +21,8 @@ type Task interface {
 	GetID() string
 	GetName() string
 	GetCommand() string
+	GetPreCommand() string
+	GetPostCommand() string
 	GetTimeout() int
 	GetWorkDir() string
 	GetEnvs() string
@@ -40,8 +42,10 @@ type CronTask interface {
 
 // Request 任务执行请求
 type Request struct {
-	Command   string
-	WorkDir   string
+	Command     string
+	PreCommand  string
+	PostCommand string
+	WorkDir     string
 	Envs      []string
 	Timeout   int // 任务超时时间（分钟）
 	Languages []map[string]string
@@ -119,6 +123,19 @@ func ExecuteWithHooks(ctx context.Context, req Request, stdout, stderr io.Writer
 		utils.InjectNodePath(&req.Envs, req.Languages)
 		req.Command = utils.BuildMiseCommand(req.Command, req.Languages)
 		req.UseMise = false
+	}
+
+	// 组合指令（如果存在前置或后置指令）
+	if req.PreCommand != "" || req.PostCommand != "" {
+		finalCmd := ""
+		if req.PreCommand != "" {
+			finalCmd += req.PreCommand + "\n"
+		}
+		finalCmd += req.Command
+		if req.PostCommand != "" {
+			finalCmd += "\n" + req.PostCommand
+		}
+		req.Command = finalCmd
 	}
 
 	// 1. 执行前钩子

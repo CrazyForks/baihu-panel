@@ -349,6 +349,8 @@ export interface Task {
   name: string
   remark: string
   command: string
+  pre_command: string
+  post_command: string
   tags: string
   type: string
   trigger_type: string

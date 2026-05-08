@@ -74,6 +74,8 @@ type Task struct {
 	Remark        string              `json:"remark" gorm:"size:255;default:''"`
 	PinType       string              `json:"pin_type" gorm:"size:20;default:none;index"` // 置顶类型: constant.PinTypeNone, constant.PinTypeTop
 	Command       BigText             `json:"command"`                   // 普通任务的命令
+	PreCommand    BigText             `json:"pre_command"`               // 执行前的命令
+	PostCommand   BigText             `json:"post_command"`              // 执行后的命令
 	Tags          string              `json:"tags" gorm:"size:255;default:''"`            // 标签，逗号分隔
 	Type          string              `json:"type" gorm:"size:20;default:'task'"`         // 任务类型: constant.TaskTypeNormal, constant.TaskTypeRepo
 	TriggerType   string              `json:"trigger_type" gorm:"size:25;default:'cron'"` // 触发类型: constant.TriggerTypeCron, constant.TriggerTypeBaihuStartup
@@ -121,6 +123,14 @@ func (t *Task) GetName() string {
 
 func (t *Task) GetCommand() string {
 	return string(t.Command)
+}
+
+func (t *Task) GetPreCommand() string {
+	return string(t.PreCommand)
+}
+
+func (t *Task) GetPostCommand() string {
+	return string(t.PostCommand)
 }
 
 func (t *Task) GetTimeout() int {

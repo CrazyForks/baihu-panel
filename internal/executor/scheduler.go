@@ -66,8 +66,10 @@ type ExecutionRequest struct {
 	LogID     string              // 日志 ID
 	Name      string              // 任务名称
 	Type      TaskType            // 任务类型
-	Command   string              // 命令
-	WorkDir   string              // 工作目录
+	Command     string              // 命令
+	PreCommand  string              // 前置命令
+	PostCommand string              // 后置命令
+	WorkDir     string              // 工作目录
 	Envs      []string            // 环境变量
 	Secrets   []string            // 需要脱敏的密码
 	Timeout   int                 // 超时时间（分钟）
@@ -204,7 +206,9 @@ func NewScheduler(config SchedulerConfig, handler SchedulerEventHandler) *Schedu
 		executor: func(ctx context.Context, req *ExecutionRequest, stdout, stderr io.Writer) (*Result, error) {
 			hooks := &schedulerHooksAdapter{handler: handler, req: req}
 			return ExecuteWithHooks(ctx, Request{
-				Command:   req.Command,
+				Command:     req.Command,
+				PreCommand:  req.PreCommand,
+				PostCommand: req.PostCommand,
 				WorkDir:   req.WorkDir,
 				Envs:      req.Envs,
 				Timeout:   req.Timeout,

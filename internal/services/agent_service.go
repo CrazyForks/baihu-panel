@@ -314,13 +314,13 @@ func (s *AgentService) Heartbeat(token, ip, version, buildTime, hostname, osType
 
 // GetTasks 获取 Agent 的任务列表
 func (s *AgentService) GetTasks(agentID string) []models.AgentTask {
-	var tasks []models.Task
-	database.DB.Where("agent_id = ? AND enabled = ?", agentID, true).Find(&tasks)
+	var tasksList []models.Task
+	database.DB.Where("agent_id = ? AND enabled = ?", agentID, true).Find(&tasksList)
 
-	result := make([]models.AgentTask, len(tasks))
+	result := make([]models.AgentTask, len(tasksList))
 	envService := NewEnvService()
 
-	for i, task := range tasks {
+	for i, task := range tasksList {
 		// 加载环境配置
 		var envVars []string
 		
@@ -343,14 +343,29 @@ func (s *AgentService) GetTasks(agentID string) []models.AgentTask {
 		}
 
 		envVarsStr := executor.FormatEnvVars(envVars)
+		
+		command := string(task.Command)
+		preCommand := string(task.PreCommand)
+		postCommand := string(task.PostCommand)
+		workDir := task.WorkDir
+
+		// 仓库同步任务特殊处理：将配置转换为 reposync 命令行
+		if task.Type == constant.TaskTypeRepo {
+			command, workDir = tasks.BuildRepoCommand(&task)
+			// 仓库任务的前置/后置命令已作为参数传给 reposync 内部处理，此处清空防止重复执行
+			preCommand = ""
+			postCommand = ""
+		}
 
 		result[i] = models.AgentTask{
 			ID:          task.ID,
 			Name:        task.Name,
-			Command:     string(task.Command),
+			Command:     command,
+			PreCommand:  preCommand,
+			PostCommand: postCommand,
 			Schedule:    task.Schedule,
 			Timeout:     task.Timeout,
-			WorkDir:     task.WorkDir,
+			WorkDir:     workDir,
 			Envs:        envVarsStr,
 			Languages:   []map[string]string(task.Languages),
 			RandomRange: task.RandomRange,

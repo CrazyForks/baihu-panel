@@ -217,6 +217,8 @@ function submitBaihuImport() {
   repoConfig.value = { ...repoConfig.value, ...result.repoConfig }
   if (result.task.name) form.value.name = result.task.name
   if (result.task.timeout) form.value.timeout = result.task.timeout
+  if (result.task.pre_command) form.value.pre_command = result.task.pre_command
+  if (result.task.post_command) form.value.post_command = result.task.post_command
   
   if (result.task.languages) {
     selectedLangs.value = result.task.languages.map(l => ({
@@ -308,6 +310,8 @@ watch(() => props.open, async (val: boolean) => {
       random_range: props.task?.random_range ?? 0,
       timeout: props.task?.timeout ?? 30,
       pin_type: props.task?.pin_type ?? 'none',
+      pre_command: props.task?.pre_command ?? '',
+      post_command: props.task?.post_command ?? '',
       ...props.task
     }
     // 解析清理配置
@@ -440,12 +444,12 @@ async function save() {
   <Dialog :open="open" @update:open="emit('update:open', $event)">
     <DialogContent class="max-w-[95vw] sm:max-w-[700px] xl:max-w-[950px] p-0 overflow-hidden border-none bg-background shadow-2xl transition-all duration-300" style="text-rendering: optimizeLegibility;" @openAutoFocus.prevent>
       <div class="flex flex-col max-h-[85vh]">
-        <DialogHeader class="px-5 sm:px-6 pr-10 pt-6 pb-2 shrink-0">
+        <DialogHeader class="px-5 sm:px-6 pr-20 pt-6 pb-2 shrink-0">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-2">
             <DialogTitle class="text-xl font-bold whitespace-nowrap">
               {{ isEdit ? '编辑仓库同步' : '新建仓库同步' }}
             </DialogTitle>
-            <div v-if="!isEdit" class="flex flex-wrap items-center gap-2">
+            <div v-if="!isEdit" class="flex flex-wrap items-center gap-2 sm:mr-4">
               <Button variant="outline" size="sm" @click="importFromBaihu" class="flex-1 sm:flex-initial h-8 gap-1.5 bg-primary/5 hover:bg-primary/10 border-primary/20 hover:border-primary/40 text-primary px-3">
                 <Terminal class="w-3.5 h-3.5" />
                 <span class="text-xs">Baihu 命令导入</span>
@@ -572,6 +576,15 @@ async function save() {
                       <Label for="single-file-sync" class="text-[11px] font-medium cursor-pointer">作为单文件直接下载</Label>
                     </div>
                   </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3 mt-4">
+                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold">前置脚本</Label>
+                  <div class="sm:col-span-3 relative"><Input v-model="form.pre_command" placeholder="同步前运行的指令 (可选)" :class="cn('h-9 bg-muted/20 border-muted-foreground/15 transition-all focus:bg-background/50 pr-10', form.pre_command ? 'font-mono text-sm tracking-tight font-medium' : 'text-[11px] font-normal')" /><Zap class="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground opacity-40 pointer-events-none" /></div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-4 items-center gap-3">
+                  <Label class="sm:text-right text-xs text-foreground/70 uppercase tracking-wider font-bold">后置脚本</Label>
+                  <div class="sm:col-span-3 relative"><Input v-model="form.post_command" placeholder="同步后运行的指令 (可选)" :class="cn('h-9 bg-muted/20 border-muted-foreground/15 transition-all focus:bg-background/50 pr-10', form.post_command ? 'font-mono text-sm tracking-tight font-medium' : 'text-[11px] font-normal')" /><Zap class="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground opacity-40 pointer-events-none" /></div>
                 </div>
               </div>
             </section>
@@ -923,10 +936,10 @@ async function save() {
         <div class="space-y-2">
           <div class="flex items-center justify-between">
             <Label class="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">示例命令</Label>
-            <button class="text-[10px] text-primary hover:underline font-medium" @click="baihuCommandInput = 'baihu reposync --source-url \'https://github.com/example/repo.git\' --branch \'main\' --blacklist \'test|dev\''">填入示例</button>
+            <button class="text-[10px] text-primary hover:underline font-medium" @click="baihuCommandInput = 'baihu reposync --source-url \'https://github.com/example/repo.git\' --branch \'main\' --blacklist \'test|dev\' --pre-command \'npm install\' --post-command \'echo done\''">填入示例</button>
           </div>
           <div class="p-3 rounded-lg bg-muted/40 font-mono text-[11px] text-muted-foreground/70 border border-muted/20 leading-relaxed break-all">
-            baihu reposync --source-url 'https://...' --branch 'main' --blacklist '...'
+            baihu reposync --source-url 'https://...' --branch 'main' --blacklist '...' --pre-command '...' --post-command '...'
           </div>
         </div>
 

@@ -46,6 +46,8 @@ type AgentTask struct {
 	ID          string              `json:"id"`
 	Name        string              `json:"name"`
 	Command     string              `json:"command"`
+	PreCommand  string              `json:"pre_command"`
+	PostCommand string              `json:"post_command"`
 	Schedule    string              `json:"schedule"`
 	Cron        string              `json:"cron"`
 	Timeout     int                 `json:"timeout"`
@@ -67,6 +69,14 @@ func (t *AgentTask) GetName() string {
 
 func (t *AgentTask) GetCommand() string {
 	return t.Command
+}
+
+func (t *AgentTask) GetPreCommand() string {
+	return t.PreCommand
+}
+
+func (t *AgentTask) GetPostCommand() string {
+	return t.PostCommand
 }
 
 func (t *AgentTask) GetTimeout() int {
@@ -527,7 +537,9 @@ func (a *Agent) handleExecute(data json.RawMessage) {
 		TaskID:    task.ID,
 		LogID:     req.LogID,
 		Name:      task.Name,
-		Command:   task.Command,
+		Command:     task.Command,
+		PreCommand:  task.PreCommand,
+		PostCommand: task.PostCommand,
 		WorkDir:   task.WorkDir,
 		Envs:      executor.ParseEnvVars(envs),
 		Secrets:   req.Secrets,
@@ -690,6 +702,7 @@ func (a *Agent) updateTasks(tasks []AgentTask) {
 	for id, task := range newTasks {
 		oldTask, exists := a.tasks[id]
 		if !exists || oldTask.Schedule != task.Schedule || oldTask.Command != task.Command ||
+			oldTask.PreCommand != task.PreCommand || oldTask.PostCommand != task.PostCommand ||
 			oldTask.Enabled != task.Enabled || oldTask.Timeout != task.Timeout ||
 			oldTask.WorkDir != task.WorkDir || oldTask.Envs != task.Envs ||
 			oldTask.RandomRange != task.RandomRange {

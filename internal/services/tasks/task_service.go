@@ -24,7 +24,7 @@ func (ts *TaskService) GetTaskBySourceID(sourceID string) *models.Task {
 	return &task
 }
 
-func (ts *TaskService) CreateTask(name, command, schedule string, timeout int, workDir, cleanConfig, envs, taskType, config string, agentID *string, languages models.TaskLanguages, triggerType string, tags string, retryCount int, retryInterval int, randomRange int, sourceID string, pinType string) *models.Task {
+func (ts *TaskService) CreateTask(name, command, preCommand, postCommand, schedule string, timeout int, workDir, cleanConfig, envs, taskType, config string, agentID *string, languages models.TaskLanguages, triggerType string, tags string, retryCount int, retryInterval int, randomRange int, sourceID string, pinType string) *models.Task {
 	if taskType == "" {
 		taskType = "task"
 	}
@@ -38,6 +38,8 @@ func (ts *TaskService) CreateTask(name, command, schedule string, timeout int, w
 		ID:            utils.GenerateID(),
 		Name:          name,
 		Command:       models.BigText(command),
+		PreCommand:    models.BigText(preCommand),
+		PostCommand:   models.BigText(postCommand),
 		PinType:       pinType,
 		Tags:          tags,
 		Type:          taskType,
@@ -122,7 +124,7 @@ func (ts *TaskService) GetTaskByID(id string) *models.Task {
 	return &task
 }
 
-func (ts *TaskService) UpdateTask(id string, name, command, schedule string, timeout int, workDir, cleanConfig, envs string, enabled bool, taskType, config string, agentID *string, languages models.TaskLanguages, triggerType string, tags string, retryCount int, retryInterval int, randomRange int, sourceID string, pinType string) *models.Task {
+func (ts *TaskService) UpdateTask(id string, name, command, preCommand, postCommand, schedule string, timeout int, workDir, cleanConfig, envs string, enabled bool, taskType, config string, agentID *string, languages models.TaskLanguages, triggerType string, tags string, retryCount int, retryInterval int, randomRange int, sourceID string, pinType string) *models.Task {
 	var task models.Task
 	res := database.DB.Where("id = ?", id).Limit(1).Find(&task)
 	if res.Error != nil || res.RowsAffected == 0 {
@@ -130,6 +132,8 @@ func (ts *TaskService) UpdateTask(id string, name, command, schedule string, tim
 	}
 	task.Name = name
 	task.Command = models.BigText(command)
+	task.PreCommand = models.BigText(preCommand)
+	task.PostCommand = models.BigText(postCommand)
 	task.PinType = pinType
 	task.Tags = tags
 	task.Schedule = schedule
@@ -159,6 +163,7 @@ func (ts *TaskService) UpdateTask(id string, name, command, schedule string, tim
 		"CleanConfig", "Envs", "Enabled", "AgentID", "Languages",
 		"RetryCount", "RetryInterval", "RandomRange", "Type",
 		"TriggerType", "Config", "SourceID", "PinType",
+		"PreCommand", "PostCommand",
 	).Updates(&task)
 
 	return &task
