@@ -86,6 +86,10 @@ func NewExecutorService(
 
 	// 2. 初始化计划任务管理器
 	es.cronManager = executor.NewCronManager(es.scheduler)
+	es.cronManager.OnTrigger = func(t executor.CronTask) *executor.ExecutionRequest {
+		task := es.taskService.GetTaskByID(t.GetID())
+		return es.CreateExecutionRequest(task, executor.TaskTypeCron, nil)
+	}
 
 	return es
 }
@@ -136,12 +140,8 @@ func (h *ServerSchedulerHandler) OnTaskExecuting(req *executor.ExecutionRequest)
 		return nil, nil, nil
 	}
 
-	// 1. 创建初始日志记录（对系统敏感信息进行全面脱敏处理）
-	masks := append([]string{}, req.Secrets...)
-	masks = append(masks, utils.GetSystemSecrets()...)
-	maskedCommand := utils.MaskSecrets(req.Command, masks)
-
-	taskLog, err := h.es.taskLogService.CreateEmptyLog(task.ID, maskedCommand)
+	// 1. 使用预先准备好的脱敏指令创建初始日志记录
+	taskLog, err := h.es.taskLogService.CreateEmptyLog(task.ID, req.MaskedCommand)
 	if err != nil {
 		return nil, nil, fmt.Errorf("创建初始日志失败: %v", err)
 	}
@@ -202,7 +202,7 @@ func (h *ServerSchedulerHandler) OnTaskHeartbeat(req *executor.ExecutionRequest,
 	// 每分钟打印一次任务还在运行的日志
 	if duration >= 60000 && (duration/60000 > (duration-3000)/60000) {
 		logger.Infof("[Scheduler] 命令: %s (#%s 已耗时: %v)",
-			utils.MaskSecrets(req.Command, req.Secrets), req.TaskID, (time.Duration(duration) * time.Millisecond).Round(time.Second))
+			req.MaskedCommand, req.TaskID, (time.Duration(duration) * time.Millisecond).Round(time.Second))
 	}
 }
 
@@ -245,7 +245,7 @@ func (h *ServerSchedulerHandler) OnTaskCompleted(req *executor.ExecutionRequest,
 	taskLog := &models.TaskLog{
 		ID:        req.LogID,
 		TaskID:    task.ID,
-		Command:   models.BigText(req.Command),
+		Command:   models.BigText(req.MaskedCommand),
 		Output:    models.BigText(output),
 		Error:     models.BigText(result.Error),
 		Status:    result.Status,
@@ -330,7 +330,7 @@ func (h *ServerSchedulerHandler) OnTaskFailed(req *executor.ExecutionRequest, er
 	taskLog := &models.TaskLog{
 		ID:        req.LogID,
 		TaskID:    taskID,
-		Command:   models.BigText(req.Command),
+		Command:   models.BigText(req.MaskedCommand),
 		Output:    models.BigText(output),
 		Error:     models.BigText(err.Error()),
 		Status:    constant.TaskStatusFailed,
@@ -399,25 +399,7 @@ func (es *ExecutorService) HandleTaskRetry(task *models.Task, req *executor.Exec
 				if latestTask == nil || !utils.DerefBool(latestTask.Enabled, true) {
 					return nil
 				}
-
-				newEnvs, newSecrets := es.loadEnvVars(latestTask.ID, string(latestTask.Envs))
-				return &executor.ExecutionRequest{
-					TaskID:    req.TaskID,
-					Name:      latestTask.Name,
-					Command:     string(latestTask.Command),
-					PreCommand:  string(latestTask.PreCommand),
-					PostCommand: string(latestTask.PostCommand),
-					WorkDir:   latestTask.WorkDir,
-					Envs:      newEnvs,
-					Secrets:   newSecrets,
-					Timeout:   latestTask.Timeout,
-					Languages: []map[string]string(latestTask.Languages),
-					UseMise:   latestTask.UseMise(),
-					Type:      executor.TaskTypeManual,
-					Metadata: executor.ExecutionMetadata{
-						RetryIndex: retryIndex,
-					},
-				}
+				return es.CreateExecutionRequest(latestTask, executor.TaskTypeManual, nil)
 			})
 		}
 	}
@@ -475,38 +457,8 @@ func (es *ExecutorService) ExecuteDispatcher(ctx context.Context, req *executor.
 	// 重新加载最新的环境变量，满足即时生效的需求
 	es.refreshExecutionRequestEnvs(req, task)
 
-	// 特殊处理仓库同步任务
-	if task.Type == constant.TaskTypeRepo {
-		cmd, workDir := es.BuildRepoCommand(task)
-		if cmd != "" {
-			req.Command = cmd
-			req.WorkDir = workDir
-			req.UseMise = false // 仓库同步任务不使用 mise，由系统原生执行
-			// 仓库任务的前置/后置命令已作为参数传给 reposync 内部处理，此处清空防止重复执行
-			req.PreCommand = ""
-			req.PostCommand = ""
-
-			// 强制脱敏并更新数据库日志
-			masks := append([]string{}, req.Secrets...)
-			masks = append(masks, utils.GetSystemSecrets()...)
-
-			// 补充仓库特有的 AuthToken
-			var repoCfg models.RepoConfig
-			if err := json.Unmarshal([]byte(task.Config), &repoCfg); err == nil && repoCfg.AuthToken != "" {
-				masks = append(masks, repoCfg.AuthToken)
-			}
-
-			maskedCmd := utils.MaskSecrets(req.Command, masks)
-
-			// 更新数据库中的任务日志命令内容
-			if req.LogID != "" {
-				es.taskLogService.UpdateLogCommand(req.LogID, maskedCmd)
-			}
-
-			// 在控制台打印最终执行的脱敏命令
-			logger.Infof("[Executor] 仓库同步最终执行命令: %s", maskedCmd)
-		}
-	}
+	// 在控制台打印最终执行的脱敏命令
+	logger.Infof("[Executor] 任务最终执行命令: %s", req.MaskedCommand)
 
 	// 组合指令逻辑已移至 executor.ExecuteWithHooks 中，此处不再处理
 	// 以避免指令被重复组合。
@@ -630,6 +582,73 @@ func (es *ExecutorService) Reload() {
 	}
 }
 
+// CreateExecutionRequest 统一处理任务到执行请求的转换逻辑（包含指令拼装、脱敏等）
+func (es *ExecutorService) CreateExecutionRequest(task *models.Task, triggerType executor.TaskType, extraEnvs []string) *executor.ExecutionRequest {
+	if task == nil {
+		return nil
+	}
+
+	// 1. 加载环境变量和机密
+	envs, secrets := es.loadEnvVars(task.ID, string(task.Envs))
+	if len(extraEnvs) > 0 {
+		envs = append(envs, extraEnvs...)
+	}
+
+	// 2. 准备指令
+	command := string(task.Command)
+	preCommand := string(task.PreCommand)
+	postCommand := string(task.PostCommand)
+	workDir := task.WorkDir
+
+	// 解析路径变量 (如 $SCRIPTS_DIR$)
+	command = es.ResolvePath(command)
+	preCommand = es.ResolvePath(preCommand)
+	postCommand = es.ResolvePath(postCommand)
+	workDir = es.ResolvePath(workDir)
+
+	useMise := task.UseMise()
+
+	// 特殊处理仓库同步任务
+	if task.Type == constant.TaskTypeRepo {
+		repoCmd, repoWorkDir := es.BuildRepoCommand(task)
+		if repoCmd != "" {
+			command = repoCmd
+			workDir = repoWorkDir
+			useMise = false // 仓库同步不使用 mise
+			// 仓库任务的前置/后置命令由 reposync 内部处理，此处清空
+			preCommand = ""
+			postCommand = ""
+
+			// 补充仓库特有的 AuthToken 到脱敏列表
+			var repoCfg models.RepoConfig
+			if err := json.Unmarshal([]byte(task.Config), &repoCfg); err == nil && repoCfg.AuthToken != "" {
+				secrets = append(secrets, repoCfg.AuthToken)
+			}
+		}
+	}
+
+	// 3. 统一脱敏处理
+	masks := append([]string{}, secrets...)
+	masks = append(masks, utils.GetSystemSecrets()...)
+	maskedCommand := utils.MaskSecrets(command, masks)
+
+	return &executor.ExecutionRequest{
+		TaskID:        task.ID,
+		Name:          task.Name,
+		Type:          triggerType,
+		Command:       command,
+		MaskedCommand: maskedCommand,
+		PreCommand:    preCommand,
+		PostCommand:   postCommand,
+		WorkDir:       workDir,
+		Envs:          envs,
+		Secrets:       secrets,
+		Timeout:       task.Timeout,
+		Languages:     []map[string]string(task.Languages),
+		UseMise:       useMise,
+	}
+}
+
 // ExecuteTask executes a task by ID（同步执行，供 API 调用）
 func (es *ExecutorService) ExecuteTask(taskID string, extraEnvs []string) *executor.ExecutionResult {
 	task := es.taskService.GetTaskByID(taskID)
@@ -654,26 +673,7 @@ func (es *ExecutorService) ExecuteTask(taskID string, extraEnvs []string) *execu
 		}
 	}
 
-	envs, secrets := es.loadEnvVars(task.ID, string(task.Envs))
-	if len(extraEnvs) > 0 {
-		envs = append(envs, extraEnvs...)
-	}
-
-	req := &executor.ExecutionRequest{
-		TaskID:    task.ID,
-		Name:      task.Name,
-		Command:     string(task.Command),
-		PreCommand:  string(task.PreCommand),
-		PostCommand: string(task.PostCommand),
-		WorkDir:   task.WorkDir,
-		Envs:      envs,
-		Secrets:   secrets,
-		Timeout:   task.Timeout,
-		Languages: []map[string]string(task.Languages),
-		UseMise:   task.UseMise(),
-		Type:      executor.TaskTypeManual,
-	}
-
+	req := es.CreateExecutionRequest(task, executor.TaskTypeManual, extraEnvs)
 	es.scheduler.EnqueueOrExecute(req)
 
 	return &executor.ExecutionResult{
@@ -1043,6 +1043,25 @@ func (es *ExecutorService) ExecuteRemoteForScheduler(task *models.Task, logID st
 
 // HandleAgentResult 处理来自 Agent 的异步结果
 func (es *ExecutorService) HandleAgentResult(result *models.AgentTaskResult) error {
+	// 加载机密以进行脱敏处理
+	var secrets []string
+	task := es.taskService.GetTaskByID(result.TaskID)
+	if task != nil {
+		_, secrets = es.loadEnvVars(task.ID, string(task.Envs))
+
+		// 如果是仓库同步任务，补充 AuthToken
+		if task.Type == constant.TaskTypeRepo {
+			var repoCfg models.RepoConfig
+			if err := json.Unmarshal([]byte(task.Config), &repoCfg); err == nil && repoCfg.AuthToken != "" {
+				secrets = append(secrets, repoCfg.AuthToken)
+			}
+		}
+	}
+
+	masks := append([]string{}, secrets...)
+	masks = append(masks, utils.GetSystemSecrets()...)
+	result.Command = utils.MaskSecrets(result.Command, masks)
+
 	taskLog, err := es.taskLogService.CreateTaskLogFromAgentResult(result)
 	if err != nil {
 		return err

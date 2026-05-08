@@ -67,6 +67,7 @@ type ExecutionRequest struct {
 	Name      string              // 任务名称
 	Type      TaskType            // 任务类型
 	Command     string              // 命令
+	MaskedCommand string            // 脱敏后的命令（用于日志和展示）
 	PreCommand  string              // 前置命令
 	PostCommand string              // 后置命令
 	WorkDir     string              // 工作目录

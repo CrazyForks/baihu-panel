@@ -395,7 +395,8 @@ func (s *AgentService) ReportResult(result *models.AgentTaskResult) error {
 	sendStatsService := NewSendStatsService()
 	taskLogService := tasks.NewTaskLogService(sendStatsService)
 
-	// 创建日志对象
+	// 创建日志对象前进行指令脱敏
+	result.Command = utils.MaskSecrets(result.Command, utils.GetSystemSecrets())
 	taskLog, err := taskLogService.CreateTaskLogFromAgentResult(result)
 	if err != nil {
 		return err

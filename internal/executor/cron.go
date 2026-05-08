@@ -22,6 +22,7 @@ type CronManager struct {
 	entryMap  map[string]cron.EntryID // task ID -> cron entry ID
 	mu        sync.RWMutex
 	logger    SchedulerLogger
+	OnTrigger func(task CronTask) *ExecutionRequest // 任务触发时的请求构造工厂
 }
 
 // NewCronManager 创建一个新的计划任务管理器
@@ -104,6 +105,9 @@ func (m *CronManager) AddTask(task CronTask) error {
 
 		// 构造执行请求的 Builder
 		reqBuilder := func() *ExecutionRequest {
+			if m.OnTrigger != nil {
+				return m.OnTrigger(task)
+			}
 			return &ExecutionRequest{
 				TaskID:    taskID,
 				Name:      name,
