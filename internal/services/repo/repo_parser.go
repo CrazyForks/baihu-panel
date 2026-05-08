@@ -179,7 +179,7 @@ func ParseRepoScriptsAndAddCron(taskID string, logWriter io.Writer, forceComment
 
 // upsertRepoTask 处理来自仓库的任务的创建或更新
 func upsertRepoTask(parentTask *models.Task, sourceID, name, command, cron, workDir, tag string) (string, bool) {
-	defaultTaskConfig := `{"$task_all_envs":true}`
+	defaultTaskConfig := `{"$task_all_envs":true,"$task_concurrency":0}`
 	var existing models.Task
 	tx := database.DB.Where("source_id = ? AND repo_task_id = ?", sourceID, parentTask.ID).Limit(1).Find(&existing)
 
