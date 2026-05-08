@@ -130,8 +130,14 @@ func ParseRepoScriptsAndAddCron(taskID string, logWriter io.Writer, forceComment
 			displayPath := path
 			displayWorkDir := targetPath
 			if strings.HasPrefix(absPath, absScriptsDir) {
-				displayPath = filepath.ToSlash(relPath)
-				displayWorkDir = "$SCRIPTS_DIR$"
+				// 命令仅使用文件名，工作目录设置为脚本所在目录
+				displayPath = filepath.Base(path)
+				relDir, _ := filepath.Rel(absScriptsDir, filepath.Dir(absPath))
+				if relDir == "." {
+					displayWorkDir = "$SCRIPTS_DIR$"
+				} else {
+					displayWorkDir = filepath.ToSlash(filepath.Join("$SCRIPTS_DIR$", relDir))
+				}
 			}
 
 			// 找到任务，进行保存
