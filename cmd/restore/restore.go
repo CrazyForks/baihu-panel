@@ -1,6 +1,7 @@
 package restore
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,12 +11,27 @@ import (
 )
 
 func Run(args []string) {
-	if len(args) < 1 {
-		fmt.Println("用法: baihu restore <backup_file.zip>")
-		os.Exit(1)
+	fs := flag.NewFlagSet("restore", flag.ExitOnError)
+	fs.Usage = func() {
+		fmt.Fprintf(os.Stderr, "\n白虎面板系统数据恢复工具\n\n")
+		fmt.Fprintf(os.Stderr, "用法:\n")
+		fmt.Fprintf(os.Stderr, "  baihu restore <备份文件.zip>\n\n")
+		fmt.Fprintf(os.Stderr, "示例:\n")
+		fmt.Fprintf(os.Stderr, "  baihu restore backup_20231027.zip\n\n")
 	}
 
-	backupFile := args[0]
+	if err := fs.Parse(args); err != nil {
+		return
+	}
+
+	parsedArgs := fs.Args()
+	if len(parsedArgs) < 1 {
+		fmt.Fprintf(os.Stderr, "错误: 必须提供备份文件路径\n")
+		fs.Usage()
+		return
+	}
+
+	backupFile := parsedArgs[0]
 	absPath, err := filepath.Abs(backupFile)
 	if err != nil {
 		fmt.Printf("文件路径解析失败: %v\n", err)

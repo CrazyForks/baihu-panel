@@ -1,7 +1,8 @@
 package builtininstall
 
 import (
-
+	"flag"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +14,19 @@ import (
 
 // Run 执行内建包安装逻辑
 func Run(args []string) {
+	fs := flag.NewFlagSet("builtininstall", flag.ExitOnError)
+	fs.Usage = func() {
+		fmt.Fprintf(os.Stderr, "\n白虎面板内建依赖安装工具\n\n")
+		fmt.Fprintf(os.Stderr, "用法:\n")
+		fmt.Fprintf(os.Stderr, "  baihu builtininstall\n\n")
+		fmt.Fprintf(os.Stderr, "说明:\n")
+		fmt.Fprintf(os.Stderr, "  此命令将为系统中已安装的 Node.js 和 Python 环境安装白虎面板所需的内建依赖包。\n\n")
+	}
+
+	if err := fs.Parse(args); err != nil {
+		return
+	}
+
 	logger.Infof("[Builtin] 开始为 mise 环境安装内建包...")
 
 	// 1. 确定内建包路径
@@ -30,15 +44,15 @@ func Run(args []string) {
 	}
 
 	// 2. 安装 Node.js 包
-	installForLanguage("node", filepath.Join(builtinPath, "nodejs"), "npm install")
+	installForLanguage("node", filepath.Join(builtinPath, "nodejs"))
 
 	// 3. 安装 Python 包
-	installForLanguage("python", filepath.Join(builtinPath, "python"), "pip install -e")
+	installForLanguage("python", filepath.Join(builtinPath, "python"))
 
 	logger.Infof("[Builtin] 内建包安装流程完成")
 }
 
-func installForLanguage(lang, pkgPath, installBaseCmd string) {
+func installForLanguage(lang, pkgPath string) {
 	if _, err := os.Stat(pkgPath); os.IsNotExist(err) {
 		logger.Warnf("[Builtin] %s 的内建包目录不存在: %s", lang, pkgPath)
 		return

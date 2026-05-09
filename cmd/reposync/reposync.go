@@ -36,6 +36,7 @@ type Config struct {
 	Dependence     string // Script dependence file keywords, vertical line separated
 	Extensions     string // Script file extensions, vertical line separated
 	TaskID         string
+	RepoTaskID     string
 	TaskLanguages  string
 	TaskTimeout    int
 	CommentToTask  string
@@ -62,13 +63,31 @@ func Run(args []string) {
 	fs.StringVar(&cfg.Extensions, "extensions", "", "Script extensions (| separated)")
 	fs.StringVar(&cfg.TaskID, "task-id", "", "Task ID for metadata")
 	fs.StringVar(&cfg.TaskLanguages, "task-langs", "", "Configured languages (JSON)")
-	fs.StringVar(&cfg.TaskID, "repo-task-id", "", "Original Task ID")
+	fs.StringVar(&cfg.RepoTaskID, "repo-task-id", "", "Original Task ID")
 	fs.IntVar(&cfg.TaskTimeout, "task-timeout", 30, "Task timeout (minutes)")
 	fs.StringVar(&cfg.CommentToTask, "commenttotask", "false", "Compatible with QL format script comment parsing (true/false)")
 	fs.StringVar(&cfg.PreCommand, "pre-command", "", "Default pre-command for discovered tasks")
 	fs.StringVar(&cfg.PostCommand, "post-command", "", "Default post-command for discovered tasks")
 
-	fs.Parse(args)
+	fs.Usage = func() {
+		fmt.Fprintf(os.Stderr, "\n白虎面板仓库同步工具 (Reposync)\n\n")
+		fmt.Fprintf(os.Stderr, "用法:\n")
+		fmt.Fprintf(os.Stderr, "  baihu reposync [参数]\n\n")
+		fmt.Fprintf(os.Stderr, "参数详情:\n")
+		fs.PrintDefaults()
+		fmt.Fprintf(os.Stderr, "\n示例:\n")
+		fmt.Fprintf(os.Stderr, "  baihu reposync --source-url https://github.com/xxx/repo.git --target-path $SCRIPTS_DIR$/repo1\n\n")
+	}
+
+	if err := fs.Parse(args); err != nil {
+		return
+	}
+
+	if cfg.SourceURL == "" {
+		fmt.Fprintf(os.Stderr, "错误: 必须提供 --source-url 参数\n")
+		fs.Usage()
+		return
+	}
 
 	// 处理 $SCRIPTS_DIR$ 代号替换
 	if strings.Contains(cfg.TargetPath, constant.ScriptsDirPlaceholder) {

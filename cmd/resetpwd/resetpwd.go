@@ -2,6 +2,7 @@ package resetpwd
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"os"
 	"strings"
@@ -12,6 +13,19 @@ import (
 )
 
 func Run(args []string) {
+	fs := flag.NewFlagSet("resetpwd", flag.ExitOnError)
+	fs.Usage = func() {
+		fmt.Fprintf(os.Stderr, "\n白虎面板用户密码重置工具\n\n")
+		fmt.Fprintf(os.Stderr, "用法:\n")
+		fmt.Fprintf(os.Stderr, "  baihu resetpwd [用户名]\n\n")
+		fmt.Fprintf(os.Stderr, "示例:\n")
+		fmt.Fprintf(os.Stderr, "  baihu resetpwd admin\n\n")
+	}
+
+	if err := fs.Parse(args); err != nil {
+		return
+	}
+
 	// 基础环境初始化
 	bootstrap.InitBasic()
 	settingsService := services.NewSettingsService()
@@ -22,9 +36,9 @@ func Run(args []string) {
 	userService := services.NewUserService()
 
 	var username string
-
-	if len(args) >= 1 {
-		username = args[0]
+	parsedArgs := fs.Args()
+	if len(parsedArgs) >= 1 {
+		username = parsedArgs[0]
 	} else {
 		username = "admin"
 	}
