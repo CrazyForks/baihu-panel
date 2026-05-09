@@ -105,6 +105,7 @@ const (
 	// 其他事件类型
 	EventSystemNotice = "system_notice"
 	EventNotifySent   = "notify_sent"
+	EventAppLogAdded  = "app_log_added"
 
 	// WebSocket 消息类型
 	WSTypeHeartbeat     = "heartbeat"

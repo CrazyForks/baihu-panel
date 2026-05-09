@@ -11,6 +11,8 @@ import BaihuDialog from '@/components/ui/BaihuDialog.vue'
 import { toast } from 'vue-sonner'
 import { format } from 'date-fns'
 import { useSiteSettings } from '@/composables/useSiteSettings'
+import { useEventBus } from '@/composables/useEventBus'
+import { LOG_EVENTS } from '@/constants'
 
 const props = defineProps<{
     filters: {
@@ -83,6 +85,15 @@ async function handleClear() {
 
 onMounted(() => {
     fetchLogs()
+})
+
+// 实时更新：当有新系统事件产生且用户在第一页时刷新
+useEventBus([LOG_EVENTS.ADDED], (payload) => {
+    if (payload && payload.category === LOG_CATEGORY.SYSTEM_NOTICE) {
+        if (currentPage.value === 1) {
+            fetchLogs()
+        }
+    }
 })
 
 const selectedLog = computed(() => logs.value.find((l: AppLog) => l.id === selectedLogId.value))

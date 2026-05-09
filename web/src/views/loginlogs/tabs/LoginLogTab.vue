@@ -3,9 +3,11 @@ import { ref, onMounted } from 'vue'
 import Pagination from '@/components/Pagination.vue'
 import { Loader2 } from 'lucide-vue-next'
 import TextOverflow from '@/components/TextOverflow.vue'
-import { api } from '@/api'
+import { api, LOG_CATEGORY } from '@/api'
 import { toast } from 'vue-sonner'
 import { useSiteSettings } from '@/composables/useSiteSettings'
+import { useEventBus } from '@/composables/useEventBus'
+import { LOG_EVENTS } from '@/constants'
 import BaihuDialog from '@/components/ui/BaihuDialog.vue'
 
 const props = defineProps<{
@@ -90,6 +92,15 @@ function handlePageChange(page: number) {
 }
 
 onMounted(loadLogs)
+
+// 实时更新：当有新登录产生且用户在第一页时刷新
+useEventBus([LOG_EVENTS.ADDED], (payload) => {
+    if (payload && payload.category === LOG_CATEGORY.LOGIN_LOG) {
+        if (currentPage.value === 1) {
+            loadLogs()
+        }
+    }
+})
 
 defineExpose({
     loadLogs

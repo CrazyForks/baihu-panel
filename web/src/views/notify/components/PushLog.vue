@@ -19,6 +19,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useSiteSettings } from '@/composables/useSiteSettings'
+import { useEventBus } from '@/composables/useEventBus'
+import { LOG_EVENTS } from '@/constants'
 import BaihuDialog from '@/components/ui/BaihuDialog.vue'
 
 const props = defineProps<{
@@ -92,6 +94,15 @@ async function handleClear() {
 
 onMounted(() => {
   fetchLogs()
+})
+
+// 实时更新：当有新推送产生且用户在第一页时刷新
+useEventBus([LOG_EVENTS.ADDED], (payload) => {
+  if (payload && payload.category === LOG_CATEGORY.PUSH_LOG) {
+    if (currentPage.value === 1) {
+      fetchLogs()
+    }
+  }
 })
 
 const selectedLog = computed(() => logs.value.find((l: AppLog) => l.id === selectedLogId.value))

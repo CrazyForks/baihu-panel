@@ -32,7 +32,14 @@ func (s *AppLogService) Add(log *models.AppLog) error {
 	if log.ID == "" {
 		log.ID = utils.GenerateID()
 	}
-	return database.DB.Create(log).Error
+	err := database.DB.Create(log).Error
+	if err == nil {
+		eventbus.DefaultBus.Publish(eventbus.Event{
+			Type:    constant.EventAppLogAdded,
+			Payload: log,
+		})
+	}
+	return err
 }
 
 func (s *AppLogService) List(category string, status string, level string, page, pageSize int, keyword string) ([]models.AppLog, int64, error) {

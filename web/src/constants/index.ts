@@ -72,3 +72,8 @@ export const TASK_EVENTS = {
   RUNNING: 'task_running',
   QUEUED: 'task_queued',
 } as const
+
+// 日志事件类型
+export const LOG_EVENTS = {
+  ADDED: 'app_log_added',
+} as const
