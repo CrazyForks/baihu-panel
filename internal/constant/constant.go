@@ -177,6 +177,9 @@ const (
 	MaxMessageSize = 1024 * 1024 // 1MB
 	// MaxLogSize 允许的最大日志大小 (保留末尾 10MB)
 	MaxLogSize = 10 * 1024 * 1024 // 10MB
+
+	// ScriptsDirPlaceholder 脚本目录占位符
+	ScriptsDirPlaceholder = "$SCRIPTS_DIR$"
 )
 
 // TablePrefix 表前缀，从配置文件读取

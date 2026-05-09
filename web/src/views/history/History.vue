@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import { TASK_STATUS, TASK_TYPE, TASK_STATUS_TEXT } from '@/constants'
+import { TASK_STATUS, TASK_TYPE, TASK_STATUS_TEXT, TASK_EVENTS } from '@/constants'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Pagination from '@/components/Pagination.vue'
@@ -17,6 +17,7 @@ import BaihuDialog from '@/components/ui/BaihuDialog.vue'
 import { toast } from 'vue-sonner'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 import TextOverflow from '@/components/TextOverflow.vue'
+import { useEventBus } from '@/composables/useEventBus'
 
 const route = useRoute()
 const { pageSize } = useSiteSettings()
@@ -33,6 +34,39 @@ let searchTimer: ReturnType<typeof setTimeout> | null = null
 let durationTimer: ReturnType<typeof setInterval> | null = null
 
 const isRefreshing = ref(false)
+
+// 监听实时任务事件
+useEventBus(Object.values(TASK_EVENTS), (payload, type) => {
+  const { log_id, status, duration, end_time } = payload
+  
+  // 查找列表中的记录
+  const logItem = logs.value.find(l => l.id === log_id)
+  
+  if (logItem) {
+    // 更新已有记录状态
+    logItem.status = status
+    if (duration !== undefined) logItem.duration = duration
+    if (end_time !== undefined) logItem.end_time = end_time
+    
+    // 如果详情页打开的是这个记录，也同步更新
+    if (selectedLog.value && selectedLog.value.id === log_id) {
+      selectedLog.value.status = status
+      if (duration !== undefined) selectedLog.value.duration = duration
+      if (end_time !== undefined) selectedLog.value.end_time = end_time
+      
+      // 如果任务完成了，停止详情页的轮询定时器
+      if (status !== TASK_STATUS.RUNNING && durationTimer) {
+        clearInterval(durationTimer)
+        durationTimer = null
+      }
+    }
+  } else if (type === TASK_EVENTS.RUNNING) {
+    // 新任务开始执行，如果在第一页且没有特定筛选条件，则刷新列表
+    if (currentPage.value === 1 && !filterTaskId.value && !filterKeyword.value && (!filterStatus.value || filterStatus.value === 'all')) {
+      loadLogs()
+    }
+  }
+})
 
 // 全屏查看
 const showFullscreen = ref(false)

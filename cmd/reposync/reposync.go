@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/services"
 	"github.com/engigu/baihu-panel/internal/services/repo"
 	"github.com/engigu/baihu-panel/internal/utils"
@@ -70,10 +71,10 @@ func Run(args []string) {
 	fs.Parse(args)
 
 	// 处理 $SCRIPTS_DIR$ 代号替换
-	if strings.Contains(cfg.TargetPath, "$SCRIPTS_DIR$") {
+	if strings.Contains(cfg.TargetPath, constant.ScriptsDirPlaceholder) {
 		scriptsDir := os.Getenv("BH_SCRIPTS_DIR")
 		if scriptsDir != "" {
-			cfg.TargetPath = filepath.Clean(strings.ReplaceAll(cfg.TargetPath, "$SCRIPTS_DIR$", scriptsDir))
+			cfg.TargetPath = filepath.Clean(strings.ReplaceAll(cfg.TargetPath, constant.ScriptsDirPlaceholder, scriptsDir))
 		}
 	}
 

@@ -58,7 +58,6 @@ const concurrency = ref(0)
 const concurrencyEnabled = ref(false)
 const commentToTaskEnabled = ref(false)
 const allEnvsEnabled = ref(false)
-const SCRIPTS_DIR_PLACEHPLDER = '$SCRIPTS_DIR$'
 const scriptsDir = ref<string>(PATHS.SCRIPTS_DIR)
 
 const cronDescription = computed(() => {
@@ -366,9 +365,9 @@ function removeEnv(id: string) {
 
 function normalizeLocalWorkDirForDisplay(workDir?: string | null): string {
   if (!workDir) return ''
-  if (workDir === SCRIPTS_DIR_PLACEHPLDER) return ''
-  if (workDir.startsWith(`${SCRIPTS_DIR_PLACEHPLDER}/`)) {
-    return workDir.slice(SCRIPTS_DIR_PLACEHPLDER.length + 1)
+  if (workDir === PATHS.SCRIPTS_DIR_PLACEHOLDER) return ''
+  if (workDir.startsWith(`${PATHS.SCRIPTS_DIR_PLACEHOLDER}/`)) {
+    return workDir.slice(PATHS.SCRIPTS_DIR_PLACEHOLDER.length + 1)
   }
   const base = scriptsDir.value || PATHS.SCRIPTS_DIR
   if (workDir === base) return ''
@@ -380,16 +379,16 @@ function normalizeLocalWorkDirForDisplay(workDir?: string | null): string {
 
 function encodeLocalWorkDir(workDir?: string | null): string {
   const value = workDir?.trim() || ''
-  if (!value) return SCRIPTS_DIR_PLACEHPLDER
-  if (value === SCRIPTS_DIR_PLACEHPLDER || value.startsWith(`${SCRIPTS_DIR_PLACEHPLDER}/`)) {
+  if (!value) return PATHS.SCRIPTS_DIR_PLACEHOLDER
+  if (value === PATHS.SCRIPTS_DIR_PLACEHOLDER || value.startsWith(`${PATHS.SCRIPTS_DIR_PLACEHOLDER}/`)) {
     return value
   }
   const base = scriptsDir.value || PATHS.SCRIPTS_DIR
-  if (value === base) return SCRIPTS_DIR_PLACEHPLDER
+  if (value === base) return PATHS.SCRIPTS_DIR_PLACEHOLDER
   if (value.startsWith(`${base}/`)) {
-    return `${SCRIPTS_DIR_PLACEHPLDER}/${value.slice(base.length + 1)}`
+    return `${PATHS.SCRIPTS_DIR_PLACEHOLDER}/${value.slice(base.length + 1)}`
   }
-  return `${SCRIPTS_DIR_PLACEHPLDER}/${value.replace(/^\/+/, '')}`
+  return `${PATHS.SCRIPTS_DIR_PLACEHOLDER}/${value.replace(/^\/+/, '')}`
 }
 
 async function save() {

@@ -42,7 +42,7 @@ func resolveWorkDir(workDir string) string {
 		return absPath
 	}
 	// 如果已经是绝对路径，直接返回
-	if strings.HasPrefix(workDir, "$SCRIPTS_DIR$") {
+	if strings.HasPrefix(workDir, constant.ScriptsDirPlaceholder) {
 		return workDir
 	}
 	if filepath.IsAbs(workDir) {
@@ -381,7 +381,7 @@ func (tc *TaskController) deleteRepoPhysicalFiles(task *models.Task) {
 		}
 	}
 
-	if targetPath == "" || targetPath == "$SCRIPTS_DIR$" {
+	if targetPath == "" || targetPath == constant.ScriptsDirPlaceholder {
 		logger.Warnf("[Controller] 任务 %s 无法确定有效的物理删除路径，跳过", task.Name)
 		return
 	}
@@ -389,8 +389,8 @@ func (tc *TaskController) deleteRepoPhysicalFiles(task *models.Task) {
 	// 确定绝对路径
 	scriptsDir, _ := filepath.Abs(constant.ScriptsWorkDir)
 	fullPath := targetPath
-	if strings.HasPrefix(targetPath, "$SCRIPTS_DIR$") {
-		fullPath = filepath.Join(scriptsDir, strings.TrimPrefix(targetPath, "$SCRIPTS_DIR$"))
+	if strings.HasPrefix(targetPath, constant.ScriptsDirPlaceholder) {
+		fullPath = filepath.Join(scriptsDir, strings.TrimPrefix(targetPath, constant.ScriptsDirPlaceholder))
 	} else if !filepath.IsAbs(targetPath) {
 		fullPath = filepath.Join(scriptsDir, targetPath)
 	}

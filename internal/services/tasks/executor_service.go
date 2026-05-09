@@ -291,6 +291,7 @@ func (h *ServerSchedulerHandler) OnTaskCompleted(req *executor.ExecutionRequest,
 			eventbus.DefaultBus.Publish(eventbus.Event{
 				Type: eventType,
 				Payload: map[string]interface{}{
+					"log_id":     req.LogID,
 					"task_id":    task.ID,
 					"task_name":  task.Name,
 					"status":     result.Status,
@@ -372,6 +373,7 @@ func (h *ServerSchedulerHandler) OnTaskFailed(req *executor.ExecutionRequest, er
 		eventbus.DefaultBus.Publish(eventbus.Event{
 			Type: constant.EventTaskFailed,
 			Payload: map[string]interface{}{
+				"log_id":    req.LogID,
 				"task_id":   taskID,
 				"task_name": taskName,
 				"error":     err.Error(),
@@ -1099,9 +1101,9 @@ func BuildRepoCommand(task *models.Task) (string, string) {
 	displayTargetPath := absTargetPath
 	if rel, err := filepath.Rel(scriptsDir, absTargetPath); err == nil && !strings.HasPrefix(rel, "..") {
 		if rel == "." {
-			displayTargetPath = "$SCRIPTS_DIR$"
+			displayTargetPath = constant.ScriptsDirPlaceholder
 		} else {
-			displayTargetPath = "$SCRIPTS_DIR$/" + filepath.ToSlash(rel)
+			displayTargetPath = constant.ScriptsDirPlaceholder + "/" + filepath.ToSlash(rel)
 		}
 	}
 
@@ -1233,7 +1235,7 @@ func (es *ExecutorService) refreshExecutionRequestEnvs(req *executor.ExecutionRe
 
 func (es *ExecutorService) ResolvePath(path string) string {
 	absScriptsDir := resolveAbsScriptsDir()
-	return strings.ReplaceAll(path, "$SCRIPTS_DIR$", absScriptsDir)
+	return strings.ReplaceAll(path, constant.ScriptsDirPlaceholder, absScriptsDir)
 }
 
 func buildRepoCommandEnvPrefix() string {

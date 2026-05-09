@@ -134,9 +134,9 @@ func ParseRepoScriptsAndAddCron(taskID string, logWriter io.Writer, forceComment
 				displayPath = filepath.Base(path)
 				relDir, _ := filepath.Rel(absScriptsDir, filepath.Dir(absPath))
 				if relDir == "." {
-					displayWorkDir = "$SCRIPTS_DIR$"
+					displayWorkDir = constant.ScriptsDirPlaceholder
 				} else {
-					displayWorkDir = filepath.ToSlash(filepath.Join("$SCRIPTS_DIR$", relDir))
+					displayWorkDir = filepath.ToSlash(filepath.Join(constant.ScriptsDirPlaceholder, relDir))
 				}
 			}
 

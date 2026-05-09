@@ -1,4 +1,5 @@
 import type { RepoConfig, Task } from '@/api'
+import { PATHS } from '@/constants'
 
 /**
  * 仓库命令解析结果
@@ -64,10 +65,10 @@ export function parseBaihuCommand(command: string): ParsedRepoResult | null {
         }
         break
       case '--target-path':
-        // 处理 $SCRIPTS_DIR$ 占位符
-        if (value.startsWith('$SCRIPTS_DIR$/')) {
-          repoConfig.target_path = value.replace('$SCRIPTS_DIR$/', '')
-        } else if (value === '$SCRIPTS_DIR$') {
+        // 处理脚本目录占位符
+        if (value.startsWith(`${PATHS.SCRIPTS_DIR_PLACEHOLDER}/`)) {
+          repoConfig.target_path = value.replace(`${PATHS.SCRIPTS_DIR_PLACEHOLDER}/`, '')
+        } else if (value === PATHS.SCRIPTS_DIR_PLACEHOLDER) {
           repoConfig.target_path = ''
         } else {
           repoConfig.target_path = value

@@ -8,6 +8,8 @@ export const PATHS = {
   CONFIGS_DIR: '/app/configs',
   // 环境目录
   ENVS_DIR: '/app/envs',
+  // 脚本目录占位符
+  SCRIPTS_DIR_PLACEHOLDER: '$SCRIPTS_DIR$',
 } as const
 
 // 文件扩展名对应的运行命令
@@ -60,4 +62,13 @@ export const AGENT_STATUS = {
 export const ENV_TYPE = {
   NORMAL: 'normal',
   SECRET: 'secret',
+} as const
+
+// 任务事件类型
+export const TASK_EVENTS = {
+  SUCCESS: 'task_success',
+  FAILED: 'task_failed',
+  TIMEOUT: 'task_timeout',
+  RUNNING: 'task_running',
+  QUEUED: 'task_queued',
 } as const
