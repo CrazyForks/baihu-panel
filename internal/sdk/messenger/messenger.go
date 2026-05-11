@@ -49,6 +49,7 @@ const (
 	ChannelGotify          = channels.ChannelGotify
 	ChannelPushPlus        = channels.ChannelPushPlus
 	ChannelVoceChat        = channels.ChannelVoceChat
+	ChannelWxPusher        = channels.ChannelWxPusher
 )
 
 // 重导出辅助函数
@@ -82,6 +83,7 @@ func init() {
 	RegisterChannel(ChannelAliyunSMS, func() Channel { return channels.NewAliyunSMSChannel() })
 	RegisterChannel(ChannelPushPlus, func() Channel { return channels.NewPushPlusChannel() })
 	RegisterChannel(ChannelVoceChat, func() Channel { return channels.NewVoceChatChannel() })
+	RegisterChannel(ChannelWxPusher, func() Channel { return channels.NewWxPusherChannel() })
 }
 
 // RegisterChannel 注册自定义渠道（可用于扩展）

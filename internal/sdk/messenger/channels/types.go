@@ -74,4 +74,5 @@ const (
 	ChannelGotify          = "Gotify"
 	ChannelPushPlus        = "PushPlus"
 	ChannelVoceChat        = "VoceChat"
+	ChannelWxPusher        = "WxPusher"
 )

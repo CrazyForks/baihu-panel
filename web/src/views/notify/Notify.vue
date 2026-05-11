@@ -128,6 +128,12 @@ const channelConfigFields: Record<string, { key: string; label: string; required
     { key: 'target_type', label: '目标类型', required: false, placeholder: 'user (默认) / group' },
     { key: 'note', label: '说明', required: false, placeholder: '当前仅支持 text/plain', type: 'note' },
   ],
+  WxPusher: [
+    { key: 'app_token', label: 'AppToken', required: true, placeholder: 'AT_...' },
+    { key: 'uids', label: 'UIDs', required: false, placeholder: '用户 UID，多个用逗号分隔' },
+    { key: 'topic_ids', label: 'TopicIDs', required: false, placeholder: '主题 ID，多个用逗号分隔' },
+    { key: 'verify_pay_type', label: '付费验证', required: false, placeholder: '0:不验证, 1:仅付费, 2:仅未订阅/过期' },
+  ],
 }
 
 // 加载数据

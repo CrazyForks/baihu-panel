@@ -56,6 +56,7 @@ var SupportedChannelTypes = []map[string]string{
 	{"type": messenger.ChannelAliyunSMS, "label": "阿里云短信"},
 	{"type": messenger.ChannelPushPlus, "label": "PushPlus"},
 	{"type": messenger.ChannelVoceChat, "label": "VoceChat"},
+	{"type": messenger.ChannelWxPusher, "label": "WxPusher"},
 }
 
 // SupportedEvents 支持的事件类型
