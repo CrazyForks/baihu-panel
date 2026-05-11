@@ -8,6 +8,7 @@
 - **Python3**, **Node.js**, **Bash** (标准版镜像内置环境)
 - 通过 **Mise** 扩展：支持几乎所有主流编程语言的动态安装与切换。
 
+
 > [!TIP]
 > **Minimal 镜像注意**：如果您使用的是 `minimal` 标签的镜像，系统初始不包含 Python 和 Node.js。您需要进入「编程语言」页面手动点击安装您所需的运行时。
 
@@ -61,6 +62,15 @@ mise use -g ansible@latest
 ```
 
 安装完成后，您可以在「脚本管理」或「定时任务」中直接调用 `ansible` 或 `ansible-playbook` 命令。
+
+## PHP 环境特别说明
+
+在 Docker 容器或精简版 Linux 环境中，通过 `mise` 安装某些 PHP 版本时，如果官方没有提供预编译的二进制包，系统会尝试从源码编译。这需要额外的系统级构建依赖（如 `autoconf`, `bison`, `pkg-config` 等）。
+
+如果您在安装 PHP 时遇到 `autoconf not found` 或 `buildconf failed` 等错误，请参考以下方案：
+
+1. **运行预设脚本**: 我们在项目根目录提供了示例脚本 [install_php_env_deps.sh](file:///example/deps/install_php_env_deps.sh)，它会自动安装所需的系统库。
+2. **配置为开机任务**: 由于 Docker 容器层通常是只读的或在重启后重置（非挂载目录），建议在面板中创建一个 **触发类型为 `baihu_startup`** 的定时任务，命令填写 `bash example/deps/install_php_env_deps.sh`。这样可以确保每次容器启动时都会自动准备好 PHP 编译环境。
 
 ---
 
