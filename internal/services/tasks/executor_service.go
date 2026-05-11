@@ -401,7 +401,9 @@ func (es *ExecutorService) HandleTaskRetry(task *models.Task, req *executor.Exec
 				if latestTask == nil || !utils.DerefBool(latestTask.Enabled, true) {
 					return nil
 				}
-				return es.CreateExecutionRequest(latestTask, executor.TaskTypeManual, nil)
+				newReq := es.CreateExecutionRequest(latestTask, req.Type, nil)
+				newReq.Metadata.RetryIndex = retryIndex
+				return newReq
 			})
 		}
 	}
@@ -1068,7 +1070,25 @@ func (es *ExecutorService) HandleAgentResult(result *models.AgentTaskResult) err
 	if err != nil {
 		return err
 	}
-	return es.taskLogService.ProcessTaskCompletion(taskLog)
+
+	err = es.taskLogService.ProcessTaskCompletion(taskLog)
+	if err != nil {
+		return err
+	}
+
+	// 处理重试逻辑（针对 Agent 自主触发的定时任务）
+	if task != nil {
+		isSuccess := result.Status == constant.TaskStatusSuccess
+		es.HandleTaskRetry(task, &executor.ExecutionRequest{
+			TaskID: task.ID,
+			Type:   executor.TaskTypeCron,
+			Metadata: executor.ExecutionMetadata{
+				RetryIndex: 0, // 初始上报视为第 0 次
+			},
+		}, isSuccess, result.Status, result.ExitCode)
+	}
+
+	return nil
 }
 
 // BuildRepoCommand 构建仓库同步任务的命令
