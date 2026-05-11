@@ -506,10 +506,13 @@ func (a *Agent) handleTasks(data json.RawMessage) {
 
 func (a *Agent) handleExecute(data json.RawMessage) {
 	var req struct {
-		TaskID  string   `json:"task_id"`
-		LogID   string   `json:"log_id"`
-		Envs    string   `json:"envs"`
-		Secrets []string `json:"secrets"`
+		TaskID      string   `json:"task_id"`
+		LogID       string   `json:"log_id"`
+		Envs        string   `json:"envs"`
+		Secrets     []string `json:"secrets"`
+		Command     string   `json:"command"`
+		PreCommand  string   `json:"pre_command"`
+		PostCommand string   `json:"post_command"`
 	}
 	if err := json.Unmarshal(data, &req); err != nil {
 		logger.Errorf("解析立即执行请求失败: %v", err)
@@ -527,26 +530,41 @@ func (a *Agent) handleExecute(data json.RawMessage) {
 	}
 
 	// 准备执行请求
-	// 如果消息中携带了环境变量，则优先使用（通常由服务端解析好后推过来）
+	// 如果消息中携带了环境变量或指令，则优先使用（确保即时生效）
 	envs := task.Envs
 	if req.Envs != "" {
 		envs = req.Envs
 	}
 
+	command := task.Command
+	if req.Command != "" {
+		command = req.Command
+	}
+
+	preCommand := task.PreCommand
+	if req.PreCommand != "" {
+		preCommand = req.PreCommand
+	}
+
+	postCommand := task.PostCommand
+	if req.PostCommand != "" {
+		postCommand = req.PostCommand
+	}
+
 	execReq := &executor.ExecutionRequest{
-		TaskID:    task.ID,
-		LogID:     req.LogID,
-		Name:      task.Name,
-		Command:     task.Command,
-		PreCommand:  task.PreCommand,
-		PostCommand: task.PostCommand,
-		WorkDir:   task.WorkDir,
-		Envs:      executor.ParseEnvVars(envs),
-		Secrets:   req.Secrets,
-		Timeout:   task.Timeout,
-		Languages: task.Languages,
-		UseMise:   task.UseMise(),
-		Type:      executor.TaskTypeManual,
+		TaskID:      task.ID,
+		LogID:       req.LogID,
+		Name:        task.Name,
+		Command:     command,
+		PreCommand:  preCommand,
+		PostCommand: postCommand,
+		WorkDir:     task.WorkDir,
+		Envs:        executor.ParseEnvVars(envs),
+		Secrets:     req.Secrets,
+		Timeout:     task.Timeout,
+		Languages:   task.Languages,
+		UseMise:     task.UseMise(),
+		Type:        executor.TaskTypeManual,
 	}
 
 	// 立即执行任务（加入队列）

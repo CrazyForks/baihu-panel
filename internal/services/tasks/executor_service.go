@@ -450,11 +450,13 @@ func (es *ExecutorService) ExecuteDispatcher(ctx context.Context, req *executor.
 	// 系统任务（无 taskID）直接本地执行
 	if task == nil {
 		return executor.Execute(ctx, executor.Request{
-			Command: req.Command,
-			WorkDir: req.WorkDir,
-			Envs:    req.Envs,
-			Timeout: req.Timeout,
-			UseMise: false, // 系统任务不使用 mise
+			Command:     req.Command,
+			PreCommand:  req.PreCommand,
+			PostCommand: req.PostCommand,
+			WorkDir:     req.WorkDir,
+			Envs:        req.Envs,
+			Timeout:     req.Timeout,
+			UseMise:     false, // 系统任务不使用 mise
 		}, stdout, stderr)
 	}
 
@@ -476,12 +478,14 @@ func (es *ExecutorService) ExecuteDispatcher(ctx context.Context, req *executor.
 	// 本地任务
 	hooks := &LocalTaskHooks{es: es, logID: req.LogID}
 	return executor.ExecuteWithHooks(ctx, executor.Request{
-		Command:   req.Command,
-		WorkDir:   req.WorkDir,
-		Envs:      req.Envs,
-		Timeout:   req.Timeout,
-		Languages: []map[string]string(task.Languages),
-		UseMise:   req.UseMise, // 使用请求中的 UseMise 标志 (由调度器统一处理过)
+		Command:     req.Command,
+		PreCommand:  req.PreCommand,
+		PostCommand: req.PostCommand,
+		WorkDir:     req.WorkDir,
+		Envs:        req.Envs,
+		Timeout:     req.Timeout,
+		Languages:   []map[string]string(task.Languages),
+		UseMise:     req.UseMise, // 使用请求中的 UseMise 标志 (由调度器统一处理过)
 	}, stdout, stderr, hooks)
 }
 
@@ -1005,10 +1009,13 @@ func (es *ExecutorService) ExecuteRemoteForScheduler(task *models.Task, logID st
 
 	// 3. 发送指令
 	err := es.agentWSManager.SendToAgent(agentID, constant.WSTypeExecute, map[string]interface{}{
-		"task_id": task.ID,
-		"log_id":  logID,
-		"envs":    envs,
-		"secrets": secrets,
+		"task_id":      task.ID,
+		"log_id":       logID,
+		"envs":         envs,
+		"secrets":      secrets,
+		"command":      task.Command,
+		"pre_command":  task.PreCommand,
+		"post_command": task.PostCommand,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("发送执行命令失败: %v", err)
