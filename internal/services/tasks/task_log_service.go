@@ -60,7 +60,14 @@ func (s *TaskLogService) CreateEmptyLog(taskID string, command string) (*models.
 func (s *TaskLogService) SaveTaskLog(taskLog *models.TaskLog) error {
 	var err error
 	if taskLog.ID != "" {
-		err = database.DB.Model(taskLog).Where("id = ?", taskLog.ID).Updates(taskLog).Error
+		// 先检查记录是否存在，如果不存在则创建，存在则更新
+		var count int64
+		database.DB.Model(&models.TaskLog{}).Where("id = ?", taskLog.ID).Count(&count)
+		if count > 0 {
+			err = database.DB.Model(taskLog).Where("id = ?", taskLog.ID).Updates(taskLog).Error
+		} else {
+			err = database.DB.Create(taskLog).Error
+		}
 	} else {
 		taskLog.ID = utils.GenerateID()
 		if taskLog.CreatedAt.Time().IsZero() {
@@ -175,8 +182,13 @@ func (s *TaskLogService) CreateTaskLogFromAgentResult(result *models.AgentTaskRe
 		compressed = ""
 	}
 
+	logID := result.LogID
+	if logID == "" {
+		logID = utils.GenerateID()
+	}
+
 	taskLog := &models.TaskLog{
-		ID:        utils.GenerateID(),
+		ID:        logID,
 		TaskID:    result.TaskID,
 		AgentID:   &result.AgentID,
 		Command:   models.BigText(result.Command),
