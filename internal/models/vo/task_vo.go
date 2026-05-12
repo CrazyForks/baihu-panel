@@ -10,6 +10,7 @@ import (
 type TaskVO struct {
 	ID          string              `json:"id"`
 	Name        string              `json:"name"`
+	Remark      string              `json:"remark"`
 	Command     string              `json:"command"`
 	PreCommand  string              `json:"pre_command"`
 	PostCommand string              `json:"post_command"`
@@ -45,6 +46,7 @@ func ToTaskVO(task *models.Task) *TaskVO {
 	return &TaskVO{
 		ID:          task.ID,
 		Name:        task.Name,
+		Remark:      task.Remark,
 		Command:     string(task.Command),
 		PreCommand:  string(task.PreCommand),
 		PostCommand: string(task.PostCommand),
