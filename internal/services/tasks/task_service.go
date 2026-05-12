@@ -8,6 +8,32 @@ import (
 	"strings"
 )
 
+// TaskParam 任务创建与更新参数传输对象
+type TaskParam struct {
+	Name          string
+	Remark        string
+	Command       string
+	PreCommand    string
+	PostCommand   string
+	Tags          string
+	Type          string
+	Config        string
+	Schedule      string
+	Timeout       int
+	WorkDir       string
+	CleanConfig   string
+	Envs          string
+	Languages     models.TaskLanguages
+	AgentID       *string
+	TriggerType   string
+	RetryCount    int
+	RetryInterval int
+	RandomRange   int
+	SourceID      string
+	PinType       string
+	Enabled       bool
+}
+
 type TaskService struct {
 }
 
@@ -24,44 +50,44 @@ func (ts *TaskService) GetTaskBySourceID(sourceID string) *models.Task {
 	return &task
 }
 
-func (ts *TaskService) CreateTask(name, remark, command, preCommand, postCommand, schedule string, timeout int, workDir, cleanConfig, envs, taskType, config string, agentID *string, languages models.TaskLanguages, triggerType string, tags string, retryCount int, retryInterval int, randomRange int, sourceID string, pinType string) *models.Task {
-	if taskType == "" {
-		taskType = "task"
+func (ts *TaskService) CreateTask(p *TaskParam) *models.Task {
+	if p.Type == "" {
+		p.Type = "task"
 	}
-	if triggerType == "" {
-		triggerType = constant.TriggerTypeCron
+	if p.TriggerType == "" {
+		p.TriggerType = constant.TriggerTypeCron
 	}
-	if pinType == "" {
-		pinType = constant.PinTypeNone
+	if p.PinType == "" {
+		p.PinType = constant.PinTypeNone
 	}
 	task := &models.Task{
 		ID:            utils.GenerateID(),
-		Name:          name,
-		Remark:        remark,
-		Command:       models.BigText(command),
-		PreCommand:    models.BigText(preCommand),
-		PostCommand:   models.BigText(postCommand),
-		PinType:       pinType,
-		Tags:          tags,
-		Type:          taskType,
-		TriggerType:   triggerType,
-		Config:        models.BigText(config),
-		Schedule:      schedule,
-		Timeout:       timeout,
-		WorkDir:       workDir,
-		CleanConfig:   cleanConfig,
-		Envs:          models.BigText(envs),
-		Languages:     languages,
-		AgentID:       agentID,
+		Name:          p.Name,
+		Remark:        p.Remark,
+		Command:       models.BigText(p.Command),
+		PreCommand:    models.BigText(p.PreCommand),
+		PostCommand:   models.BigText(p.PostCommand),
+		PinType:       p.PinType,
+		Tags:          p.Tags,
+		Type:          p.Type,
+		TriggerType:   p.TriggerType,
+		Config:        models.BigText(p.Config),
+		Schedule:      p.Schedule,
+		Timeout:       p.Timeout,
+		WorkDir:       p.WorkDir,
+		CleanConfig:   p.CleanConfig,
+		Envs:          models.BigText(p.Envs),
+		Languages:     p.Languages,
+		AgentID:       p.AgentID,
 		Enabled:       utils.BoolPtr(true),
-		RetryCount:    retryCount,
-		RetryInterval: retryInterval,
-		RandomRange:   randomRange,
-		SourceID:      sourceID,
+		RetryCount:    p.RetryCount,
+		RetryInterval: p.RetryInterval,
+		RandomRange:   p.RandomRange,
+		SourceID:      p.SourceID,
 		CreatedAt:     models.Now(),
 		UpdatedAt:     models.Now(),
 	}
-	if triggerType != constant.TriggerTypeCron {
+	if p.TriggerType != constant.TriggerTypeCron {
 		task.NextRun = nil
 	}
 	database.DB.Select("*").Create(task)
@@ -125,39 +151,39 @@ func (ts *TaskService) GetTaskByID(id string) *models.Task {
 	return &task
 }
 
-func (ts *TaskService) UpdateTask(id string, name, remark, command, preCommand, postCommand, schedule string, timeout int, workDir, cleanConfig, envs string, enabled bool, taskType, config string, agentID *string, languages models.TaskLanguages, triggerType string, tags string, retryCount int, retryInterval int, randomRange int, sourceID string, pinType string) *models.Task {
+func (ts *TaskService) UpdateTask(id string, p *TaskParam) *models.Task {
 	var task models.Task
 	res := database.DB.Where("id = ?", id).Limit(1).Find(&task)
 	if res.Error != nil || res.RowsAffected == 0 {
 		return nil
 	}
-	task.Name = name
-	task.Remark = remark
-	task.Command = models.BigText(command)
-	task.PreCommand = models.BigText(preCommand)
-	task.PostCommand = models.BigText(postCommand)
-	task.PinType = pinType
-	task.Tags = tags
-	task.Schedule = schedule
-	task.Timeout = timeout
-	task.WorkDir = workDir
-	task.CleanConfig = cleanConfig
-	task.Envs = models.BigText(envs)
-	task.Enabled = &enabled
-	task.AgentID = agentID
-	task.Languages = languages
-	task.Config = models.BigText(config)
-	task.RetryCount = retryCount
-	task.RetryInterval = retryInterval
-	task.RandomRange = randomRange
-	if taskType != "" {
-		task.Type = taskType
+	task.Name = p.Name
+	task.Remark = p.Remark
+	task.Command = models.BigText(p.Command)
+	task.PreCommand = models.BigText(p.PreCommand)
+	task.PostCommand = models.BigText(p.PostCommand)
+	task.PinType = p.PinType
+	task.Tags = p.Tags
+	task.Schedule = p.Schedule
+	task.Timeout = p.Timeout
+	task.WorkDir = p.WorkDir
+	task.CleanConfig = p.CleanConfig
+	task.Envs = models.BigText(p.Envs)
+	task.Enabled = &p.Enabled
+	task.AgentID = p.AgentID
+	task.Languages = p.Languages
+	task.Config = models.BigText(p.Config)
+	task.RetryCount = p.RetryCount
+	task.RetryInterval = p.RetryInterval
+	task.RandomRange = p.RandomRange
+	if p.Type != "" {
+		task.Type = p.Type
 	}
-	if triggerType != "" {
-		task.TriggerType = triggerType
+	if p.TriggerType != "" {
+		task.TriggerType = p.TriggerType
 	}
-	if sourceID != "" {
-		task.SourceID = sourceID
+	if p.SourceID != "" {
+		task.SourceID = p.SourceID
 	}
 
 	database.DB.Model(&task).Select(

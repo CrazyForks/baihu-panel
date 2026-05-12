@@ -117,17 +117,42 @@ func (tc *TaskController) CreateTask(c *gin.Context) {
 		}
 	}
 
+	param := tasks.TaskParam{
+		Name:          req.Name,
+		Remark:        req.Remark,
+		Command:       req.Command,
+		PreCommand:    req.PreCommand,
+		PostCommand:   req.PostCommand,
+		Tags:          req.Tags,
+		Type:          req.Type,
+		Config:        req.Config,
+		Schedule:      req.Schedule,
+		Timeout:       req.Timeout,
+		WorkDir:       workDir,
+		CleanConfig:   req.CleanConfig,
+		Envs:          req.Envs,
+		Languages:     req.Languages,
+		AgentID:       req.AgentID,
+		TriggerType:   req.TriggerType,
+		RetryCount:    req.RetryCount,
+		RetryInterval: req.RetryInterval,
+		RandomRange:   req.RandomRange,
+		SourceID:      sourceID,
+		PinType:       req.PinType,
+		Enabled:       true,
+	}
+
 	var task *models.Task
 	// 去重逻辑：如果已存在相同 SourceID 的仓库任务，则改为更新
 	if sourceID != "" {
 		task = tc.taskService.GetTaskBySourceID(sourceID)
 		if task != nil {
-			task = tc.taskService.UpdateTask(task.ID, req.Name, req.Remark, req.Command, req.PreCommand, req.PostCommand, req.Schedule, req.Timeout, workDir, req.CleanConfig, req.Envs, true, req.Type, req.Config, req.AgentID, req.Languages, req.TriggerType, req.Tags, req.RetryCount, req.RetryInterval, req.RandomRange, sourceID, req.PinType)
+			task = tc.taskService.UpdateTask(task.ID, &param)
 		}
 	}
 
 	if task == nil {
-		task = tc.taskService.CreateTask(req.Name, req.Remark, req.Command, req.PreCommand, req.PostCommand, req.Schedule, req.Timeout, workDir, req.CleanConfig, req.Envs, req.Type, req.Config, req.AgentID, req.Languages, req.TriggerType, req.Tags, req.RetryCount, req.RetryInterval, req.RandomRange, sourceID, req.PinType)
+		task = tc.taskService.CreateTask(&param)
 	}
 
 	// 如果是 Agent 任务，通知 Agent；否则添加到本地 cron
@@ -280,7 +305,32 @@ func (tc *TaskController) UpdateTask(c *gin.Context) {
 		sourceID = oldTask.SourceID
 	}
 
-	task := tc.taskService.UpdateTask(id, req.Name, req.Remark, req.Command, req.PreCommand, req.PostCommand, req.Schedule, req.Timeout, workDir, req.CleanConfig, req.Envs, req.Enabled, req.Type, req.Config, req.AgentID, req.Languages, req.TriggerType, req.Tags, req.RetryCount, req.RetryInterval, req.RandomRange, sourceID, req.PinType)
+	param := tasks.TaskParam{
+		Name:          req.Name,
+		Remark:        req.Remark,
+		Command:       req.Command,
+		PreCommand:    req.PreCommand,
+		PostCommand:   req.PostCommand,
+		Tags:          req.Tags,
+		Type:          req.Type,
+		Config:        req.Config,
+		Schedule:      req.Schedule,
+		Timeout:       req.Timeout,
+		WorkDir:       workDir,
+		CleanConfig:   req.CleanConfig,
+		Envs:          req.Envs,
+		Languages:     req.Languages,
+		AgentID:       req.AgentID,
+		TriggerType:   req.TriggerType,
+		RetryCount:    req.RetryCount,
+		RetryInterval: req.RetryInterval,
+		RandomRange:   req.RandomRange,
+		SourceID:      sourceID,
+		PinType:       req.PinType,
+		Enabled:       req.Enabled,
+	}
+
+	task := tc.taskService.UpdateTask(id, &param)
 	if task == nil {
 		utils.NotFound(c, "任务不存在")
 		return
