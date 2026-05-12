@@ -34,10 +34,8 @@ func sendAliyunSMS(client *dysmsapi.Client, phoneNumber, signName, templateCode,
 	templateParam := map[string]interface{}{
 		"content": content,
 	}
-	if extra != nil {
-		for k, v := range extra {
-			templateParam[k] = v
-		}
+	for k, v := range extra {
+		templateParam[k] = v
 	}
 	templateParamJSON, _ := json.Marshal(templateParam)
 

@@ -34,11 +34,12 @@ func (c *EmailChannel) Send(config ChannelConfig, msg *Message) (*Result, error)
 	emailer.Init(server, port, account, passwd, fromName)
 
 	var errMsg string
-	if contentType == FormatTypeText {
+	switch contentType {
+	case FormatTypeText:
 		errMsg = emailer.SendTextMessage(toAccount, msg.Title, formattedContent)
-	} else if contentType == FormatTypeHTML {
+	case FormatTypeHTML:
 		errMsg = emailer.SendHtmlMessage(toAccount, msg.Title, formattedContent)
-	} else {
+	default:
 		errMsg = fmt.Sprintf("未知的邮件发送内容类型：%s", contentType)
 	}
 

@@ -28,11 +28,12 @@ func (c *FeishuChannel) Send(config ChannelConfig, msg *Message) (*Result, error
 	var res []byte
 	var err error
 
-	if contentType == FormatTypeText {
+	switch contentType {
+	case FormatTypeText:
 		res, err = cli.SendMessageText(formattedContent, atList...)
-	} else if contentType == FormatTypeMarkdown {
+	case FormatTypeMarkdown:
 		res, err = cli.SendMessageMarkdown(msg.Title, formattedContent, atList...)
-	} else {
+	default:
 		return SendError("未知的飞书发送内容类型：%s", contentType), nil
 	}
 

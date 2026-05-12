@@ -26,11 +26,12 @@ func (c *DtalkChannel) Send(config ChannelConfig, msg *Message) (*Result, error)
 	var res []byte
 	var err error
 
-	if contentType == FormatTypeText {
+	switch contentType {
+	case FormatTypeText:
 		res, err = cli.SendMessageText(formattedContent, atMobiles...)
-	} else if contentType == FormatTypeMarkdown {
+	case FormatTypeMarkdown:
 		res, err = cli.SendMessageMarkdown(msg.Title, formattedContent, atMobiles...)
-	} else {
+	default:
 		return SendError("未知的钉钉发送内容类型：%s", contentType), nil
 	}
 
