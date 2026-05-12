@@ -399,7 +399,7 @@ watch(() => route.query, (newQuery) => {
           <span class="w-10 shrink-0 text-center"></span>
         </div>
         <!-- 列表 -->
-        <div class="divide-y flex-1">
+        <div class="divide-y flex-1 overflow-y-auto custom-scrollbar">
           <div v-if="logs.length === 0" class="text-sm text-muted-foreground text-center py-8">
             暂无日志
           </div>

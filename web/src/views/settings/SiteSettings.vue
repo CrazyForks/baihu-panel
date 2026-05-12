@@ -75,6 +75,7 @@ async function saveSettings() {
       login_log_max_count: String(form.value.login_log_max_count || '1000')
     })
     await refreshSettings()
+    await loadSettings()
     toast.success('保存成功')
   } catch {
     toast.error('保存失败')
