@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import XTerminal from '@/components/XTerminal.vue'
-import { Save, Play, Pencil, Eye, X, Download, Trash2 } from 'lucide-vue-next'
+import { Save, Play, FilePen, TextCursorInput, Eye, X, Download, Trash2 } from 'lucide-vue-next'
 import { api, type FileNode, type MiseLanguage } from '@/api'
 import { toast } from 'vue-sonner'
 import { PATHS, FILE_RUNNERS } from '@/constants'
@@ -481,7 +481,7 @@ onUnmounted(() => {
         </span>
         <div v-if="selectedPath" class="flex gap-1 shrink-0">
           <Button variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2" @click="dialogsRef?.openRename(selectedPath)">
-            <Pencil class="h-3 w-3" /> <span class="hidden sm:inline">重命名</span>
+            <TextCursorInput class="h-3 w-3" /> <span class="hidden sm:inline">重命名</span>
           </Button>
           <Button variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2 hover:bg-destructive/10 transition-colors" @click="dialogsRef?.openDelete(selectedPath)">
             <Trash2 class="h-3 w-3" /> <span class="hidden sm:inline">删除</span>
@@ -492,7 +492,7 @@ onUnmounted(() => {
               <Download class="h-3 w-3" /> <span class="hidden sm:inline">下载</span>
             </Button>
             <Button v-if="!isEditMode" variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2" @click="isEditMode = true">
-              <Pencil class="h-3 w-3" /> <span class="hidden sm:inline">编辑</span>
+              <FilePen class="h-3 w-3" /> <span class="hidden sm:inline">编辑</span>
             </Button>
             <template v-else>
               <Button variant="ghost" size="sm" class="h-6 text-xs gap-1 px-2" @click="isEditMode = false; fileContent = originalContent">

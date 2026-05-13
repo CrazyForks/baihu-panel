@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Button } from '@/components/ui/button'
-import { RefreshCw, FolderUp, Upload, Plus, AlertCircle } from 'lucide-vue-next'
+import { RefreshCw, FileUp, FileArchive, Plus, AlertCircle } from 'lucide-vue-next'
 import FileTreeNode from '@/components/FileTreeNode.vue'
 import BaihuDialog from '@/components/ui/BaihuDialog.vue'
 import { type FileNode } from '@/api'
@@ -71,12 +71,18 @@ const currentTargetDir = computed(() => {
 
 function triggerArchiveUpload(targetDir = '') {
   uploadTargetDir.value = targetDir
-  if (archiveInputRef.value) archiveInputRef.value.click()
+  if (archiveInputRef.value) {
+    archiveInputRef.value.value = ''
+    archiveInputRef.value.click()
+  }
 }
 
 function triggerFilesUpload(targetDir = '') {
   uploadTargetDir.value = targetDir
-  if (filesInputRef.value) filesInputRef.value.click()
+  if (filesInputRef.value) {
+    filesInputRef.value.value = ''
+    filesInputRef.value.click()
+  }
 }
 
 function handleArchiveUpload(e: Event) {
@@ -93,31 +99,31 @@ function handleArchiveUpload(e: Event) {
       }
     }
   }
-  input.value = ''
 }
 
 function handleFilesUpload(e: Event) {
   const input = e.target as HTMLInputElement
-  const files = input.files
-  if (files && files.length > 0) {
+  const fileList = input.files
+  if (fileList && fileList.length > 0) {
+    const files: File[] = []
+    const paths: string[] = []
+    for (let i = 0; i < fileList.length; i++) {
+      const f = fileList.item(i)
+      if (f) {
+        files.push(f)
+        paths.push((f as any).webkitRelativePath || f.name)
+      }
+    }
     const dirName = uploadTargetDir.value || '根目录'
     confirmUpload.value = {
       show: true,
       title: '确认上传文件',
       message: `即将把 ${files.length} 个文件/文件夹上传到目录 [ ${dirName} ]。确认上传吗？`,
       onConfirm: () => {
-        const paths: string[] = []
-        for (let i = 0; i < files.length; i++) {
-           const f = files.item(i)
-           if (f) {
-             paths.push((f as any).webkitRelativePath || f.name)
-           }
-        }
-        emit('uploadFiles', files, paths, uploadTargetDir.value)
+        emit('uploadFiles', files as unknown as FileList, paths, uploadTargetDir.value)
       }
     }
   }
-  input.value = ''
 }
 </script>
 
@@ -129,11 +135,11 @@ function handleFilesUpload(e: Event) {
         <Button variant="ghost" size="icon" class="h-6 w-6" @click="emit('refresh')" :disabled="isRefreshing" title="刷新">
           <RefreshCw class="h-3 w-3" :class="{ 'animate-spin': isRefreshing }" />
         </Button>
-        <Button variant="ghost" size="icon" class="h-6 w-6" @click="triggerFilesUpload(currentTargetDir)" :title="currentTargetDir ? `上传到: ${currentTargetDir}` : '上传到根目录'">
-          <FolderUp class="h-3 w-3" />
+        <Button variant="ghost" size="icon" class="h-6 w-6" @click="triggerFilesUpload(currentTargetDir)" :title="currentTargetDir ? `上传文件到: ${currentTargetDir}` : '上传文件到根目录'">
+          <FileUp class="h-3 w-3" />
         </Button>
         <Button variant="ghost" size="icon" class="h-6 w-6" @click="triggerArchiveUpload(currentTargetDir)" :title="currentTargetDir ? `导入压缩包到: ${currentTargetDir}` : '导入压缩包到根目录'">
-          <Upload class="h-3 w-3" />
+          <FileArchive class="h-3 w-3" />
         </Button>
         <Button variant="ghost" size="icon" class="h-6 w-6" @click="emit('create', currentTargetDir)" :title="currentTargetDir ? `在 ${currentTargetDir} 中新建` : '在根目录新建'">
           <Plus class="h-3 w-3" />
