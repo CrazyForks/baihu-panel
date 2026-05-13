@@ -10,6 +10,7 @@
 | `baihu reposync` | 供定时任务调用，将远程 Git 仓库的高级特性同步到本地目录中。 |
 | `baihu resetpwd` | 交互式重置系统 admin 账号密码（密码丢失时可通过进入终端重置）。 |
 | `baihu restore <file>` | 使用本地的 .zip 备份压缩包文件，一条命令直接全量恢复系统数据。 |
+| `baihu task` | 极速只读与控制台常驻任务管理（支持查询列表、手动触发、查看状态及开关控制）。 |
 
 ---
 
@@ -108,6 +109,56 @@ baihu reposync --source-url https://github.com/example/repo.git \
   --dependence "package.json|requirements.txt" \
   --commenttotask "true"
 ```
+
+---
+
+## `baihu task` 任务管理指令集
+
+`baihu task` 是一组专为纯终端操作与自动化脚本调度打造的轻量级任务管理子命令集。它能够绕过繁重的界面操作，直接提供闪电般的本地查询与安全指令下发控制。
+
+### 支持子命令
+
+#### 1. 任务列表查询 (`list`)
+查询并分页展示系统内配置的所有任务概览。
+```bash
+# 默认展示前 20 条
+baihu task list
+
+# 指定关键词过滤，并查看第 2 页 (每页展示 10 条)
+baihu task list -q "签到" -page 2 -size 10
+```
+
+#### 2. 手动立即触发 (`run`)
+手动向常驻后台服务下发指令，立即异步运行指定的任务。
+```bash
+baihu task run a1b2c3d4
+```
+
+#### 3. 任务状态切换 (`enable` / `disable`)
+快速启用或禁用系统任务。
+```bash
+baihu task enable a1b2c3d4
+baihu task disable a1b2c3d4
+```
+
+#### 4. 实时执行状态追踪 (`status`)
+查看指定任务最新一次执行的详细输出日志和最终退出码。
+```bash
+# 查看最近一条日志
+baihu task status a1b2c3d4
+
+# 查看指定历史日志条目的完整输出
+baihu task status a1b2c3d4 log_123456
+```
+
+#### 5. 近期执行历史流水 (`history`)
+列出某任务最近的多次运行记录（包含耗时、执行时间及状态结果）。
+```bash
+baihu task history a1b2c3d4
+```
+
+> [!TIP]
+> 所有的 `baihu task` 子命令均原生支持单独传入 `--help` 参数获取具体的示例和选项清单。例如：`baihu task list --help`。
 
 ---
 
