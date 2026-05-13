@@ -12,22 +12,29 @@ import (
 	"github.com/engigu/baihu-panel/internal/utils"
 )
 
+func printHelp() {
+	fmt.Fprintf(os.Stderr, "\n白虎面板用户密码重置工具\n\n")
+	fmt.Fprintf(os.Stderr, "用法:\n")
+	fmt.Fprintf(os.Stderr, "  baihu resetpwd [用户名]\n\n")
+	fmt.Fprintf(os.Stderr, "示例:\n")
+	fmt.Fprintf(os.Stderr, "  baihu resetpwd admin\n\n")
+}
+
 func Run(args []string) {
-	fs := flag.NewFlagSet("resetpwd", flag.ExitOnError)
-	fs.Usage = func() {
-		fmt.Fprintf(os.Stderr, "\n白虎面板用户密码重置工具\n\n")
-		fmt.Fprintf(os.Stderr, "用法:\n")
-		fmt.Fprintf(os.Stderr, "  baihu resetpwd [用户名]\n\n")
-		fmt.Fprintf(os.Stderr, "示例:\n")
-		fmt.Fprintf(os.Stderr, "  baihu resetpwd admin\n\n")
+	if len(args) > 0 && (args[0] == "-h" || args[0] == "--help") {
+		printHelp()
+		return
 	}
+
+	fs := flag.NewFlagSet("resetpwd", flag.ExitOnError)
+	fs.Usage = printHelp
 
 	if err := fs.Parse(args); err != nil {
 		return
 	}
 
 	// 基础环境初始化
-	bootstrap.InitBasic()
+	bootstrap.InitBasicForCmd()
 	settingsService := services.NewSettingsService()
 	if err := settingsService.InitSettings(); err != nil {
 		fmt.Printf("初始化系统设置失败: %v\n", err)

@@ -29,6 +29,8 @@ func initPublicAPIRoutes(api *gin.RouterGroup, c *Controllers) {
 	internalAPI.Use(middleware.LocalhostOnly())
 	{
 		internalAPI.POST("/tasks/sync-repo-status", c.Task.SyncRepoTasks)
+		internalAPI.POST("/tasks/execute/:id", c.Executor.ExecuteTask)
+		internalAPI.POST("/tasks/toggle/:id", c.Task.ToggleTask)
 	}
 }
 

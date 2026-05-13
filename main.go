@@ -52,7 +52,7 @@ func main() {
 	}
 
 	if handler, ok := cmd.Handlers[commandName]; ok {
-		bootstrap.InitBasic() // 启动基础环境(配置和数据库)
+		bootstrap.InitBasicForCmd() // 专为命令行工具定制启动基础环境，屏蔽后台启动刷屏日志
 		handler(os.Args[2:])
 		return
 	}

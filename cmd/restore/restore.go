@@ -10,15 +10,22 @@ import (
 	"github.com/engigu/baihu-panel/internal/services"
 )
 
+func printHelp() {
+	fmt.Fprintf(os.Stderr, "\n白虎面板系统数据恢复工具\n\n")
+	fmt.Fprintf(os.Stderr, "用法:\n")
+	fmt.Fprintf(os.Stderr, "  baihu restore <备份文件.zip>\n\n")
+	fmt.Fprintf(os.Stderr, "示例:\n")
+	fmt.Fprintf(os.Stderr, "  baihu restore backup_20231027.zip\n\n")
+}
+
 func Run(args []string) {
-	fs := flag.NewFlagSet("restore", flag.ExitOnError)
-	fs.Usage = func() {
-		fmt.Fprintf(os.Stderr, "\n白虎面板系统数据恢复工具\n\n")
-		fmt.Fprintf(os.Stderr, "用法:\n")
-		fmt.Fprintf(os.Stderr, "  baihu restore <备份文件.zip>\n\n")
-		fmt.Fprintf(os.Stderr, "示例:\n")
-		fmt.Fprintf(os.Stderr, "  baihu restore backup_20231027.zip\n\n")
+	if len(args) > 0 && (args[0] == "-h" || args[0] == "--help") {
+		printHelp()
+		return
 	}
+
+	fs := flag.NewFlagSet("restore", flag.ExitOnError)
+	fs.Usage = printHelp
 
 	if err := fs.Parse(args); err != nil {
 		return
@@ -44,7 +51,7 @@ func Run(args []string) {
 	}
 
 	// 必须初始化环境与数据库才能恢复数据
-	bootstrap.InitBasic()
+	bootstrap.InitBasicForCmd()
 
 	backupService := services.NewBackupService()
 	fmt.Printf("正在从 '%s' 恢复系统数据，请勿强制中断...\n", absPath)

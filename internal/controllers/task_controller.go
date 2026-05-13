@@ -619,3 +619,80 @@ func (tc *TaskController) SyncRepoTasks(c *gin.Context) {
 	tc.executorService.SyncRepoTasks(req.UpsertedIDs, req.DeletedIDs)
 	utils.SuccessMsg(c, "增量同步成功")
 }
+
+// ToggleTask 切换任务启用/禁用状态
+func (tc *TaskController) ToggleTask(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		utils.BadRequest(c, "无效的任务ID")
+		return
+	}
+
+	var req struct {
+		Enabled bool `json:"enabled"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.BadRequest(c, err.Error())
+		return
+	}
+
+	task := tc.taskService.GetTaskByID(id)
+	if task == nil {
+		utils.NotFound(c, "任务不存在")
+		return
+	}
+
+	// 获取旧 AgentID
+	var oldAgentID *string
+	oldAgentID = task.AgentID
+
+	// 构造更新参数，仅修改 Enabled
+	param := tasks.TaskParam{
+		Name:          task.Name,
+		Remark:        task.Remark,
+		Command:       string(task.Command),
+		PreCommand:    string(task.PreCommand),
+		PostCommand:   string(task.PostCommand),
+		Tags:          task.Tags,
+		Type:          task.Type,
+		Config:        string(task.Config),
+		Schedule:      task.Schedule,
+		Timeout:       task.Timeout,
+		WorkDir:       task.WorkDir,
+		CleanConfig:   task.CleanConfig,
+		Envs:          string(task.Envs),
+		Languages:     task.Languages,
+		AgentID:       task.AgentID,
+		TriggerType:   task.TriggerType,
+		RetryCount:    task.RetryCount,
+		RetryInterval: task.RetryInterval,
+		RandomRange:   task.RandomRange,
+		SourceID:      task.SourceID,
+		PinType:       task.PinType,
+		Enabled:       req.Enabled,
+	}
+
+	updatedTask := tc.taskService.UpdateTask(id, &param)
+	if updatedTask == nil {
+		utils.NotFound(c, "任务不存在")
+		return
+	}
+
+	// 处理调度器更新
+	if updatedTask.AgentID != nil && *updatedTask.AgentID != "" {
+		tc.executorService.RemoveCronTask(updatedTask.ID)
+		tc.agentWSManager.BroadcastTasks(*updatedTask.AgentID)
+	} else {
+		if req.Enabled {
+			tc.executorService.AddCronTask(updatedTask)
+		} else {
+			tc.executorService.RemoveCronTask(updatedTask.ID)
+		}
+		if oldAgentID != nil && *oldAgentID != "" {
+			tc.agentWSManager.BroadcastTasks(*oldAgentID)
+		}
+	}
+
+	utils.Success(c, vo.ToTaskVO(updatedTask))
+}
+

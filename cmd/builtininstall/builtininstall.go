@@ -12,16 +12,23 @@ import (
 	"github.com/engigu/baihu-panel/internal/utils"
 )
 
+func printHelp() {
+	fmt.Fprintf(os.Stderr, "\n白虎面板内建依赖安装工具\n\n")
+	fmt.Fprintf(os.Stderr, "用法:\n")
+	fmt.Fprintf(os.Stderr, "  baihu builtininstall\n\n")
+	fmt.Fprintf(os.Stderr, "说明:\n")
+	fmt.Fprintf(os.Stderr, "  此命令将为系统中已安装的 Node.js 和 Python 环境安装白虎面板所需的内建依赖包。\n\n")
+}
+
 // Run 执行内建包安装逻辑
 func Run(args []string) {
-	fs := flag.NewFlagSet("builtininstall", flag.ExitOnError)
-	fs.Usage = func() {
-		fmt.Fprintf(os.Stderr, "\n白虎面板内建依赖安装工具\n\n")
-		fmt.Fprintf(os.Stderr, "用法:\n")
-		fmt.Fprintf(os.Stderr, "  baihu builtininstall\n\n")
-		fmt.Fprintf(os.Stderr, "说明:\n")
-		fmt.Fprintf(os.Stderr, "  此命令将为系统中已安装的 Node.js 和 Python 环境安装白虎面板所需的内建依赖包。\n\n")
+	if len(args) > 0 && (args[0] == "-h" || args[0] == "--help") {
+		printHelp()
+		return
 	}
+
+	fs := flag.NewFlagSet("builtininstall", flag.ExitOnError)
+	fs.Usage = printHelp
 
 	if err := fs.Parse(args); err != nil {
 		return

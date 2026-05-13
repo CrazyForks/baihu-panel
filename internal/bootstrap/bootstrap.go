@@ -42,9 +42,16 @@ func InitBasic() *App {
 	return app
 }
 
-func (a *App) initConfig() {
-	a.initConfigWithPath(constant.ConfigPath)
+// InitBasicForCmd 专为命令行工具定制的基础环境初始化入口
+// 内部会调高控制台日志过滤级别以自动静默屏蔽刷屏的底层系统与组件启动 Info 日志
+func InitBasicForCmd() *App {
+	logger.SetLevel("warn")
+	return InitBasic()
 }
+
+// func (a *App) initConfig() {
+// 	a.initConfigWithPath(constant.ConfigPath)
+// }
 
 func (a *App) initConfigWithPath(path string) {
 	cfg, err := services.LoadConfig(path)

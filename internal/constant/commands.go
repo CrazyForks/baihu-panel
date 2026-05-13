@@ -28,4 +28,8 @@ var Commands = []CommandInfo{
 		Name:        "builtininstall",
 		Description: "为所有 mise 管理的 Node.js 和 Python 环境安装内建助手库",
 	},
+	{
+		Name:        "task",
+		Description: "系统级任务的列表查询、触发运行、启停控制及状态查看",
+	},
 }

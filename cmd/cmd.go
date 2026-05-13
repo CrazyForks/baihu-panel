@@ -5,6 +5,7 @@ import (
 	"github.com/engigu/baihu-panel/cmd/reposync"
 	"github.com/engigu/baihu-panel/cmd/resetpwd"
 	"github.com/engigu/baihu-panel/cmd/restore"
+	"github.com/engigu/baihu-panel/cmd/task"
 	// "github.com/engigu/baihu-panel/cmd/migrate"
 )
 
@@ -17,5 +18,6 @@ var Handlers = map[string]CommandHandler{
 	"resetpwd":       resetpwd.Run,
 	"restore":        restore.Run,
 	"builtininstall": builtininstall.Run,
+	"task":           task.Run,
 	// "migrate":  migrate.Run,
 }

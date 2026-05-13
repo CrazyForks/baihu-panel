@@ -2,7 +2,6 @@ package reposync
 
 import (
 	"bytes"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -14,8 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/engigu/baihu-panel/internal/bootstrap"
 	"github.com/engigu/baihu-panel/internal/constant"
-	"github.com/engigu/baihu-panel/internal/services"
 	"github.com/engigu/baihu-panel/internal/services/repo"
 	"github.com/engigu/baihu-panel/internal/utils"
 )
@@ -69,7 +68,7 @@ func Run(args []string) {
 	fs.StringVar(&cfg.PreCommand, "pre-command", "", "Default pre-command for discovered tasks")
 	fs.StringVar(&cfg.PostCommand, "post-command", "", "Default post-command for discovered tasks")
 
-	fs.Usage = func() {
+	printHelp := func() {
 		fmt.Fprintf(os.Stderr, "\n白虎面板仓库同步工具 (Reposync)\n\n")
 		fmt.Fprintf(os.Stderr, "用法:\n")
 		fmt.Fprintf(os.Stderr, "  baihu reposync [参数]\n\n")
@@ -78,6 +77,13 @@ func Run(args []string) {
 		fmt.Fprintf(os.Stderr, "\n示例:\n")
 		fmt.Fprintf(os.Stderr, "  baihu reposync --source-url https://github.com/xxx/repo.git --target-path $SCRIPTS_DIR$/repo1\n\n")
 	}
+
+	if len(args) > 0 && (args[0] == "-h" || args[0] == "--help") {
+		printHelp()
+		return
+	}
+
+	fs.Usage = printHelp
 
 	if err := fs.Parse(args); err != nil {
 		return
@@ -164,34 +170,19 @@ func getActualRepoDir(cfg Config) string {
 }
 
 func notifyMainServerToSyncRepoTasks(repoID string, upsertedIDs []string, deletedIDs []string) {
-	appCfg := services.GetConfig()
-	if appCfg != nil {
-		url := fmt.Sprintf("http://127.0.0.1:%d/internal/tasks/sync-repo-status", appCfg.Server.Port)
-		payload := map[string]interface{}{
-			"repo_id":      repoID,
-			"upserted_ids": upsertedIDs,
-			"deleted_ids":  deletedIDs,
-		}
-		jsonData, _ := json.Marshal(payload)
-		settings := services.NewSettingsService()
-		secret := settings.Get("security", "secret") // constant.SectionSecurity = "security", constant.KeySecret = "secret"
-
-		req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
-		if err == nil {
-			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("X-Internal-Token", secret)
-			resp, reqErr := http.DefaultClient.Do(req)
-			if reqErr == nil {
-				defer resp.Body.Close()
-				if resp.StatusCode == 200 {
-					fmt.Println(">> [通知] 已成功将变动任务增量同步至主程序调度器")
-				} else {
-					fmt.Printf(">> [通知] 调度器刷新异常，主程序响应状态码: %d\n", resp.StatusCode)
-				}
-			} else {
-				fmt.Printf(">> [通知] 无法连接到主程序进行增量刷新: %v\n", reqErr)
-			}
-		}
+	_, statusCode, err := bootstrap.SendInternalRequest("POST", "/internal/tasks/sync-repo-status", map[string]interface{}{
+		"repo_id":      repoID,
+		"upserted_ids": upsertedIDs,
+		"deleted_ids":  deletedIDs,
+	})
+	if err != nil {
+		fmt.Printf(">> [通知] 无法连接到主程序进行增量刷新: %v\n", err)
+		return
+	}
+	if statusCode == 200 {
+		fmt.Println(">> [通知] 已成功将变动任务增量同步至主程序调度器")
+	} else {
+		fmt.Printf(">> [通知] 调度器刷新异常，主程序响应状态码: %d\n", statusCode)
 	}
 }
 
