@@ -1,13 +1,13 @@
 <script setup lang="ts">
+// 消息日志总览入口控制器
 import { ref, watch } from 'vue'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Button } from '@/components/ui/button'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Search, RefreshCw, Trash2 } from 'lucide-vue-next'
 import LoginLogTab from './tabs/LoginLogTab.vue'
 import SystemEventTab from './tabs/SystemEventTab.vue'
-import PushLog from '@/views/notify/components/PushLog.vue'
+import PushLogTab from './tabs/PushLogTab.vue'
 import { LOG_LEVEL, LOG_STATUS } from '@/api'
 
 const activeTab = ref('system')
@@ -30,10 +30,20 @@ function handleSearch() {
   }, 300)
 }
 
-function handleRefresh() {
-  if (activeTab.value === 'system') systemTabRef.value?.fetchLogs()
-  else if (activeTab.value === 'push') pushLogRef.value?.fetchLogs()
-  else if (activeTab.value === 'login') loginTabRef.value?.loadLogs()
+const isRefreshing = ref(false)
+
+async function handleRefresh() {
+  if (isRefreshing.value) return
+  isRefreshing.value = true
+  try {
+    if (activeTab.value === 'system') await systemTabRef.value?.fetchLogs()
+    else if (activeTab.value === 'push') await pushLogRef.value?.fetchLogs()
+    else if (activeTab.value === 'login') await loginTabRef.value?.loadLogs()
+  } finally {
+    setTimeout(() => {
+      isRefreshing.value = false
+    }, 400)
+  }
 }
 
 function handleClear() {
@@ -49,7 +59,7 @@ watch(activeTab, () => {
 </script>
 
 <template>
-  <Tabs v-model="activeTab" class="space-y-6 h-full flex flex-col">
+  <div class="space-y-6 h-full flex flex-col">
     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 shrink-0 px-1">
       <div class="flex flex-col shrink-0">
         <h2 class="text-xl sm:text-2xl font-bold tracking-tight">消息日志</h2>
@@ -123,28 +133,23 @@ watch(activeTab, () => {
 
         <!-- 操作区域 -->
         <div :class="[activeTab === 'login' ? 'flex-1 sm:flex-none' : 'w-full lg:w-auto', 'flex items-center gap-2']">
-          <Button variant="outline" size="icon" class="h-9 w-9 shrink-0 shadow-sm" @click="handleRefresh" title="刷新">
-            <RefreshCw class="h-4 w-4" />
-          </Button>
+          <button type="button" class="inline-flex items-center justify-center h-9 w-9 rounded-md border border-border bg-background hover:bg-accent hover:text-accent-foreground shrink-0 shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" :disabled="isRefreshing" @click="handleRefresh">
+            <RefreshCw class="h-4 w-4 block transition-transform" :class="{ 'animate-spin': isRefreshing }" />
+          </button>
 
-          <Button v-if="activeTab !== 'login'" variant="outline" 
-            class="flex-1 lg:flex-none lg:px-3 h-9 shadow-sm text-destructive border-destructive/20 hover:bg-destructive/10" 
-            @click="handleClear" title="清空记录">
-            <Trash2 class="h-4 w-4 lg:mr-2" /> <span class="ml-2 lg:inline" :class="activeTab !== 'login' ? '' : 'hidden'">清空记录</span>
-          </Button>
+          <button v-if="activeTab !== 'login'" type="button" class="inline-flex items-center justify-center h-9 px-3 rounded-md border border-destructive/20 bg-background text-destructive hover:bg-destructive/10 shrink-0 shadow-sm transition-colors gap-1.5 cursor-pointer" @click="handleClear">
+            <Trash2 class="h-4 w-4 block" />
+            <span class="text-sm font-medium" :class="activeTab !== 'login' ? '' : 'hidden'">清空记录</span>
+          </button>
 
           <!-- 桌面端标签切换 -->
-          <TabsList class="h-9 p-1 bg-muted/30 border shrink-0 hidden lg:flex">
-            <TabsTrigger value="system" class="px-4 h-7 text-sm">
-              系统事件
-            </TabsTrigger>
-            <TabsTrigger value="push" class="px-4 h-7 text-sm">
-              推送日志
-            </TabsTrigger>
-            <TabsTrigger value="login" class="px-4 h-7 text-sm">
-              登录日志
-            </TabsTrigger>
-          </TabsList>
+          <Tabs v-model="activeTab" class="w-auto">
+            <TabsList class="h-9 p-1 bg-muted/30 border shrink-0 hidden lg:flex">
+              <TabsTrigger value="system" class="px-4 h-7 text-sm">系统事件</TabsTrigger>
+              <TabsTrigger value="push" class="px-4 h-7 text-sm">推送日志</TabsTrigger>
+              <TabsTrigger value="login" class="px-4 h-7 text-sm">登录日志</TabsTrigger>
+            </TabsList>
+          </Tabs>
 
           <!-- 移动端标签切换 (简易版) -->
           <div class="lg:hidden flex-1 shrink-0 min-w-0">
@@ -164,17 +169,17 @@ watch(activeTab, () => {
     </div>
 
     <div class="flex-1 min-h-0">
-      <TabsContent value="system" class="mt-0">
+      <div v-show="activeTab === 'system'" class="h-full">
         <SystemEventTab ref="systemTabRef" :filters="filters.system" />
-      </TabsContent>
+      </div>
 
-      <TabsContent value="push" class="mt-0">
-        <PushLog ref="pushLogRef" :filters="filters.push" />
-      </TabsContent>
+      <div v-show="activeTab === 'push'" class="h-full">
+        <PushLogTab ref="pushLogRef" :filters="filters.push" />
+      </div>
 
-      <TabsContent value="login" class="mt-0">
+      <div v-show="activeTab === 'login'" class="h-full">
         <LoginLogTab ref="loginTabRef" :username="filters.login.username" />
-      </TabsContent>
+      </div>
     </div>
-  </Tabs>
+  </div>
 </template>
