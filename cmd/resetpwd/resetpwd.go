@@ -71,6 +71,9 @@ func Run(args []string) {
 	user := userService.GetUserByUsername(username)
 	if user == nil {
 		fmt.Printf("找不到用户 [%s]\n", username)
+		fmt.Println(">> 提示: 程序当前可能连接到了默认的空 SQLite 数据库。")
+		fmt.Println(">> 若您的生产环境使用的是 MySQL 或指定路径配置，请在执行命令时携带配置文件路径环境变量，例如:")
+		fmt.Println(">> BH_CONFIG_PATH=/app/data/config.ini baihu resetpwd " + username)
 		return
 	}
 

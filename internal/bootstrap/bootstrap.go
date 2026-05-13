@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/engigu/baihu-panel/internal/constant"
@@ -30,16 +31,24 @@ func New() *App {
 	return app
 }
 
+var (
+	globalApp *App
+	initOnce  sync.Once
+)
+
 func InitBasic() *App {
-	app := &App{}
-	utils.InitRuntime()
-	utils.InitSecretKey()
-	
-	// 自动加载配置 (内部会自动处理 BH_CONFIG_PATH 环境变量与默认路径的优先级)
-	app.initConfigWithPath("")
-	app.initDatabase()
-	logger.Infof("[System] 低于1.0.11版本升级最新版本错误指引: https://github.com/engigu/baihu-panel/issues/64")
-	return app
+	initOnce.Do(func() {
+		app := &App{}
+		utils.InitRuntime()
+		utils.InitSecretKey()
+
+		// 自动加载配置 (内部会自动处理 BH_CONFIG_PATH 环境变量与默认路径的优先级)
+		app.initConfigWithPath("")
+		app.initDatabase()
+		logger.Infof("[System] 低于1.0.11版本升级最新版本错误指引: https://github.com/engigu/baihu-panel/issues/64")
+		globalApp = app
+	})
+	return globalApp
 }
 
 // InitBasicForCmd 专为命令行工具定制的基础环境初始化入口
