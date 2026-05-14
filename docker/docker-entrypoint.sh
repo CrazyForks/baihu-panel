@@ -88,4 +88,4 @@ ln -sf /app/baihu /usr/local/bin/baihu
 printf "\n\033[1;32m>>> Environment setup complete. Starting Baihu Server...\033[0m\n\n"
 
 cd /app
-exec ./baihu server
+exec baihu server
