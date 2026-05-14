@@ -16,16 +16,62 @@ import (
 // 打印主帮助
 func printMainHelp() {
 	fmt.Fprintf(os.Stderr, "\n白虎面板任务命令行管理工具 (Task CLI)\n\n")
+	fmt.Fprintf(os.Stderr, "说明:\n")
+	fmt.Fprintf(os.Stderr, "  本工具原生兼容管理普通任务 (task) 与仓库同步任务 (repo)。\n")
+	fmt.Fprintf(os.Stderr, "  操作目标支持传入精确任务ID、任务名称模糊/精准查找，或使用快捷字面量 'repo' 一键操作主力仓库。\n\n")
 	fmt.Fprintf(os.Stderr, "用法:\n")
 	fmt.Fprintf(os.Stderr, "  baihu task <子命令> [参数]\n\n")
 	fmt.Fprintf(os.Stderr, "可用子命令:\n")
 	fmt.Fprintf(os.Stderr, "  list       查询并输出任务列表\n")
-	fmt.Fprintf(os.Stderr, "  run        手动立即触发执行指定的任务\n")
-	fmt.Fprintf(os.Stderr, "  enable     启用指定的任务（同步加入后台调度队列）\n")
-	fmt.Fprintf(os.Stderr, "  disable    禁用指定的任务（同步从后台调度队列摘除）\n")
-	fmt.Fprintf(os.Stderr, "  status     查看指定任务最近一次执行的完整输出与状态\n")
-	fmt.Fprintf(os.Stderr, "  history    查看指定任务近期的多次执行流水记录\n\n")
+	fmt.Fprintf(os.Stderr, "  run        手动立即触发执行指定的任务或仓库\n")
+	fmt.Fprintf(os.Stderr, "  enable     启用指定的任务或仓库（同步加入后台调度队列）\n")
+	fmt.Fprintf(os.Stderr, "  disable    禁用指定的任务或仓库（同步从后台调度队列摘除）\n")
+	fmt.Fprintf(os.Stderr, "  status     查看指定任务或仓库最近一次执行的完整输出与状态\n")
+	fmt.Fprintf(os.Stderr, "  history    查看指定任务或仓库近期的多次执行流水记录\n\n")
 	fmt.Fprintf(os.Stderr, "使用 'baihu task <子命令> --help' 查看具体子命令的参数说明和示例。\n\n")
+}
+
+// resolveTaskID 智能解析目标任务ID：支持直接传入真实ID、任务名称，或传入 "repo" 快捷操作系统中唯一的仓库同步任务
+func resolveTaskID(input string) string {
+	var t models.Task
+	// 1. 尝试按精确 ID 匹配
+	if res := database.DB.Where("id = ?", input).Limit(1).Find(&t); res.Error == nil && res.RowsAffected > 0 {
+		return t.ID
+	}
+
+	// 2. 如果输入字面量为 "repo"，尝试匹配 type = 'repo' 的记录
+	if strings.ToLower(input) == "repo" {
+		var repos []models.Task
+		if res := database.DB.Where("type = ?", constant.TaskTypeRepo).Find(&repos); res.Error == nil {
+			if len(repos) == 1 {
+				fmt.Printf(">> 智能匹配到唯一的仓库任务: [%s] (ID: %s)\n", repos[0].Name, repos[0].ID)
+				return repos[0].ID
+			} else if len(repos) > 1 {
+				fmt.Fprintf(os.Stderr, ">> 提示: 系统中存在多个 repo 类型的仓库任务，请指定具体的仓库名称或ID进行精确操作。\n")
+				return input
+			}
+		}
+	}
+
+	// 3. 尝试按名称精准或模糊匹配
+	var namedTasks []models.Task
+	if res := database.DB.Where("name = ?", input).Find(&namedTasks); res.Error == nil && len(namedTasks) > 0 {
+		if len(namedTasks) == 1 {
+			fmt.Printf(">> 智能匹配到目标任务: [%s] (ID: %s)\n", namedTasks[0].Name, namedTasks[0].ID)
+			return namedTasks[0].ID
+		}
+		fmt.Fprintf(os.Stderr, ">> 提示: 存在多个同名任务 [%s]，请使用精确的任务ID进行操作。\n", input)
+		return input
+	}
+
+	// 尝试名称模糊匹配 (LIKE)
+	if res := database.DB.Where("name LIKE ?", "%"+input+"%").Find(&namedTasks); res.Error == nil && len(namedTasks) == 1 {
+		fmt.Printf(">> 模糊匹配到唯一的任务: [%s] (ID: %s)\n", namedTasks[0].Name, namedTasks[0].ID)
+		return namedTasks[0].ID
+	}
+
+	// 默认原样返回
+	return input
 }
 
 // Run 任务命令行入口
@@ -121,7 +167,7 @@ func runList(args []string) {
 func runExecute(args []string) {
 	fs := flag.NewFlagSet("run", flag.ExitOnError)
 	fs.Usage = func() {
-		clibase.PrintSubCommandUsage("白虎面板手动任务触发工具", "baihu task run <任务ID>", "  baihu task run a1b2c3d4", nil)
+		clibase.PrintSubCommandUsage("白虎面板手动任务触发工具", "baihu task run <任务ID/名称/repo>", "  baihu task run a1b2c3d4\n  baihu task run \"自动签到\"\n  baihu task run repo", nil)
 	}
 
 	if err := fs.Parse(args); err != nil {
@@ -137,6 +183,7 @@ func runExecute(args []string) {
 	taskID := parsedArgs[0]
 
 	clibase.InitContext(false)
+	taskID = resolveTaskID(taskID)
 
 	_, err := clibase.CallInternalAPI("POST", "/internal/tasks/execute/"+taskID, map[string]interface{}{})
 	if err != nil {
@@ -158,7 +205,7 @@ func runToggle(action string, args []string) {
 	}
 
 	fs.Usage = func() {
-		clibase.PrintSubCommandUsage(fmt.Sprintf("白虎面板任务%s工具", actionName), fmt.Sprintf("baihu task %s <任务ID>", action), fmt.Sprintf("  baihu task %s a1b2c3d4", action), nil)
+		clibase.PrintSubCommandUsage(fmt.Sprintf("白虎面板任务%s工具", actionName), fmt.Sprintf("baihu task %s <任务ID/名称/repo>", action), fmt.Sprintf("  baihu task %s a1b2c3d4\n  baihu task %s repo", action, action), nil)
 	}
 
 	if err := fs.Parse(args); err != nil {
@@ -174,6 +221,7 @@ func runToggle(action string, args []string) {
 	taskID := parsedArgs[0]
 
 	clibase.InitContext(false)
+	taskID = resolveTaskID(taskID)
 
 	_, err := clibase.CallInternalAPI("POST", "/internal/tasks/toggle/"+taskID, map[string]interface{}{
 		"enabled": targetEnabled,
@@ -189,7 +237,7 @@ func runToggle(action string, args []string) {
 func runStatus(args []string) {
 	fs := flag.NewFlagSet("status", flag.ExitOnError)
 	fs.Usage = func() {
-		clibase.PrintSubCommandUsage("白虎面板任务执行状态与日志查看工具", "baihu task status <任务ID> [日志ID]", "  baihu task status a1b2c3d4\n  baihu task status a1b2c3d4 log_123456", nil)
+		clibase.PrintSubCommandUsage("白虎面板任务执行状态与日志查看工具", "baihu task status <任务ID/名称/repo> [日志ID]", "  baihu task status a1b2c3d4\n  baihu task status repo\n  baihu task status \"自动签到\"", nil)
 	}
 
 	if err := fs.Parse(args); err != nil {
@@ -209,6 +257,7 @@ func runStatus(args []string) {
 	}
 
 	clibase.InitContext(false)
+	taskID = resolveTaskID(taskID)
 
 	var taskLog models.TaskLog
 	query := database.DB.Where("task_id = ?", taskID)
@@ -278,7 +327,7 @@ func runHistory(args []string) {
 	limitPtr := fs.Int("limit", 10, "展示的最近历史记录条数")
 
 	fs.Usage = func() {
-		clibase.PrintSubCommandUsage("白虎面板任务执行历史查看工具", "baihu task history <任务ID> [参数]", "  baihu task history a1b2c3d4\n  baihu task history a1b2c3d4 -limit 20", fs)
+		clibase.PrintSubCommandUsage("白虎面板任务执行历史查看工具", "baihu task history <任务ID/名称/repo> [参数]", "  baihu task history a1b2c3d4\n  baihu task history repo\n  baihu task history repo -limit 20", fs)
 	}
 
 	if err := fs.Parse(args); err != nil {
@@ -294,6 +343,7 @@ func runHistory(args []string) {
 	taskID := parsedArgs[0]
 
 	clibase.InitContext(false)
+	taskID = resolveTaskID(taskID)
 
 	var task models.Task
 	database.DB.Where("id = ?", taskID).Limit(1).Find(&task)
