@@ -136,15 +136,16 @@ func runList(args []string) {
 	var tasks []models.Task
 	query.Order("created_at DESC").Limit(*sizePtr).Offset(offset).Find(&tasks)
 
-	fmt.Println("====================================================================================================")
-	fmt.Printf("%-12s | %-25s | %-18s | %-8s | %-6s\n", "任务ID", "任务名称", "Cron规则", "类型", "状态")
-	fmt.Println("----------------------------------------------------------------------------------------------------")
+	fmt.Println(strings.Repeat("=", 90))
+	fmt.Printf("%s | %s | %s | %s | %s\n",
+		clibase.VisualFormat("任务ID", 20),
+		clibase.VisualFormat("任务名称", 28),
+		clibase.VisualFormat("Cron规则", 18),
+		clibase.VisualFormat("类型", 6),
+		clibase.VisualFormat("状态", 6),
+	)
+	fmt.Println(strings.Repeat("-", 90))
 	for _, t := range tasks {
-		name := t.Name
-		// 截断过长名称以对齐
-		if len(name) > 22 {
-			name = string([]rune(name)[:20]) + ".."
-		}
 		cron := t.Schedule
 		if cron == "" {
 			cron = "-"
@@ -153,9 +154,15 @@ func runList(args []string) {
 		if !utils.DerefBool(t.Enabled, true) {
 			status = "禁用"
 		}
-		fmt.Printf("%-12s | %-25s | %-18s | %-8s | %-6s\n", t.ID, name, cron, t.Type, status)
+		fmt.Printf("%s | %s | %s | %s | %s\n",
+			clibase.VisualFormat(t.ID, 20),
+			clibase.VisualFormat(t.Name, 28),
+			clibase.VisualFormat(cron, 18),
+			clibase.VisualFormat(t.Type, 6),
+			clibase.VisualFormat(status, 6),
+		)
 	}
-	fmt.Println("====================================================================================================")
+	fmt.Println(strings.Repeat("=", 90))
 	totalPages := (total + int64(*sizePtr) - 1) / int64(*sizePtr)
 	if totalPages == 0 {
 		totalPages = 1
