@@ -25,8 +25,8 @@ func startAppLogCleanup(appLogSvc *services.AppLogService) {
 	// 初始化时执行一次清理
 	appLogSvc.CleanUp()
 
-	// 每天凌晨或者定期清理
-	ticker := time.NewTicker(24 * time.Hour)
+	// 定期清理（每隔1小时执行一次巡检）
+	ticker := time.NewTicker(1 * time.Hour)
 	for range ticker.C {
 		appLogSvc.CleanUp()
 	}

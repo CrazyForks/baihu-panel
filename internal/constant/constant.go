@@ -60,6 +60,8 @@ const (
 	KeyPushLogMaxCount      = "push_log_max_count"
 	KeyLoginLogDays         = "login_log_days"
 	KeyLoginLogMaxCount     = "login_log_max_count"
+	KeySchedulerLogDays     = "scheduler_log_days"
+	KeySchedulerLogMaxCount = "scheduler_log_max_count"
 
 	// Scheduler Settings Key 常量
 	KeyWorkerCount  = "worker_count"
@@ -104,6 +106,7 @@ const (
 
 	// 其他事件类型
 	EventSystemNotice = "system_notice"
+	EventSchedulerLog = "scheduler_log"
 	EventNotifySent   = "notify_sent"
 	EventAppLogAdded  = "app_log_added"
 
@@ -153,6 +156,7 @@ const (
 	LogCategorySystemNotice = "system_notice"
 	LogCategoryPushLog      = "push_log"
 	LogCategoryLoginLog     = "login_log"
+	LogCategorySchedulerLog = "scheduler_log"
 
 	// AppLog 级别
 	LogLevelInfo    = "info"

@@ -77,6 +77,8 @@ func (s *SettingsService) InitSettings() error {
 		constant.KeyPushLogMaxCount:      "5000",
 		constant.KeyLoginLogDays:         "30",
 		constant.KeyLoginLogMaxCount:     "1000",
+		constant.KeySchedulerLogDays:     "30",
+		constant.KeySchedulerLogMaxCount: "10000",
 	}
 
 	for k, v := range defaultRetention {

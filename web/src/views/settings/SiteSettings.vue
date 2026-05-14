@@ -36,7 +36,9 @@ const form = ref<SiteSettings>({
   push_log_days: '15',
   push_log_max_count: '5000',
   login_log_days: '30',
-  login_log_max_count: '1000'
+  login_log_max_count: '1000',
+  scheduler_log_days: '30',
+  scheduler_log_max_count: '10000'
 })
 const loading = ref(false)
 const showOpenapiConfirmDialog = ref(false)
@@ -72,7 +74,9 @@ async function saveSettings() {
       push_log_days: String(form.value.push_log_days || '15'),
       push_log_max_count: String(form.value.push_log_max_count || '5000'),
       login_log_days: String(form.value.login_log_days || '30'),
-      login_log_max_count: String(form.value.login_log_max_count || '1000')
+      login_log_max_count: String(form.value.login_log_max_count || '1000'),
+      scheduler_log_days: String(form.value.scheduler_log_days || '30'),
+      scheduler_log_max_count: String(form.value.scheduler_log_max_count || '10000')
     })
     await refreshSettings()
     await loadSettings()
@@ -207,6 +211,23 @@ onMounted(loadSettings)
             </div>
           </div>
         </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+          <Label class="sm:text-right text-muted-foreground whitespace-nowrap sm:pt-0 pt-1">调度日志</Label>
+          <div class="sm:col-span-3 grid grid-cols-2 gap-0">
+            <div class="flex items-center gap-1.5 pr-4">
+              <Input v-model="form.scheduler_log_days" type="number" class="w-full h-8 text-xs sm:h-9 sm:text-sm"
+                min="0" />
+              <span class="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">天清理</span>
+            </div>
+            <div class="flex items-center gap-1.5 border-l pl-4 border-border/50">
+              <span class="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">保留</span>
+              <Input v-model="form.scheduler_log_max_count" type="number" class="w-full h-full h-8 text-xs sm:h-9 sm:text-sm"
+                min="0" />
+              <span class="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">条</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="mt-6 p-4 bg-muted/30 rounded-lg border border-dashed border-border flex flex-col gap-3">
@@ -228,7 +249,7 @@ onMounted(loadSettings)
           <div class="space-y-1">
             <p class="text-sm font-medium">执行周期说明</p>
             <p class="text-xs text-muted-foreground leading-relaxed">
-              清理任务在白虎面板后端服务启动时立即执行一次。在运行期间，系统将自动开启后台巡检计数器，每隔 24 小时进行周期性自动清理。
+              清理任务在白虎面板后端服务启动时立即执行一次。在运行期间，系统将自动开启后台巡检计数器，每隔 1 小时进行周期性自动清理。
             </p>
           </div>
         </div>

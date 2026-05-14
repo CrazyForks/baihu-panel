@@ -112,6 +112,11 @@ func (m *SystemWSManager) SubscribeEvents(bus *eventbus.EventBus) {
 	bus.Subscribe(constant.EventSystemNotice, func(e eventbus.Event) {
 		m.Broadcast("notice", e.Payload)
 	})
+
+	// 应用日志新增事件（驱动运行日志下属4大标签页实时流式刷新列表）
+	bus.Subscribe(constant.EventAppLogAdded, func(e eventbus.Event) {
+		m.Broadcast(e.Type, e.Payload)
+	})
 }
 
 func (c *ClientConnection) Close() {

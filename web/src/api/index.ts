@@ -510,6 +510,8 @@ export interface SiteSettings {
   push_log_max_count?: string
   login_log_days?: string
   login_log_max_count?: string
+  scheduler_log_days?: string
+  scheduler_log_max_count?: string
 }
 
 export interface SchedulerSettings {
@@ -663,7 +665,8 @@ export interface AppLogListResponse {
 export const LOG_CATEGORY = {
   SYSTEM_NOTICE: 'system_notice',
   PUSH_LOG: 'push_log',
-  LOGIN_LOG: 'login_log'
+  LOGIN_LOG: 'login_log',
+  SCHEDULER_LOG: 'scheduler_log'
 } as const
 
 export const LOG_LEVEL = {

@@ -112,6 +112,15 @@ func (es *ExecutorService) initScheduler() {
 	es.scheduler.Start()
 
 	logger.Infof("[Executor] 调度器已启动: workers=%d, queue=%d, rate=%dms", workerCount, queueSize, rateInterval)
+
+	eventbus.DefaultBus.Publish(eventbus.Event{
+		Type: constant.EventSchedulerLog,
+		Payload: map[string]interface{}{
+			"title":   "调度器启动",
+			"content": fmt.Sprintf("主服务任务调度引擎已成功拉起运行。\n配置 Worker 数量: %d\n等待队列容量: %d\n速率限制间隔: %dms", workerCount, queueSize, rateInterval),
+			"level":   constant.LogLevelInfo,
+		},
+	})
 }
 
 // ServerSchedulerHandler 实现 executor.SchedulerEventHandler
@@ -126,6 +135,15 @@ func (h *ServerSchedulerHandler) OnTaskScheduled(req *executor.ExecutionRequest)
 			Payload: map[string]interface{}{
 				"task_id": req.TaskID,
 				"status":  constant.TaskStatusQueued,
+			},
+		})
+
+		eventbus.DefaultBus.Publish(eventbus.Event{
+			Type: constant.EventSchedulerLog,
+			Payload: map[string]interface{}{
+				"title":   "触发任务",
+				"content": fmt.Sprintf("任务 [%s] (#%s) 调度类型: %s\n已成功推入后台调度排队队列等待执行。", req.Name, req.TaskID, req.Type),
+				"level":   constant.LogLevelInfo,
 			},
 		})
 	}
@@ -574,6 +592,15 @@ func (es *ExecutorService) loadCronTasks() {
 		}
 	}
 	logger.Infof("[Executor] 启动调度已加载 %d 个定时任务", count)
+
+	eventbus.DefaultBus.Publish(eventbus.Event{
+		Type: constant.EventSchedulerLog,
+		Payload: map[string]interface{}{
+			"title":   "加载定时任务",
+			"content": fmt.Sprintf("后台调度引擎成功解析并载入本地活跃定时计划任务: %d 个。", count),
+			"level":   constant.LogLevelInfo,
+		},
+	})
 }
 
 // Reload 重新加载配置并重建调度器
@@ -588,6 +615,15 @@ func (es *ExecutorService) Reload() {
 	if es.cronManager != nil {
 		es.cronManager.SetScheduler(es.scheduler)
 	}
+
+	eventbus.DefaultBus.Publish(eventbus.Event{
+		Type: constant.EventSchedulerLog,
+		Payload: map[string]interface{}{
+			"title":   "调度器重载",
+			"content": "主服务任务调度引擎配置及执行队列实例已全量重载完毕。",
+			"level":   constant.LogLevelInfo,
+		},
+	})
 }
 
 // CreateExecutionRequest 统一处理任务到执行请求的转换逻辑（包含指令拼装、脱敏等）

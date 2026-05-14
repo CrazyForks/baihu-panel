@@ -8,17 +8,20 @@ import { Search, RefreshCw, Trash2 } from 'lucide-vue-next'
 import LoginLogTab from './tabs/LoginLogTab.vue'
 import SystemEventTab from './tabs/SystemEventTab.vue'
 import PushLogTab from './tabs/PushLogTab.vue'
+import SchedulerLogTab from './tabs/SchedulerLogTab.vue'
 import { LOG_LEVEL, LOG_STATUS } from '@/api'
 
 const activeTab = ref('system')
 const systemTabRef = ref()
 const pushLogRef = ref()
 const loginTabRef = ref()
+const schedulerTabRef = ref()
 
 const filters = ref({
   system: { keyword: '', level: 'all' },
   push: { keyword: '', status: 'all' },
-  login: { username: '' }
+  login: { username: '' },
+  scheduler: { keyword: '', level: 'all' }
 })
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
@@ -39,6 +42,7 @@ async function handleRefresh() {
     if (activeTab.value === 'system') await systemTabRef.value?.fetchLogs()
     else if (activeTab.value === 'push') await pushLogRef.value?.fetchLogs()
     else if (activeTab.value === 'login') await loginTabRef.value?.loadLogs()
+    else if (activeTab.value === 'scheduler') await schedulerTabRef.value?.fetchLogs()
   } finally {
     setTimeout(() => {
       isRefreshing.value = false
@@ -49,6 +53,7 @@ async function handleRefresh() {
 function handleClear() {
   if (activeTab.value === 'system' && systemTabRef.value) systemTabRef.value.showClearConfirm = true
   else if (activeTab.value === 'push' && pushLogRef.value) pushLogRef.value.showClearConfirm = true
+  else if (activeTab.value === 'scheduler' && schedulerTabRef.value) schedulerTabRef.value.showClearConfirm = true
 }
 
 // 切换标签时重置搜索
@@ -62,17 +67,18 @@ watch(activeTab, () => {
   <div class="space-y-6 h-full flex flex-col">
     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 shrink-0 px-1">
       <div class="flex flex-col shrink-0">
-        <h2 class="text-xl sm:text-2xl font-bold tracking-tight">消息日志</h2>
+        <h2 class="text-xl sm:text-2xl font-bold tracking-tight">运行日志</h2>
         <p class="text-muted-foreground text-sm">
           {{ activeTab === 'system' ? '查看系统重要运行事件' :
-            activeTab === 'push' ? '查看消息推送历史记录' : '查看系统用户登录记录' }}
+            activeTab === 'push' ? '查看消息推送历史记录' : 
+            activeTab === 'scheduler' ? '查看后台调度器执行与配置装载日志' : '查看系统用户登录记录' }}
         </p>
       </div>
 
       <div :class="[activeTab === 'login' ? 'flex flex-row lg:flex-row' : 'flex flex-col lg:flex-row', 'lg:items-center gap-2 lg:gap-3 w-full lg:w-auto lg:ml-auto lg:justify-end']">
         <!-- 搜索与筛选区域 -->
         <div :class="[activeTab === 'login' ? 'flex-1 min-w-0' : 'w-full lg:w-auto', 'flex items-center gap-2']">
-          <!-- 系统事件 / 推送日志 搜索框 -->
+          <!-- 系统事件 / 推送日志 / 调度日志 搜索框 -->
           <div v-if="activeTab !== 'login'" class="relative flex-1 lg:w-60 group">
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
             <Input 
@@ -86,6 +92,13 @@ watch(activeTab, () => {
               v-else-if="activeTab === 'push'"
               v-model="filters.push.keyword" 
               placeholder="搜索推送日志..." 
+              class="h-9 pl-9 w-full bg-muted/20 border-muted-foreground/10 focus:bg-background text-sm"
+              @input="handleSearch" 
+            />
+            <Input 
+              v-else-if="activeTab === 'scheduler'"
+              v-model="filters.scheduler.keyword" 
+              placeholder="搜索调度日志..." 
               class="h-9 pl-9 w-full bg-muted/20 border-muted-foreground/10 focus:bg-background text-sm"
               @input="handleSearch" 
             />
@@ -146,6 +159,7 @@ watch(activeTab, () => {
           <Tabs v-model="activeTab" class="w-auto">
             <TabsList class="h-9 p-1 bg-muted/30 border shrink-0 hidden lg:flex">
               <TabsTrigger value="system" class="px-4 h-7 text-sm">系统事件</TabsTrigger>
+              <TabsTrigger value="scheduler" class="px-4 h-7 text-sm">调度日志</TabsTrigger>
               <TabsTrigger value="push" class="px-4 h-7 text-sm">推送日志</TabsTrigger>
               <TabsTrigger value="login" class="px-4 h-7 text-sm">登录日志</TabsTrigger>
             </TabsList>
@@ -159,6 +173,7 @@ watch(activeTab, () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="system">系统事件</SelectItem>
+                <SelectItem value="scheduler">调度日志</SelectItem>
                 <SelectItem value="push">推送日志</SelectItem>
                 <SelectItem value="login">登录日志</SelectItem>
               </SelectContent>
@@ -171,6 +186,10 @@ watch(activeTab, () => {
     <div class="flex-1 min-h-0">
       <div v-show="activeTab === 'system'" class="h-full">
         <SystemEventTab ref="systemTabRef" :filters="filters.system" />
+      </div>
+
+      <div v-show="activeTab === 'scheduler'" class="h-full">
+        <SchedulerLogTab ref="schedulerTabRef" :filters="filters.scheduler" />
       </div>
 
       <div v-show="activeTab === 'push'" class="h-full">

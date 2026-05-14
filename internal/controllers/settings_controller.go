@@ -155,6 +155,8 @@ func (sc *SettingsController) GetSiteSettings(c *gin.Context) {
 	settings["push_log_max_count"] = sc.settingsService.Get(constant.SectionSystem, constant.KeyPushLogMaxCount)
 	settings["login_log_days"] = sc.settingsService.Get(constant.SectionSystem, constant.KeyLoginLogDays)
 	settings["login_log_max_count"] = sc.settingsService.Get(constant.SectionSystem, constant.KeyLoginLogMaxCount)
+	settings["scheduler_log_days"] = sc.settingsService.Get(constant.SectionSystem, constant.KeySchedulerLogDays)
+	settings["scheduler_log_max_count"] = sc.settingsService.Get(constant.SectionSystem, constant.KeySchedulerLogMaxCount)
 
 	utils.Success(c, settings)
 }
@@ -188,6 +190,8 @@ func (sc *SettingsController) UpdateSiteSettings(c *gin.Context) {
 		PushLogMaxCount      string `json:"push_log_max_count"`
 		LoginLogDays         string `json:"login_log_days"`
 		LoginLogMaxCount     string `json:"login_log_max_count"`
+		SchedulerLogDays     string `json:"scheduler_log_days"`
+		SchedulerLogMaxCount string `json:"scheduler_log_max_count"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -228,6 +232,8 @@ func (sc *SettingsController) UpdateSiteSettings(c *gin.Context) {
 	sc.settingsService.Set(constant.SectionSystem, constant.KeyPushLogMaxCount, req.PushLogMaxCount)
 	sc.settingsService.Set(constant.SectionSystem, constant.KeyLoginLogDays, req.LoginLogDays)
 	sc.settingsService.Set(constant.SectionSystem, constant.KeyLoginLogMaxCount, req.LoginLogMaxCount)
+	sc.settingsService.Set(constant.SectionSystem, constant.KeySchedulerLogDays, req.SchedulerLogDays)
+	sc.settingsService.Set(constant.SectionSystem, constant.KeySchedulerLogMaxCount, req.SchedulerLogMaxCount)
 
 	utils.SuccessMsg(c, "保存成功")
 }
