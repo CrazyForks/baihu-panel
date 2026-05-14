@@ -75,8 +75,8 @@ const (
 	// Notify Templates Keys
 	KeyNotifyTemplateUserLoginTitle       = "notify_template_user_login_title"
 	KeyNotifyTemplateUserLoginText        = "notify_template_user_login_text"
-	KeyNotifyTemplateBruteForceLoginTitle  = "notify_template_brute_force_login_title"
-	KeyNotifyTemplateBruteForceLoginText   = "notify_template_brute_force_login_text"
+	KeyNotifyTemplateBruteForceLoginTitle = "notify_template_brute_force_login_title"
+	KeyNotifyTemplateBruteForceLoginText  = "notify_template_brute_force_login_text"
 	KeyNotifyTemplatePasswordChangedTitle = "notify_template_password_changed_title"
 	KeyNotifyTemplatePasswordChangedText  = "notify_template_password_changed_text"
 	KeyNotifyTemplateTaskSuccessTitle     = "notify_template_task_success_title"
@@ -228,8 +228,8 @@ var DefaultSettings = map[string]map[string]string{
 		// Login
 		KeyNotifyTemplateUserLoginTitle:       "用户登录(成功/失败)",
 		KeyNotifyTemplateUserLoginText:        "用户 {{username}} 在 IP {{ip}} 登录{{status_label}}\n{{message}}",
-		KeyNotifyTemplateBruteForceLoginTitle:  "系统安全警告",
-		KeyNotifyTemplateBruteForceLoginText:   "检测到 IP {{ip}} 正在尝试暴力破解用户 {{username}}",
+		KeyNotifyTemplateBruteForceLoginTitle: "系统安全警告",
+		KeyNotifyTemplateBruteForceLoginText:  "检测到 IP {{ip}} 正在尝试暴力破解用户 {{username}}",
 		KeyNotifyTemplatePasswordChangedTitle: "账户安全通知",
 		KeyNotifyTemplatePasswordChangedText:  "用户 {{username}} 刚刚修改了密码",
 		// Task

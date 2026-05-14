@@ -49,8 +49,11 @@ func CheckWSOrigin(r *http.Request) bool {
 		}
 	}
 
-	// 3. 允许来自 localhost 和 127.0.0.1 的请求 (方便本地开发和同机部署)
-	if strings.HasPrefix(u.Host, "localhost") || strings.HasPrefix(u.Host, "127.0.0.1") {
+	// 3. 允许来自 localhost、127.0.0.1 以及局域网内网 IP 的请求 (方便本地开发、虚拟机调试和局域网部署)
+	hostname := u.Hostname()
+	if strings.HasPrefix(hostname, "localhost") || strings.HasPrefix(hostname, "127.0.0.1") ||
+		strings.HasPrefix(hostname, "192.168.") || strings.HasPrefix(hostname, "10.") ||
+		strings.HasPrefix(hostname, "172.") {
 		return true
 	}
 
