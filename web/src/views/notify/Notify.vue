@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { Send, FileText, Link, Code } from 'lucide-vue-next'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import BaihuDialog from '@/components/ui/BaihuDialog.vue'
@@ -333,11 +334,23 @@ onMounted(() => {
           <h2 class="text-xl sm:text-2xl font-bold tracking-tight">消息推送</h2>
           <p class="text-muted-foreground text-sm">配置通知渠道，绑定系统事件实现自动推送</p>
         </div>
-        <TabsList class="flex w-full sm:w-fit overflow-x-auto overflow-y-hidden justify-start sm:justify-center bg-muted/50 p-1 rounded-xl scrollbar-hide border border-border/50">
-          <TabsTrigger value="channels" class="flex-1 sm:flex-none whitespace-nowrap px-3 sm:px-6 text-sm">渠道管理</TabsTrigger>
-          <TabsTrigger value="templates" class="flex-1 sm:flex-none whitespace-nowrap px-3 sm:px-6 text-sm">推送模板</TabsTrigger>
-          <TabsTrigger value="events" class="flex-1 sm:flex-none whitespace-nowrap px-3 sm:px-6 text-sm">事件绑定</TabsTrigger>
-          <TabsTrigger value="api" class="flex-1 sm:flex-none whitespace-nowrap px-3 sm:px-6 text-sm">脚本调用</TabsTrigger>
+        <TabsList class="h-9 p-0.5 bg-muted/20 border border-border/40 rounded-lg w-full sm:w-auto flex">
+          <TabsTrigger value="channels" class="px-3 h-8 text-xs gap-1.5 font-medium transition-all flex-1 sm:flex-none">
+            <Send class="w-3.5 h-3.5 opacity-70" />
+            <span>渠道</span>
+          </TabsTrigger>
+          <TabsTrigger value="templates" class="px-3 h-8 text-xs gap-1.5 font-medium transition-all flex-1 sm:flex-none">
+            <FileText class="w-3.5 h-3.5 opacity-70" />
+            <span>模板</span>
+          </TabsTrigger>
+          <TabsTrigger value="events" class="px-3 h-8 text-xs gap-1.5 font-medium transition-all flex-1 sm:flex-none">
+            <Link class="w-3.5 h-3.5 opacity-70" />
+            <span>事件</span>
+          </TabsTrigger>
+          <TabsTrigger value="api" class="px-3 h-8 text-xs gap-1.5 font-medium transition-all flex-1 sm:flex-none">
+            <Code class="w-3.5 h-3.5 opacity-70" />
+            <span>脚本</span>
+          </TabsTrigger>
         </TabsList>
       </div>
 

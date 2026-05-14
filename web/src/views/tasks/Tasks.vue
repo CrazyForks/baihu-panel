@@ -7,7 +7,7 @@ import Pagination from '@/components/Pagination.vue'
 import TaskDialog from './TaskDialog.vue'
 import RepoDialog from './RepoDialog.vue'
 import LogViewer from '@/views/history/LogViewer.vue'
-import { Plus, Play, Pencil, Trash2, Search, ScrollText, GitBranch, Terminal, Server, Monitor, X, Loader2, RefreshCw, Wifi, WifiOff, Zap, ZapOff, Copy, Tag, ChevronDown, Pin, PinOff, MoreHorizontal } from 'lucide-vue-next'
+import { Plus, Play, Pencil, Trash2, Search, ScrollText, GitBranch, Terminal, Server, Monitor, X, Loader2, RefreshCw, Wifi, WifiOff, Zap, ZapOff, Copy, Tag, ChevronDown, Pin, PinOff, MoreHorizontal, CalendarClock } from 'lucide-vue-next'
 import TagInput from '@/components/TagInput.vue'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -594,9 +594,15 @@ watch(() => route.query.agent_id, (newVal: any) => {
 
             <!-- 桌面端类型切换 -->
             <Tabs :model-value="filterType" @update:model-value="(v: string | number) => { filterType = String(v); handleTypeChange() }" class="shrink-0 hidden xl:block">
-            <TabsList class="h-9 p-1 bg-muted/30 border">
-                  <TabsTrigger :value="TASK_TYPE.NORMAL" class="px-4 h-7 text-sm">定时任务</TabsTrigger>
-                  <TabsTrigger :value="TASK_TYPE.REPO" class="px-4 h-7 text-sm">仓库同步</TabsTrigger>
+               <TabsList class="h-9 p-0.5 bg-muted/20 border border-border/40 rounded-lg">
+                  <TabsTrigger :value="TASK_TYPE.NORMAL" class="px-3 h-8 text-xs gap-1.5 font-medium transition-all">
+                     <CalendarClock class="w-3.5 h-3.5 opacity-70" />
+                     <span>任务</span>
+                  </TabsTrigger>
+                  <TabsTrigger :value="TASK_TYPE.REPO" class="px-3 h-8 text-xs gap-1.5 font-medium transition-all">
+                     <GitBranch class="w-3.5 h-3.5 opacity-70" />
+                     <span>仓库</span>
+                  </TabsTrigger>
                </TabsList>
             </Tabs>
           </div>

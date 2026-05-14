@@ -279,10 +279,14 @@ onUnmounted(() => {
           </Button>
         </div>
 
-        <TabsList class="h-9 p-1 bg-muted/30 border w-full sm:w-auto">
-          <TabsTrigger value="agents" class="px-4 h-7 text-sm flex-1 sm:flex-none">Agent 列表</TabsTrigger>
-          <TabsTrigger value="regcodes" class="px-4 h-7 text-sm flex-1 sm:flex-none">
-            <Ticket class="h-3.5 w-3.5 mr-1.5" />令牌
+        <TabsList class="h-9 p-0.5 bg-muted/20 border border-border/40 rounded-lg w-full sm:w-auto">
+          <TabsTrigger value="agents" class="px-3 h-8 text-xs gap-1.5 font-medium transition-all flex-1 sm:flex-none">
+            <Server class="w-3.5 h-3.5 opacity-70" />
+            <span>列表</span>
+          </TabsTrigger>
+          <TabsTrigger value="regcodes" class="px-3 h-8 text-xs gap-1.5 font-medium transition-all flex-1 sm:flex-none">
+            <Ticket class="w-3.5 h-3.5 opacity-70" />
+            <span>令牌</span>
           </TabsTrigger>
         </TabsList>
       </div>

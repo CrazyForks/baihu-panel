@@ -10,7 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import {
     Plus, Globe, Search, RefreshCw, Loader2, Trash2,
     Terminal as TerminalIcon, X, AlertCircle,
-    Check, ChevronsUpDown, ArrowRight
+    Check, ChevronsUpDown, ArrowRight, Boxes, Zap
 } from 'lucide-vue-next'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { api, type MiseLanguage } from '@/api'
@@ -351,9 +351,15 @@ onMounted(() => {
                     <Plus class="h-3.5 w-3.5 sm:mr-2" /> <span class="whitespace-nowrap">新增语言</span>
                 </Button>
                 <Tabs v-model="activeTab" class="flex-1 sm:w-auto">
-                    <TabsList class="grid w-full sm:w-60 grid-cols-2 h-9">
-                        <TabsTrigger value="runtimes" class="text-sm px-1 sm:px-3">安装列表</TabsTrigger>
-                        <TabsTrigger value="envs" class="text-sm px-1 sm:px-3">镜像加速</TabsTrigger>
+                    <TabsList class="h-9 p-0.5 bg-muted/20 border border-border/40 rounded-lg w-full sm:w-auto flex">
+                        <TabsTrigger value="runtimes" class="px-3 h-8 text-xs gap-1.5 font-medium transition-all flex-1 sm:flex-none">
+                            <Boxes class="w-3.5 h-3.5 opacity-70" />
+                            <span>运行时</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="envs" class="px-3 h-8 text-xs gap-1.5 font-medium transition-all flex-1 sm:flex-none">
+                            <Zap class="w-3.5 h-3.5 opacity-70" />
+                            <span>加速</span>
+                        </TabsTrigger>
                     </TabsList>
                 </Tabs>
             </div>

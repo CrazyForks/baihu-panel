@@ -4,7 +4,7 @@ import { ref, watch } from 'vue'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Search, RefreshCw, Trash2 } from 'lucide-vue-next'
+import { Search, RefreshCw, Trash2, Terminal, Cpu, Send, KeyRound } from 'lucide-vue-next'
 import LoginLogTab from './tabs/LoginLogTab.vue'
 import SystemEventTab from './tabs/SystemEventTab.vue'
 import PushLogTab from './tabs/PushLogTab.vue'
@@ -157,11 +157,23 @@ watch(activeTab, () => {
 
           <!-- 桌面端标签切换 -->
           <Tabs v-model="activeTab" class="w-auto">
-            <TabsList class="h-9 p-1 bg-muted/30 border shrink-0 hidden lg:flex">
-              <TabsTrigger value="system" class="px-4 h-7 text-sm">系统事件</TabsTrigger>
-              <TabsTrigger value="scheduler" class="px-4 h-7 text-sm">调度日志</TabsTrigger>
-              <TabsTrigger value="push" class="px-4 h-7 text-sm">推送日志</TabsTrigger>
-              <TabsTrigger value="login" class="px-4 h-7 text-sm">登录日志</TabsTrigger>
+            <TabsList class="h-9 p-0.5 bg-muted/20 border border-border/40 shrink-0 hidden lg:flex rounded-lg">
+              <TabsTrigger value="system" class="px-3 h-8 text-xs gap-1.5 font-medium transition-all">
+                <Terminal class="w-3.5 h-3.5 opacity-70" />
+                <span>系统</span>
+              </TabsTrigger>
+              <TabsTrigger value="scheduler" class="px-3 h-8 text-xs gap-1.5 font-medium transition-all">
+                <Cpu class="w-3.5 h-3.5 opacity-70" />
+                <span>调度</span>
+              </TabsTrigger>
+              <TabsTrigger value="push" class="px-3 h-8 text-xs gap-1.5 font-medium transition-all">
+                <Send class="w-3.5 h-3.5 opacity-70" />
+                <span>推送</span>
+              </TabsTrigger>
+              <TabsTrigger value="login" class="px-3 h-8 text-xs gap-1.5 font-medium transition-all">
+                <KeyRound class="w-3.5 h-3.5 opacity-70" />
+                <span>登录</span>
+              </TabsTrigger>
             </TabsList>
           </Tabs>
 

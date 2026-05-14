@@ -284,10 +284,14 @@ onBeforeUnmount(() => {
           </Button>
         </div>
 
-        <TabsList class="h-9 p-1 bg-muted/30 border w-full sm:w-auto">
-          <TabsTrigger value="normal" class="px-4 h-7 text-sm flex-1 sm:flex-none">环境变量</TabsTrigger>
-          <TabsTrigger value="secret" class="px-4 h-7 text-sm flex-1 sm:flex-none">
-            <Shield class="h-3.5 w-3.5 mr-1.5" />机密
+        <TabsList class="h-9 p-0.5 bg-muted/20 border border-border/40 rounded-lg w-full sm:w-auto">
+          <TabsTrigger value="normal" class="px-3 h-8 text-xs gap-1.5 font-medium transition-all flex-1 sm:flex-none">
+            <Terminal class="w-3.5 h-3.5 opacity-70" />
+            <span>变量</span>
+          </TabsTrigger>
+          <TabsTrigger value="secret" class="px-3 h-8 text-xs gap-1.5 font-medium transition-all flex-1 sm:flex-none">
+            <Shield class="w-3.5 h-3.5 opacity-70" />
+            <span>机密</span>
           </TabsTrigger>
         </TabsList>
       </div>
