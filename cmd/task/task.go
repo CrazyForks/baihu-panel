@@ -1,14 +1,12 @@
 package task
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
-	"regexp"
 	"strings"
 
-	"github.com/engigu/baihu-panel/internal/bootstrap"
+	"github.com/engigu/baihu-panel/cmd/clibase"
 	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/database"
 	"github.com/engigu/baihu-panel/internal/models"
@@ -65,23 +63,14 @@ func runList(args []string) {
 	sizePtr := fs.Int("size", 20, "每页展示条数")
 
 	fs.Usage = func() {
-		fmt.Fprintf(os.Stderr, "\n白虎面板任务列表查询工具\n\n")
-		fmt.Fprintf(os.Stderr, "用法:\n")
-		fmt.Fprintf(os.Stderr, "  baihu task list [参数]\n\n")
-		fmt.Fprintf(os.Stderr, "参数说明:\n")
-		fs.PrintDefaults()
-		fmt.Fprintf(os.Stderr, "\n示例:\n")
-		fmt.Fprintf(os.Stderr, "  baihu task list\n")
-		fmt.Fprintf(os.Stderr, "  baihu task list -page 2 -size 10\n")
-		fmt.Fprintf(os.Stderr, "  baihu task list -name \"签到\"\n\n")
+		clibase.PrintSubCommandUsage("白虎面板任务列表查询工具", "baihu task list [参数]", "  baihu task list\n  baihu task list -page 2 -size 10\n  baihu task list -name \"签到\"", fs)
 	}
 
 	if err := fs.Parse(args); err != nil {
 		return
 	}
 
-	// 基础环境初始化
-	bootstrap.InitBasicForCmd()
+	clibase.InitContext(false)
 
 	var total int64
 	query := database.DB.Model(&models.Task{})
@@ -132,11 +121,7 @@ func runList(args []string) {
 func runExecute(args []string) {
 	fs := flag.NewFlagSet("run", flag.ExitOnError)
 	fs.Usage = func() {
-		fmt.Fprintf(os.Stderr, "\n白虎面板手动任务触发工具\n\n")
-		fmt.Fprintf(os.Stderr, "用法:\n")
-		fmt.Fprintf(os.Stderr, "  baihu task run <任务ID>\n\n")
-		fmt.Fprintf(os.Stderr, "示例:\n")
-		fmt.Fprintf(os.Stderr, "  baihu task run a1b2c3d4\n\n")
+		clibase.PrintSubCommandUsage("白虎面板手动任务触发工具", "baihu task run <任务ID>", "  baihu task run a1b2c3d4", nil)
 	}
 
 	if err := fs.Parse(args); err != nil {
@@ -151,35 +136,16 @@ func runExecute(args []string) {
 	}
 	taskID := parsedArgs[0]
 
-	bootstrap.InitBasicForCmd()
+	clibase.InitContext(false)
 
-	bodyBytes, statusCode, err := bootstrap.SendInternalRequest("POST", "/internal/tasks/execute/"+taskID, map[string]interface{}{})
+	_, err := clibase.CallInternalAPI("POST", "/internal/tasks/execute/"+taskID, map[string]interface{}{})
 	if err != nil {
-		fmt.Printf(">> 触发请求失败: %v\n", err)
+		fmt.Printf(">> 任务触发失败: %v\n", err)
 		return
 	}
 
-	if statusCode == 200 {
-		var res struct {
-			Data struct {
-				Success bool   `json:"success"`
-				Error   string `json:"error"`
-			} `json:"data"`
-		}
-		_ = json.Unmarshal(bodyBytes, &res)
-		if res.Data.Success {
-			fmt.Printf(">> 任务 [%s] 触发指令下发成功！已进入后台调度队列排队或执行。\n", taskID)
-			fmt.Printf(">> 提示: 可以使用 'baihu task status %s' 查看近期执行输出。\n", taskID)
-		} else {
-			errReason := res.Data.Error
-			if errReason == "" {
-				errReason = "未知调度拒绝原因 (原始返回: " + strings.TrimSpace(string(bodyBytes)) + ")"
-			}
-			fmt.Printf(">> 任务触发被拒绝，原因: %s\n", errReason)
-		}
-	} else {
-		fmt.Printf(">> 触发失败，后台返回状态码: %d\n响应内容: %s\n", statusCode, string(bodyBytes))
-	}
+	fmt.Printf(">> 任务 [%s] 触发指令下发成功！已进入后台调度队列排队或执行。\n", taskID)
+	fmt.Printf(">> 提示: 可以使用 'baihu task status %s' 查看近期执行输出。\n", taskID)
 }
 
 func runToggle(action string, args []string) {
@@ -192,11 +158,7 @@ func runToggle(action string, args []string) {
 	}
 
 	fs.Usage = func() {
-		fmt.Fprintf(os.Stderr, "\n白虎面板任务%s工具\n\n", actionName)
-		fmt.Fprintf(os.Stderr, "用法:\n")
-		fmt.Fprintf(os.Stderr, "  baihu task %s <任务ID>\n\n", action)
-		fmt.Fprintf(os.Stderr, "示例:\n")
-		fmt.Fprintf(os.Stderr, "  baihu task %s a1b2c3d4\n\n", action)
+		clibase.PrintSubCommandUsage(fmt.Sprintf("白虎面板任务%s工具", actionName), fmt.Sprintf("baihu task %s <任务ID>", action), fmt.Sprintf("  baihu task %s a1b2c3d4", action), nil)
 	}
 
 	if err := fs.Parse(args); err != nil {
@@ -211,36 +173,23 @@ func runToggle(action string, args []string) {
 	}
 	taskID := parsedArgs[0]
 
-	bootstrap.InitBasicForCmd()
+	clibase.InitContext(false)
 
-	bodyBytes, statusCode, err := bootstrap.SendInternalRequest("POST", "/internal/tasks/toggle/"+taskID, map[string]interface{}{
+	_, err := clibase.CallInternalAPI("POST", "/internal/tasks/toggle/"+taskID, map[string]interface{}{
 		"enabled": targetEnabled,
 	})
 	if err != nil {
-		fmt.Printf(">> 切换状态请求失败: %v\n", err)
+		fmt.Printf(">> 切换状态操作失败: %v\n", err)
 		return
 	}
 
-	if statusCode == 200 {
-		fmt.Printf(">> 任务 [%s] 已成功%s！\n", taskID, actionName)
-	} else {
-		fmt.Printf(">> 操作失败，后台返回状态码: %d\n响应内容: %s\n", statusCode, string(bodyBytes))
-	}
+	fmt.Printf(">> 任务 [%s] 已成功%s！\n", taskID, actionName)
 }
-
-var ansiRegex = regexp.MustCompile("\x1b\\[[0-9;]*[a-zA-Z]")
 
 func runStatus(args []string) {
 	fs := flag.NewFlagSet("status", flag.ExitOnError)
 	fs.Usage = func() {
-		fmt.Fprintf(os.Stderr, "\n白虎面板任务执行状态与日志查看工具\n\n")
-		fmt.Fprintf(os.Stderr, "用法:\n")
-		fmt.Fprintf(os.Stderr, "  baihu task status <任务ID> [日志ID]\n\n")
-		fmt.Fprintf(os.Stderr, "说明:\n")
-		fmt.Fprintf(os.Stderr, "  默认查看该任务最新的一条日志记录。若指定了具体的日志ID，则查看特定历史日志的内容。\n\n")
-		fmt.Fprintf(os.Stderr, "示例:\n")
-		fmt.Fprintf(os.Stderr, "  baihu task status a1b2c3d4\n")
-		fmt.Fprintf(os.Stderr, "  baihu task status a1b2c3d4 log_123456\n\n")
+		clibase.PrintSubCommandUsage("白虎面板任务执行状态与日志查看工具", "baihu task status <任务ID> [日志ID]", "  baihu task status a1b2c3d4\n  baihu task status a1b2c3d4 log_123456", nil)
 	}
 
 	if err := fs.Parse(args); err != nil {
@@ -259,7 +208,7 @@ func runStatus(args []string) {
 		specificLogID = parsedArgs[1]
 	}
 
-	bootstrap.InitBasicForCmd()
+	clibase.InitContext(false)
 
 	var taskLog models.TaskLog
 	query := database.DB.Where("task_id = ?", taskID)
@@ -313,7 +262,7 @@ func runStatus(args []string) {
 	} else {
 		// 清理多余回车和终端 ANSI 转义字符
 		cleanText := strings.ReplaceAll(decompressed, "\r\n", "\n")
-		cleanText = ansiRegex.ReplaceAllString(cleanText, "")
+		cleanText = clibase.AnsiRegex.ReplaceAllString(cleanText, "")
 		fmt.Println(strings.TrimSpace(cleanText))
 	}
 
@@ -329,14 +278,7 @@ func runHistory(args []string) {
 	limitPtr := fs.Int("limit", 10, "展示的最近历史记录条数")
 
 	fs.Usage = func() {
-		fmt.Fprintf(os.Stderr, "\n白虎面板任务执行历史查看工具\n\n")
-		fmt.Fprintf(os.Stderr, "用法:\n")
-		fmt.Fprintf(os.Stderr, "  baihu task history <任务ID> [参数]\n\n")
-		fmt.Fprintf(os.Stderr, "参数说明:\n")
-		fs.PrintDefaults()
-		fmt.Fprintf(os.Stderr, "\n示例:\n")
-		fmt.Fprintf(os.Stderr, "  baihu task history a1b2c3d4\n")
-		fmt.Fprintf(os.Stderr, "  baihu task history a1b2c3d4 -limit 20\n\n")
+		clibase.PrintSubCommandUsage("白虎面板任务执行历史查看工具", "baihu task history <任务ID> [参数]", "  baihu task history a1b2c3d4\n  baihu task history a1b2c3d4 -limit 20", fs)
 	}
 
 	if err := fs.Parse(args); err != nil {
@@ -351,7 +293,7 @@ func runHistory(args []string) {
 	}
 	taskID := parsedArgs[0]
 
-	bootstrap.InitBasicForCmd()
+	clibase.InitContext(false)
 
 	var task models.Task
 	database.DB.Where("id = ?", taskID).Limit(1).Find(&task)

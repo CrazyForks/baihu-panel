@@ -2,22 +2,18 @@ package builtininstall
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 
+	"github.com/engigu/baihu-panel/cmd/clibase"
 	"github.com/engigu/baihu-panel/internal/logger"
 	"github.com/engigu/baihu-panel/internal/utils"
 )
 
 func printHelp() {
-	fmt.Fprintf(os.Stderr, "\n白虎面板内建依赖安装工具\n\n")
-	fmt.Fprintf(os.Stderr, "用法:\n")
-	fmt.Fprintf(os.Stderr, "  baihu builtininstall\n\n")
-	fmt.Fprintf(os.Stderr, "说明:\n")
-	fmt.Fprintf(os.Stderr, "  此命令将为系统中已安装的 Node.js 和 Python 环境安装白虎面板所需的内建依赖包。\n\n")
+	clibase.PrintSubCommandUsage("白虎面板内建依赖安装工具", "baihu builtininstall", "", nil)
 }
 
 // Run 执行内建包安装逻辑

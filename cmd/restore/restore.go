@@ -6,16 +6,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/engigu/baihu-panel/internal/bootstrap"
+	"github.com/engigu/baihu-panel/cmd/clibase"
 	"github.com/engigu/baihu-panel/internal/services"
 )
 
 func printHelp() {
-	fmt.Fprintf(os.Stderr, "\n白虎面板系统数据恢复工具\n\n")
-	fmt.Fprintf(os.Stderr, "用法:\n")
-	fmt.Fprintf(os.Stderr, "  baihu restore <备份文件.zip>\n\n")
-	fmt.Fprintf(os.Stderr, "示例:\n")
-	fmt.Fprintf(os.Stderr, "  baihu restore backup_20231027.zip\n\n")
+	clibase.PrintSubCommandUsage("白虎面板系统数据恢复工具", "baihu restore <备份文件.zip>", "  baihu restore backup_20231027.zip", nil)
 }
 
 func Run(args []string) {
@@ -51,7 +47,7 @@ func Run(args []string) {
 	}
 
 	// 必须初始化环境与数据库才能恢复数据
-	bootstrap.InitBasicForCmd()
+	clibase.InitContext(false)
 
 	backupService := services.NewBackupService()
 	fmt.Printf("正在从 '%s' 恢复系统数据，请勿强制中断...\n", absPath)

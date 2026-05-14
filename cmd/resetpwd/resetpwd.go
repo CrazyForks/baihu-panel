@@ -7,17 +7,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/engigu/baihu-panel/internal/bootstrap"
+	"github.com/engigu/baihu-panel/cmd/clibase"
 	"github.com/engigu/baihu-panel/internal/services"
 	"github.com/engigu/baihu-panel/internal/utils"
 )
 
 func printHelp() {
-	fmt.Fprintf(os.Stderr, "\n白虎面板用户密码重置工具\n\n")
-	fmt.Fprintf(os.Stderr, "用法:\n")
-	fmt.Fprintf(os.Stderr, "  baihu resetpwd [用户名]\n\n")
-	fmt.Fprintf(os.Stderr, "示例:\n")
-	fmt.Fprintf(os.Stderr, "  baihu resetpwd admin\n\n")
+	clibase.PrintSubCommandUsage("白虎面板用户密码重置工具", "baihu resetpwd [用户名]", "  baihu resetpwd admin", nil)
 }
 
 func Run(args []string) {
@@ -33,11 +29,8 @@ func Run(args []string) {
 		return
 	}
 
-	// 基础环境初始化
-	bootstrap.InitBasicForCmd()
-	settingsService := services.NewSettingsService()
-	if err := settingsService.InitSettings(); err != nil {
-		fmt.Printf("初始化系统设置失败: %v\n", err)
+	if err := clibase.InitContext(true); err != nil {
+		fmt.Println(err)
 		return
 	}
 	userService := services.NewUserService()
@@ -71,9 +64,7 @@ func Run(args []string) {
 	user := userService.GetUserByUsername(username)
 	if user == nil {
 		fmt.Printf("找不到用户 [%s]\n", username)
-		fmt.Println(">> 提示: 程序当前可能连接到了默认的空 SQLite 数据库。")
-		fmt.Println(">> 若您的生产环境使用的是 MySQL 或指定路径配置，请在执行命令时携带配置文件路径环境变量，例如:")
-		fmt.Println(">> BH_CONFIG_PATH=/app/data/config.ini baihu resetpwd " + username)
+		clibase.PrintDBConfigHint("resetpwd " + username)
 		return
 	}
 

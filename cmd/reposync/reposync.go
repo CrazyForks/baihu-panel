@@ -1,7 +1,6 @@
 package reposync
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -13,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/engigu/baihu-panel/internal/bootstrap"
+	"github.com/engigu/baihu-panel/cmd/clibase"
 	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/services/repo"
 	"github.com/engigu/baihu-panel/internal/utils"
@@ -170,20 +169,16 @@ func getActualRepoDir(cfg Config) string {
 }
 
 func notifyMainServerToSyncRepoTasks(repoID string, upsertedIDs []string, deletedIDs []string) {
-	_, statusCode, err := bootstrap.SendInternalRequest("POST", "/internal/tasks/sync-repo-status", map[string]interface{}{
+	_, err := clibase.CallInternalAPI("POST", "/internal/tasks/sync-repo-status", map[string]interface{}{
 		"repo_id":      repoID,
 		"upserted_ids": upsertedIDs,
 		"deleted_ids":  deletedIDs,
 	})
 	if err != nil {
-		fmt.Printf(">> [通知] 无法连接到主程序进行增量刷新: %v\n", err)
+		fmt.Printf(">> [通知] 调度器同步失败: %v\n", err)
 		return
 	}
-	if statusCode == 200 {
-		fmt.Println(">> [通知] 已成功将变动任务增量同步至主程序调度器")
-	} else {
-		fmt.Printf(">> [通知] 调度器刷新异常，主程序响应状态码: %d\n", statusCode)
-	}
+	fmt.Println(">> [通知] 已成功将变动任务增量同步至主程序调度器")
 }
 
 func syncGit(cfg Config) {
@@ -443,68 +438,13 @@ func isRawFileURL(url string) bool {
 	return false
 }
 
-var ansiRegex = regexp.MustCompile("\x1b\\[[0-9;]*[a-zA-Z]")
-
-type cleanWriter struct {
-	out io.Writer
-	buf []byte
-}
-
-func (c *cleanWriter) Write(p []byte) (n int, err error) {
-	c.buf = append(c.buf, p...)
-
-	for {
-		idx := bytes.IndexAny(c.buf, "\r\n")
-		if idx == -1 {
-			break
-		}
-
-		if c.buf[idx] == '\r' && idx == len(c.buf)-1 {
-			// Ends with \r across a chunk, wait for next.
-			break
-		}
-
-		char := c.buf[idx]
-		line := string(c.buf[:idx])
-		c.buf = c.buf[idx+1:]
-
-		if char == '\r' && len(c.buf) > 0 && c.buf[0] == '\n' {
-			c.buf = c.buf[1:]
-			char = '\n'
-		}
-
-		s := ansiRegex.ReplaceAllString(line, "")
-
-		if char == '\r' {
-			continue // filter out terminal progress overwrites
-		}
-
-		if s != "" {
-			c.out.Write([]byte(s + "\n"))
-		}
-	}
-	return len(p), nil
-}
-
-func (c *cleanWriter) Flush() {
-	if len(c.buf) > 0 {
-		s := string(c.buf)
-		s = strings.TrimSuffix(s, "\r")
-		s = ansiRegex.ReplaceAllString(s, "")
-		if s != "" {
-			c.out.Write([]byte(s + "\n"))
-		}
-		c.buf = nil
-	}
-}
-
 func runCmd(args []string, dir string, env []string) {
 	fmt.Printf(">> %s\n", strings.Join(args, " "))
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = dir
 	cmd.Env = env
 
-	cw := &cleanWriter{out: os.Stdout}
+	cw := clibase.NewCleanWriter(os.Stdout)
 	cmd.Stdout = cw
 	cmd.Stderr = cw
 
