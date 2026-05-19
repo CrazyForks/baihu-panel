@@ -152,6 +152,7 @@ type Agent struct {
 	wsStopCh      chan struct{}       // 用于停止当前 WebSocket 相关的 goroutine
 	taskLogs      map[string][]string // 记录最近的日志行，用于失败显示
 	logMu         sync.Mutex          // taskLogs 的锁
+	schedulerStarted bool                // 调度器是否已经启动
 }
 
 func NewAgent(config *Config, configFile string) *Agent {
@@ -267,9 +268,7 @@ func (a *Agent) Start() error {
 	}
 
 	logger.Infof("机器识别码: %s", a.machineID[:16]+"...")
-	a.scheduler.Start()
-	a.cronManager.Start()
-
+	// 调度器暂不在此启动，等待 WebSocket 连接成功并获取到调度配置后再启动
 	go a.wsLoop()
 
 	logger.Info("Agent 已启动 (时区: Asia/Shanghai, 模式: WebSocket)")
@@ -279,8 +278,16 @@ func (a *Agent) Start() error {
 func (a *Agent) Stop() {
 	close(a.stopCh)
 	a.closeWS()
-	a.cronManager.Stop()
-	a.scheduler.Stop()
+
+	a.mu.Lock()
+	started := a.schedulerStarted
+	a.schedulerStarted = false
+	a.mu.Unlock()
+
+	if started {
+		a.cronManager.Stop()
+		a.scheduler.Stop()
+	}
 	logger.Info("Agent 已停止")
 }
 
@@ -460,16 +467,30 @@ func (a *Agent) updateSchedulerConfig(config map[string]interface{}) {
 			newCfg.RateInterval = time.Duration(v) * time.Millisecond
 		}
 	}
+	if val, ok := config["strict_queue"]; ok {
+		if v, ok := val.(bool); ok {
+			newCfg.StrictQueue = v
+		}
+	}
 
-	// 只有当配置发生变化时才重新加载
-	// 只有当配置发生变化时才重新加载
-	if newCfg != currentCfg {
-		logger.Infof("收到调度配置更新: workers=%d, queue=%d, rate=%v",
-			newCfg.WorkerCount, newCfg.QueueSize, newCfg.RateInterval)
+	a.mu.Lock()
+	started := a.schedulerStarted
+	a.schedulerStarted = true
+	a.mu.Unlock()
+
+	if !started {
+		logger.Infof("首次连接成功，启动调度器配置: workers=%d, queue=%d, rate=%v, strict=%t",
+			newCfg.WorkerCount, newCfg.QueueSize, newCfg.RateInterval, newCfg.StrictQueue)
+		// 用下发的最新配置加载并启动调度器与计划任务管理器
+		a.scheduler.Reload(newCfg)
+		a.cronManager.Start()
+	} else if newCfg != currentCfg {
+		logger.Infof("收到调度配置更新: workers=%d, queue=%d, rate=%v, strict=%t",
+			newCfg.WorkerCount, newCfg.QueueSize, newCfg.RateInterval, newCfg.StrictQueue)
 		a.scheduler.Reload(newCfg)
 	} else {
-		logger.Infof("当前调度配置: workers=%d, queue=%d, rate=%v",
-			newCfg.WorkerCount, newCfg.QueueSize, newCfg.RateInterval)
+		logger.Infof("当前调度配置未改变: workers=%d, queue=%d, rate=%v, strict=%t",
+			newCfg.WorkerCount, newCfg.QueueSize, newCfg.RateInterval, newCfg.StrictQueue)
 	}
 }
 

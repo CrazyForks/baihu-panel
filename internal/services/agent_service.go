@@ -203,11 +203,12 @@ func (s *AgentService) Register(req *models.AgentRegisterRequest, ip string) (*m
 }
 
 // Update 更新 Agent
-func (s *AgentService) Update(id string, name, description string, enabled bool) error {
+func (s *AgentService) Update(id string, name, description string, enabled bool, schedulerConfig models.AgentSchedulerConfig) error {
 	return database.DB.Model(&models.Agent{}).Where("id = ?", id).Updates(map[string]interface{}{
-		"name":        name,
-		"description": description,
-		"enabled":     &enabled,
+		"name":             name,
+		"description":      description,
+		"enabled":          &enabled,
+		"scheduler_config": schedulerConfig,
 	}).Error
 }
 

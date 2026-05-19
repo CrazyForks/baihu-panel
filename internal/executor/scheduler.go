@@ -37,6 +37,7 @@ type SchedulerConfig struct {
 	QueueSize    int           // 队列大小
 	RateInterval time.Duration // 速率限制间隔
 	Verbose      bool          // 是否开启详细日志
+	StrictQueue  bool          // 是否开启严格排队（满时拒绝执行，不降级直接执行）
 }
 
 // TaskType 任务类型
@@ -281,9 +282,16 @@ func (s *Scheduler) EnqueueOrExecute(req *ExecutionRequest) {
 			s.handler.OnTaskScheduled(req)
 		}
 	default:
-		// 队列满，直接执行（降级处理）
-		s.logger.Warnf("[Scheduler] 任务队列已满，直接执行任务 %s", req.TaskID)
-		go s.executeTask(req)
+		if s.config.StrictQueue {
+			s.logger.Errorf("[Scheduler] 任务队列已满，拒绝执行任务 %s", req.TaskID)
+			if s.handler != nil {
+				s.handler.OnTaskFailed(req, fmt.Errorf("任务队列已满，拒绝执行"))
+			}
+		} else {
+			// 队列满，直接执行（降级处理）
+			s.logger.Warnf("[Scheduler] 任务队列已满，直接执行任务 %s", req.TaskID)
+			go s.executeTask(req)
+		}
 	}
 }
 
@@ -592,8 +600,8 @@ func (s *Scheduler) Reload(config SchedulerConfig) {
 	// 重启 workers
 	s.Start()
 
-	s.logger.Infof("[Scheduler] 配置已重载: workers=%d, queue=%d, rate=%v",
-		config.WorkerCount, config.QueueSize, config.RateInterval)
+	s.logger.Infof("[Scheduler] 配置已重载: workers=%d, queue=%d, rate=%v, strict=%t",
+		config.WorkerCount, config.QueueSize, config.RateInterval, config.StrictQueue)
 }
 
 // GetQueueSize 获取当前队列大小

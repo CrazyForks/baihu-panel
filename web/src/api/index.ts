@@ -279,7 +279,7 @@ export const api = {
   agents: {
     list: () => request<Agent[]>('/agents'),
     getVersion: () => request<{ version: string; platforms: { os: string; arch: string; filename: string }[] }>('/agents/version'),
-    update: (id: string, data: { name: string; description?: string; enabled: boolean }) =>
+    update: (id: string, data: { name: string; description?: string; enabled: boolean; scheduler_config: SchedulerConfig | null }) =>
       request('/agents/' + id, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: string) => request('/agents/' + id, { method: 'DELETE' }),
     forceUpdate: (id: string) => request('/agents/' + id + '/update', { method: 'POST' }),
@@ -582,8 +582,17 @@ export interface Agent {
   os: string
   arch: string
   enabled: boolean
+  scheduler_config: SchedulerConfig | null
   created_at: string
   updated_at: string
+}
+
+export interface SchedulerConfig {
+  worker_count: number
+  queue_size: number
+  rate_interval: number
+  verbose: boolean
+  strict_queue: boolean
 }
 
 export interface AgentToken {

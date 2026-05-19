@@ -937,7 +937,17 @@ func (es *ExecutorService) CheckConcurrency(taskID string) error {
 	}
 
 	if config.Concurrency == 0 && len(goids) > 0 {
-		return fmt.Errorf("任务正在运行中，拒绝并行执行，请前往日志查看")
+		// 检查目标 Agent 是否开启了排队机制
+		var isAgentQueueing bool
+		if task.AgentID != nil && *task.AgentID != "" {
+			var agent models.Agent
+			if err := database.DB.Select("scheduler_config").Where("id = ?", *task.AgentID).First(&agent).Error; err == nil {
+				isAgentQueueing = agent.SchedulerConfig.StrictQueue
+			}
+		}
+		if !isAgentQueueing {
+			return fmt.Errorf("任务正在运行中，拒绝并行执行，请前往日志查看")
+		}
 	}
 	return nil
 }
@@ -969,7 +979,17 @@ func (es *ExecutorService) AddRunningGo(taskID string) (int64, error) {
 
 			// 如果并发为0(禁用)且已有执行中的任务，返回错误
 			if config.Concurrency == 0 && len(goids) > 0 {
-				return fmt.Errorf("task is running")
+				// 检查目标 Agent 是否开启了排队机制
+				var isAgentQueueing bool
+				if task.AgentID != nil && *task.AgentID != "" {
+					var agent models.Agent
+					if err := tx.Select("scheduler_config").Where("id = ?", *task.AgentID).First(&agent).Error; err == nil {
+						isAgentQueueing = agent.SchedulerConfig.StrictQueue
+					}
+				}
+				if !isAgentQueueing {
+					return fmt.Errorf("task is running")
+				}
 			}
 
 			goids = append(goids, goid)

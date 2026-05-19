@@ -1,6 +1,8 @@
 package vo
 
 import (
+	"time"
+
 	"github.com/engigu/baihu-panel/internal/models"
 	"github.com/engigu/baihu-panel/internal/utils"
 )
@@ -18,10 +20,11 @@ type AgentVO struct {
 	Hostname    string            `json:"hostname"`
 	OS          string            `json:"os"`
 	Arch        string            `json:"arch"`
-	ForceUpdate bool              `json:"force_update"`
-	Enabled     bool              `json:"enabled"`
-	CreatedAt   models.LocalTime  `json:"created_at"`
-	UpdatedAt   models.LocalTime  `json:"updated_at"`
+	ForceUpdate     bool                    `json:"force_update"`
+	Enabled         bool                    `json:"enabled"`
+	SchedulerConfig *AgentSchedulerConfigVO `json:"scheduler_config"`
+	CreatedAt       models.LocalTime        `json:"created_at"`
+	UpdatedAt       models.LocalTime        `json:"updated_at"`
 	// 隐藏 Token 和 MachineID
 }
 
@@ -29,6 +32,16 @@ type AgentVO struct {
 func ToAgentVO(agent *models.Agent) *AgentVO {
 	if agent == nil {
 		return nil
+	}
+	var schedulerConfigVO *AgentSchedulerConfigVO
+	if agent.SchedulerConfig.WorkerCount > 0 {
+		schedulerConfigVO = &AgentSchedulerConfigVO{
+			WorkerCount:  agent.SchedulerConfig.WorkerCount,
+			QueueSize:    agent.SchedulerConfig.QueueSize,
+			RateInterval: int(agent.SchedulerConfig.RateInterval / time.Millisecond),
+			Verbose:      agent.SchedulerConfig.Verbose,
+			StrictQueue:  agent.SchedulerConfig.StrictQueue,
+		}
 	}
 	return &AgentVO{
 		ID:          agent.ID,
@@ -42,10 +55,11 @@ func ToAgentVO(agent *models.Agent) *AgentVO {
 		Hostname:    agent.Hostname,
 		OS:          agent.OS,
 		Arch:        agent.Arch,
-		ForceUpdate: agent.ForceUpdate,
-		Enabled:     utils.DerefBool(agent.Enabled, true),
-		CreatedAt:   agent.CreatedAt,
-		UpdatedAt:   agent.UpdatedAt,
+		ForceUpdate:     agent.ForceUpdate,
+		Enabled:         utils.DerefBool(agent.Enabled, true),
+		SchedulerConfig: schedulerConfigVO,
+		CreatedAt:       agent.CreatedAt,
+		UpdatedAt:       agent.UpdatedAt,
 	}
 }
 
@@ -118,4 +132,13 @@ func ToAgentTokenVOListFromModels(tokens []models.AgentToken) []*AgentTokenVO {
 		vos[i] = ToAgentTokenVO(&tokens[i])
 	}
 	return vos
+}
+
+// AgentSchedulerConfigVO 调度配置视图对象
+type AgentSchedulerConfigVO struct {
+	WorkerCount  int  `json:"worker_count"`
+	QueueSize    int  `json:"queue_size"`
+	RateInterval int  `json:"rate_interval"` // 毫秒
+	Verbose      bool `json:"verbose"`
+	StrictQueue  bool `json:"strict_queue"`
 }
