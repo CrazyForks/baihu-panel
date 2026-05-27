@@ -6,7 +6,7 @@ import urllib.error
 def _get_headers():
     token = os.environ.get("BHPKG_OPENAPI_TOKEN") or os.environ.get("OPENAPI_TOKEN") or os.environ.get("BHPKG_NOTIFY_TOKEN")
     if not token:
-        raise RuntimeError("缺少 BHPKG_OPENAPI_TOKEN 或 BHPKG_NOTIFY_TOKEN 环境变量，无法使用任务管理操作")
+        raise RuntimeError("没有正确配置或缺少 BHPKG_OPENAPI_TOKEN 等环境变量，无法使用任务管理操作")
     return {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {token}"
@@ -41,7 +41,11 @@ def _request(url, method="GET", data=None):
             body = resp.read().decode("utf-8")
             if not body:
                 return {}
-            return json.loads(body)
+            parsed = json.loads(body)
+            if isinstance(parsed, dict) and parsed.get("code") is not None and parsed.get("code") != 200:
+                msg = parsed.get("msg") or parsed.get("message") or "未知错误"
+                raise RuntimeError(f"请求失败 [{parsed.get('code')}]: {msg}")
+            return parsed
     except urllib.error.HTTPError as e:
         err_body = e.read().decode("utf-8")
         try:

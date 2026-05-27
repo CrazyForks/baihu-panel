@@ -13,7 +13,7 @@ function notify(title, text, channelId) {
         const missing = [];
         if (!token) missing.push("BHPKG_NOTIFY_TOKEN");
         if (!channel) missing.push("BHPKG_NOTIFY_CHANNEL");
-        throw new Error(`缺少必要的环境变量以使用 notify 函数: ${missing.join(", ")}。请在白虎面板的任务设置中配置这些 Key。`);
+        throw new Error(`没有正确配置或缺少 ${missing.join(" 和 ")} 环境变量以使用 notify 函数。请在白虎面板的任务设置中配置这些 Key。`);
     }
 
     const notifyUrl = process.env.BHPKG_NOTIFY_URL || 'http://localhost:8052/api/v1/notify/send';

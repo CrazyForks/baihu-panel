@@ -8,7 +8,7 @@ const { URL } = require('url');
 function request(urlStr, method = 'GET', data = null) {
     const token = process.env.BHPKG_OPENAPI_TOKEN || process.env.OPENAPI_TOKEN || process.env.BHPKG_NOTIFY_TOKEN;
     if (!token) {
-        throw new Error("缺少 BHPKG_OPENAPI_TOKEN 或 BHPKG_NOTIFY_TOKEN 环境变量，无法使用任务管理操作");
+        throw new Error("没有正确配置或缺少 BHPKG_OPENAPI_TOKEN 等环境变量，无法使用任务管理操作");
     }
 
     const parsedUrl = new URL(urlStr);
@@ -41,7 +41,12 @@ function request(urlStr, method = 'GET', data = null) {
             res.on('end', () => {
                 if (res.statusCode >= 200 && res.statusCode < 300) {
                     try {
-                        resolve(body ? JSON.parse(body) : {});
+                        const parsed = body ? JSON.parse(body) : {};
+                        if (parsed && typeof parsed === 'object' && parsed.code !== undefined && parsed.code !== 200) {
+                            reject(new Error(`请求失败 [${parsed.code}]: ${parsed.msg || parsed.message || '未知错误'}`));
+                        } else {
+                            resolve(parsed);
+                        }
                     } catch (e) {
                         resolve(body);
                     }
