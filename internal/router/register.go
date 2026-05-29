@@ -63,6 +63,7 @@ func RegisterControllers() *Controllers {
 		Notification: controllers.NewNotificationController(),
 		AppLog:       controllers.NewAppLogController(),
 		SystemWS:     controllers.NewSystemWSController(),
+		WebUI:        controllers.NewWebUIController(services.NewWebUIService(settingsService)),
 	}
 }
 

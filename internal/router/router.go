@@ -30,6 +30,7 @@ type Controllers struct {
 	Notification *controllers.NotificationController
 	AppLog       *controllers.AppLogController
 	SystemWS     *controllers.SystemWSController
+	WebUI        *controllers.WebUIController
 }
 
 func Setup(c *Controllers) *gin.Engine {

@@ -52,6 +52,7 @@ export default defineConfig({
                 text: '部署配置',
                 items: [
                     { text: '系统配置', link: '/guide/configuration' },
+                    { text: '前端定制(WebUI)', link: '/guide/webui' },
                     { text: '反向代理', link: '/guide/nginx' }
                 ]
             },

@@ -25,11 +25,37 @@ func cacheControl(value string) gin.HandlerFunc {
 	}
 }
 
-func initStaticRoutes(root *gin.RouterGroup) {
-	staticFS := static.GetFS()
-	if staticFS == nil {
-		return
+func openFileWithWebui(filename string) (fs.File, error) {
+	webuiSvc := services.NewWebUIService(services.NewSettingsService())
+	if customFS := webuiSvc.GetActiveWebUIFS(); customFS != nil {
+		// 如果启用了定义的前端包，去取定义的路径
+		return customFS.Open(filename)
 	}
+
+	// 如果是默认的，取默认路径
+	defaultFS := static.GetFS()
+	if defaultFS == nil {
+		return nil, fs.ErrNotExist
+	}
+	return defaultFS.Open(filename)
+}
+
+func readFileWithWebui(filename string) ([]byte, error) {
+	webuiSvc := services.NewWebUIService(services.NewSettingsService())
+	if customFS := webuiSvc.GetActiveWebUIFS(); customFS != nil {
+		// 如果启用了定义的前端包，去取定义的路径
+		return fs.ReadFile(customFS, filename)
+	}
+
+	// 如果是默认的，取默认路径
+	defaultFS := static.GetFS()
+	if defaultFS == nil {
+		return nil, fs.ErrNotExist
+	}
+	return fs.ReadFile(defaultFS, filename)
+}
+
+func initStaticRoutes(root *gin.RouterGroup) {
 
 	// 专门处理 /assets 目录下的资源
 	root.GET("/assets/*filepath", cacheControl("public, max-age=31536000, immutable"), func(ctx *gin.Context) {
@@ -56,7 +82,7 @@ func initStaticRoutes(root *gin.RouterGroup) {
 		}
 
 		// 优先尝试读取 .gz 文件
-		if gzFile, err := staticFS.Open(gzPath); err == nil {
+		if gzFile, err := openFileWithWebui(gzPath); err == nil {
 			defer gzFile.Close()
 			ctx.Header("Content-Type", contentType)
 
@@ -76,7 +102,7 @@ func initStaticRoutes(root *gin.RouterGroup) {
 		}
 
 		// 如果没有 .gz，流式读取原文件
-		if file, err := staticFS.Open(fullPath); err == nil {
+		if file, err := openFileWithWebui(fullPath); err == nil {
 			defer file.Close()
 			ctx.Header("Content-Type", contentType)
 			ctx.Status(http.StatusOK)
@@ -133,14 +159,9 @@ func initPWARoutes(root *gin.RouterGroup) {
 }
 
 func handleManifest(ctx *gin.Context) {
-	staticFS := static.GetFS()
-	if staticFS == nil {
-		ctx.Status(404)
-		return
-	}
 
 	// 读取原始 manifest
-	data, err := fs.ReadFile(staticFS, "manifest.webmanifest")
+	data, err := readFileWithWebui("manifest.webmanifest")
 	if err != nil {
 		ctx.Status(404)
 		return
@@ -177,11 +198,6 @@ func handleManifest(ctx *gin.Context) {
 }
 
 func serveSingleFile(ctx *gin.Context, filename string, contentType string, cache string) {
-	staticFS := static.GetFS()
-	if staticFS == nil {
-		ctx.Status(404)
-		return
-	}
 
 	if cache != "" {
 		ctx.Header("Cache-Control", cache)
@@ -191,7 +207,7 @@ func serveSingleFile(ctx *gin.Context, filename string, contentType string, cach
 	isGzipSupported := strings.Contains(ctx.GetHeader("Accept-Encoding"), "gzip")
 
 	// 尝试流式发送压缩版
-	if gzFile, err := staticFS.Open(filename + ".gz"); err == nil {
+	if gzFile, err := openFileWithWebui(filename + ".gz"); err == nil {
 		defer gzFile.Close()
 		if isGzipSupported {
 			ctx.Header("Content-Encoding", "gzip")
@@ -207,7 +223,7 @@ func serveSingleFile(ctx *gin.Context, filename string, contentType string, cach
 	}
 
 	// 尝试流式发送原版
-	if file, err := staticFS.Open(filename); err == nil {
+	if file, err := openFileWithWebui(filename); err == nil {
 		defer file.Close()
 		ctx.Status(200)
 		io.Copy(ctx.Writer, file)
@@ -219,20 +235,15 @@ func serveSingleFile(ctx *gin.Context, filename string, contentType string, cach
 
 // serveSPA 注入配置并返回 index.html 给前端渲染
 func serveSPA(ctx *gin.Context, urlPrefix string, status int) {
-	staticFS := static.GetFS()
-	if staticFS == nil {
-		ctx.String(status, "Frontend assets not found.")
-		return
-	}
 
 	var data []byte
 	// index.html 较小且需要修改字符串，可以一次性读入内存
-	if gzFile, err := staticFS.Open("index.html.gz"); err == nil {
+	if gzFile, err := openFileWithWebui("index.html.gz"); err == nil {
 		defer gzFile.Close()
 		gr, _ := gzip.NewReader(gzFile)
 		data, _ = io.ReadAll(gr)
 		gr.Close()
-	} else if file, err := staticFS.Open("index.html"); err == nil {
+	} else if file, err := openFileWithWebui("index.html"); err == nil {
 		defer file.Close()
 		data, _ = io.ReadAll(file)
 	}

@@ -64,6 +64,7 @@ func initAuthorizedAPIRoutes(api *gin.RouterGroup, c *Controllers) {
 			registerNotificationRoutes(adminOnly, c)
 			registerAppLogRoutes(adminOnly, c)
 			registerSystemWSRoutes(adminOnly, c)
+			registerWebUIRoutes(adminOnly, c)
 		}
 	}
 
@@ -274,5 +275,15 @@ func initAgentAPIRoutes(root *gin.RouterGroup, c *Controllers) {
 		agentAPI.POST("/report", c.Agent.ReportResult)
 		agentAPI.GET("/download", c.Agent.Download) // 也在这里注册，兼容 Agent 调用
 		agentAPI.GET("/ws", c.Agent.WSConnect)      // WebSocket 连接
+	}
+}
+
+func registerWebUIRoutes(g *gin.RouterGroup, c *Controllers) {
+	webuiGroup := g.Group("/webui")
+	{
+		webuiGroup.GET("", c.WebUI.GetWebUIs)
+		webuiGroup.POST("/upload", c.WebUI.UploadWebUI)
+		webuiGroup.PUT("/active", c.WebUI.SetActiveWebUI)
+		webuiGroup.DELETE("/:name", c.WebUI.DeleteWebUI)
 	}
 }

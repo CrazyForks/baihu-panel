@@ -30,6 +30,7 @@ const (
 	KeyPageSize     = "page_size"
 	KeyCookieDays   = "cookie_days"
 	KeyOpenapiToken = "openapi_token"
+	KeyActiveWebUI  = "active_webui"
 
 	// Security Settings Key 常量
 	KeySecret = "secret"
@@ -201,11 +202,12 @@ var DefaultIcon = `<svg t="1766107903919" class="icon" viewBox="0 0 1024 1024" v
 // DefaultSettings 默认系统设置
 var DefaultSettings = map[string]map[string]string{
 	SectionSite: {
-		KeyTitle:      "白虎面板",
-		KeySubtitle:   "极致轻量、高性能的自动化任务调度平台",
-		KeyIcon:       DefaultIcon,
-		KeyPageSize:   "10",
-		KeyCookieDays: "7",
+		KeyTitle:       "白虎面板",
+		KeySubtitle:    "极致轻量、高性能的自动化任务调度平台",
+		KeyIcon:        DefaultIcon,
+		KeyPageSize:    "10",
+		KeyCookieDays:  "7",
+		KeyActiveWebUI: "default",
 	},
 	SectionScheduler: {
 		KeyWorkerCount:  "4",

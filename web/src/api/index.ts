@@ -338,7 +338,36 @@ export const api = {
     },
     markAsRead: (data: { id?: string; category?: string }) => request('/app-logs/read', { method: 'POST', body: JSON.stringify(data) }),
     clear: (category: string) => request('/app-logs/clear', { method: 'POST', body: JSON.stringify({ category }) })
+  },
+  webui: {
+    list: () => request<WebUI[]>('/webui'),
+    upload: async (file: File) => {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch(`${API_BASE_URL}/webui/upload`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
+      })
+      const json: ApiResponse<{ message: string, theme: string }> = await res.json()
+      if (json.code === 401) {
+        window.location.href = BASE_URL + '/login'
+        throw new Error('请先登录')
+      }
+      if (json.code !== 200) throw new Error(json.msg || '上传失败')
+      return json.data
+    },
+    setActive: (name: string) => request<{ message: string }>('/webui/active', { method: 'PUT', body: JSON.stringify({ name }) }),
+    delete: (name: string) => request<{ message: string }>(`/webui/${name}`, { method: 'DELETE' })
   }
+}
+
+export interface WebUI {
+  name: string
+  version: string
+  author: string
+  description: string
+  min_panel_version: string
 }
 
 export interface FileNode {
@@ -516,6 +545,7 @@ export interface SiteSettings {
   login_log_max_count?: string
   scheduler_log_days?: string
   scheduler_log_max_count?: string
+  active_webui?: string
 }
 
 export interface SchedulerSettings {

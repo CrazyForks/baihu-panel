@@ -22,6 +22,31 @@ all: build
 build-web:
 	cd web && npm ci && npm run build
 
+pack-webui:
+	@echo "==> [1/6] 验证参数有效性..."
+	@if [ -z "$(NAME)" ] || [ -z "$(VERSION)" ] || [ -z "$(AUTHOR)" ] || [ -z "$(DESC)" ]; then \
+		echo "Error: Missing required arguments!"; \
+		echo "Usage: make pack-webui NAME=<name> VERSION=<version> AUTHOR=<author> DESC=<description>"; \
+		exit 1; \
+	fi
+	@if [ "$(NAME)" = "default" ]; then \
+		echo "Error: WebUI name cannot be 'default' ('default' is reserved for the built-in system identifier)."; \
+		exit 1; \
+	fi
+	@echo "==> [2/6] 正在安装前端依赖包 (npm i)..."
+	cd web && npm i
+	@echo "==> [3/6] 正在编译构建前端资源文件 (npm run build)..."
+	cd web && npm run build
+	@echo "==> [4/6] 正在准备归档输出目录与清理旧包..."
+	@mkdir -p bin
+	@rm -f bin/webui-$(NAME)-$(VERSION).tar.gz
+	@echo "==> [5/6] 正在生成包配置文件 uimanifest.json..."
+	@echo '{"name": "$(NAME)", "version": "$(VERSION)", "author": "$(AUTHOR)", "description": "$(DESC)"}' > web/dist/uimanifest.json
+	@echo "==> [6/6] 正在压缩打包为 tar.gz 归档包..."
+	@sleep 2
+	cd web/dist && tar -czf ../../bin/webui-$(NAME)-$(VERSION).tar.gz *
+	@echo "==> 打包成功！资源包已创建于: bin/webui-$(NAME)-$(VERSION).tar.gz"
+
 # Build the application (requires frontend to be built first)
 build:
 	@mkdir -p bin
@@ -171,6 +196,7 @@ help:
 	@echo "  build            - Build backend binary (no UI embedded)"
 	@echo "  release          - Build full release binary (with UI embedded)"
 	@echo "  build-web        - Build frontend assets only"
+	@echo "  pack-webui       - Build and package custom WebUI tar.gz"
 	@echo "  build-agent      - Build agent packages (tar.gz) for all platforms"
 	@echo "  clean            - Clean built files"
 	@echo "  clean-all        - Clean local files and Docker dev environment (including volumes)"
